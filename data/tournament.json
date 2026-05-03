@@ -1,0 +1,15 @@
+{
+  "competition": "WC2026",
+  "starts_on": "2026-06-11",
+  "ends_on": "2026-07-19",
+  "hosts": ["USA", "CAN", "MEX"],
+  "stages": ["GROUP_STAGE", "ROUND_OF_32", "LAST_16", "QUARTER_FINALS", "SEMI_FINALS", "THIRD_PLACE", "FINAL"],
+  "groups": ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"],
+  "venues": [
+    { "name_en": "MetLife Stadium",  "name_he": "אצטדיון מטלייף",  "city_en": "East Rutherford", "city_he": "איסט רת'רפורד", "country": "USA" },
+    { "name_en": "SoFi Stadium",     "name_he": "אצטדיון סופיי",   "city_en": "Inglewood",       "city_he": "אינגלווד",       "country": "USA" },
+    { "name_en": "AT&T Stadium",     "name_he": "אצטדיון AT&T",    "city_en": "Arlington",       "city_he": "ארלינגטון",      "country": "USA" },
+    { "name_en": "Estadio Azteca",   "name_he": "אצטדיון אסטקה",   "city_en": "Mexico City",     "city_he": "מקסיקו סיטי",   "country": "MEX" },
+    { "name_en": "BMO Field",        "name_he": "אצטדיון BMO",     "city_en": "Toronto",         "city_he": "טורונטו",        "country": "CAN" }
+  ]
+}

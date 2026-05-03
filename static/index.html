@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>מונדיאל 2026</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;600;700;800&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/base.css">
+  <link rel="stylesheet" href="/static/css/layout.css">
+  <link rel="stylesheet" href="/static/css/components.css">
+  <link rel="stylesheet" href="/static/css/rtl.css">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#E8542C">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Mondial">
+</head>
+<body>
+  <div id="app">
+    <!-- SPA shell — app.js renders the UI -->
+    <div style="min-height:100dvh;display:flex;align-items:center;justify-content:center;background:var(--mn-cream);">
+      <div style="text-align:center;color:var(--mn-ink-soft);font-size:var(--mn-fs-sm);">
+        <div style="font-size:var(--mn-fs-xxl);font-weight:800;color:var(--mn-flame);margin-bottom:8px;">מונדיאל 2026</div>
+        <div>טוען...</div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/static/js/app.js"></script>
+  <script>
+    // Register service worker
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/service-worker.js').catch(() => {});
+    }
+  </script>
+</body>
+</html>

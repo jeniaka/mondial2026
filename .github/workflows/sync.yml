@@ -1,0 +1,32 @@
+name: sync
+on:
+  schedule:
+    - cron: "*/2 * * * *"
+  workflow_dispatch:
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Skip if outside tournament window
+        id: window
+        run: |
+          NOW=$(date -u +%s)
+          START=$(date -u -d "2026-06-10" +%s)
+          END=$(date -u -d "2026-07-20" +%s)
+          if [ "$NOW" -lt "$START" ] || [ "$NOW" -gt "$END" ]; then
+            echo "outside=true" >> $GITHUB_OUTPUT
+          fi
+      - name: Sync matches
+        if: steps.window.outputs.outside != 'true'
+        run: |
+          curl -fsS --max-time 60 \
+            -X POST \
+            -H "X-Internal-Token: ${{ secrets.INTERNAL_TOKEN }}" \
+            "${{ secrets.RENDER_BASE_URL }}/internal/sync-matches"
+      - name: Score predictions
+        if: steps.window.outputs.outside != 'true'
+        run: |
+          curl -fsS --max-time 60 \
+            -X POST \
+            -H "X-Internal-Token: ${{ secrets.INTERNAL_TOKEN }}" \
+            "${{ secrets.RENDER_BASE_URL }}/internal/score-predictions"

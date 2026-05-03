@@ -1,0 +1,15 @@
+name: digest
+on:
+  schedule:
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+jobs:
+  digest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send digest
+        run: |
+          curl -fsS --max-time 60 \
+            -X POST \
+            -H "X-Internal-Token: ${{ secrets.INTERNAL_TOKEN }}" \
+            "${{ secrets.RENDER_BASE_URL }}/internal/email-digest"

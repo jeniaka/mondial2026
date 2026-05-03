@@ -1,0 +1,48 @@
+/* rtl.css — RTL-specific overrides */
+/* All layout already uses logical properties (margin-inline-start, etc.) */
+/* This file handles directional icons and exceptions */
+
+[dir="rtl"] .mn-icon-chevron-right,
+[dir="rtl"] .mn-icon-arrow-right {
+  transform: scaleX(-1);
+}
+
+[dir="rtl"] .mn-icon-chevron-left,
+[dir="rtl"] .mn-icon-arrow-left {
+  transform: scaleX(-1);
+}
+
+/* Drawer slides in from left in RTL */
+[dir="rtl"] .mn-drawer {
+  inset-inline-end: 0;
+  inset-inline-start: auto;
+}
+
+/* Score display: numbers stay LTR inside RTL sentences */
+.mn-score-value {
+  unicode-bidi: embed;
+  direction: ltr;
+  display: inline;
+}
+
+/* Match card layout in RTL: flag on right, name on left */
+[dir="rtl"] .mn-team-row {
+  /* flex-direction stays row; logical properties handle inlines */
+}
+
+/* Back button arrow flips in RTL */
+[dir="rtl"] .mn-back-btn svg { transform: scaleX(-1); }
+
+/* Toast centering in RTL */
+[dir="rtl"] .mn-toast {
+  left: auto;
+  right: 50%;
+  transform: translateX(50%);
+}
+
+/* Prevent double-flip on icons that should not flip */
+[dir="rtl"] .mn-flag,
+[dir="rtl"] .mn-live-dot,
+[dir="rtl"] .mn-avatar {
+  transform: none;
+}
