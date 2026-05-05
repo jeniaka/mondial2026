@@ -94,6 +94,19 @@ def invalidate(key: str):
     _cache.pop(key, None)
 
 
+def validate_team_tlas(match_docs: list, countries: dict) -> list:
+    """Check every team TLA in match_docs against countries.json. Returns sorted list of missing TLAs."""
+    missing = set()
+    for m in match_docs:
+        for side in ("home", "away"):
+            tla = m.get(side, {}).get("fifa", "")
+            if tla and tla not in countries:
+                missing.add(tla)
+    for tla in sorted(missing):
+        log.warning("FLAG MISSING: team TLA '%s' not found in countries.json — flag will fall back to placeholder", tla)
+    return sorted(missing)
+
+
 def get_standings():
     """Fetch group standings."""
     return _cached("standings", TTL_STANDINGS, lambda: _get(

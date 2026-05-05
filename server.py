@@ -982,8 +982,11 @@ def handle_internal_sync(handler: BaseHTTPRequestHandler, **_):
             upsert=True
         ))
 
+    # Validate all TLAs against countries.json
+    missing_flags = sports.validate_team_tlas(new_match_docs, countries)
+
     if not ops:
-        send_json(handler, 200, {"ok": True, "synced": 0})
+        send_json(handler, 200, {"ok": True, "synced": 0, "missing_flags": missing_flags})
         return
 
     # Snapshot existing states before write so we can diff for notifications
@@ -995,7 +998,7 @@ def handle_internal_sync(handler: BaseHTTPRequestHandler, **_):
     for new_match in new_match_docs:
         _fire_match_notifications(old_matches.get(new_match["_id"]), new_match)
 
-    send_json(handler, 200, {"ok": True, "synced": len(ops)})
+    send_json(handler, 200, {"ok": True, "synced": len(ops), "missing_flags": missing_flags})
 
 
 def handle_internal_score(handler: BaseHTTPRequestHandler, **_):
@@ -1220,6 +1223,30 @@ def _generate_join_code() -> str:
 
 
 # ---------------------------------------------------------------------------
+# Debug endpoints (admin only)
+# ---------------------------------------------------------------------------
+
+def handle_debug_missing_flags(handler: BaseHTTPRequestHandler, **_):
+    user = auth.require_user(handler)
+    if not user or not user.get("is_admin"):
+        send_json(handler, 403, {"error": "forbidden"})
+        return
+    import json as _json
+    countries_path = os.path.join(os.path.dirname(__file__), "data", "countries.json")
+    with open(countries_path, encoding="utf-8") as f:
+        countries = _json.load(f)
+    matches = list(db.matches().find({}, {"home.fifa": 1, "away.fifa": 1}))
+    seen_tlas: set = set()
+    for m in matches:
+        h = m.get("home", {}).get("fifa", "")
+        a = m.get("away", {}).get("fifa", "")
+        if h: seen_tlas.add(h)
+        if a: seen_tlas.add(a)
+    missing = sorted(t for t in seen_tlas if t not in countries)
+    send_json(handler, 200, {"missing_flags": missing, "total_seen": len(seen_tlas), "countries_count": len(countries)})
+
+
+# ---------------------------------------------------------------------------
 # Bonus / tournament bets
 # ---------------------------------------------------------------------------
 
@@ -1289,6 +1316,7 @@ ROUTES_GET = [
     (r"^/api/standings/([^/]+)$",               handle_standings_get),
     (r"^/api/tournament$",                      handle_tournament_get),
     (r"^/api/countries$",                       handle_countries_get),
+    (r"^/api/debug/missing-flags$",             handle_debug_missing_flags),
     # Groups
     (r"^/api/groups$",                          handle_groups_list),
     (r"^/api/groups/([^/]+)$",                  handle_group_get),
@@ -1436,7 +1464,34 @@ def handler_passes_csrf(handler: BaseHTTPRequestHandler) -> bool:
 # Entry point
 # ---------------------------------------------------------------------------
 
+def _startup_validate_countries():
+    """Verify countries.json loads and has sufficient FIFA member coverage. Exits with code 1 on failure."""
+    import sys
+    import json as _json
+    countries_path = os.path.join(os.path.dirname(__file__), "data", "countries.json")
+    try:
+        with open(countries_path, encoding="utf-8") as f:
+            countries = _json.load(f)
+    except Exception as exc:
+        log.error("STARTUP: Cannot load countries.json: %s", exc)
+        sys.exit(1)
+    count = len(countries)
+    if count < 50:
+        log.error("STARTUP: countries.json has only %d entries — expected at least 50 FIFA members. Fix data/countries.json before running.", count)
+        sys.exit(1)
+    # Warn about any entry that is missing name_he (owner must provide correct Hebrew spelling)
+    placeholder_warned = False
+    for tla, entry in countries.items():
+        if not entry.get("name_he"):
+            if not placeholder_warned:
+                log.error("STARTUP BANNER: One or more countries in countries.json are missing name_he (Hebrew name). Please provide correct Hebrew spellings for the following teams:")
+                placeholder_warned = True
+            log.error("  MISSING name_he: %s (%s)", tla, entry.get("name_en", ""))
+    log.info("STARTUP: countries.json validated — %d teams loaded", count)
+
+
 def main():
+    _startup_validate_countries()
     db.ensure_indexes()
     host = "0.0.0.0"
     port = config.PORT
