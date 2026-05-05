@@ -258,6 +258,19 @@
   border-radius: 1px;
 }
 
+/* --- Kickoff pill (pre-tournament) --- */
+.mn-day-strip-kickoff-pill {
+  flex-shrink: 0;
+  padding: 5px 12px;
+  border-radius: var(--mn-r-pill);
+  font-size: var(--mn-fs-xs);
+  font-weight: 700;
+  color: #fff;
+  background: var(--mn-pitch-green);
+  white-space: nowrap;
+  align-self: center;
+}
+
 /* --- Empty state --- */
 .mn-empty {
   text-align: center;

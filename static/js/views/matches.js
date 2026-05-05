@@ -4,14 +4,20 @@ import { t, currentLang } from '../i18n.js';
 import { api, showToast } from '../api.js';
 import { buildMatchCard } from '../components/match_card.js';
 
+const TOURNAMENT_START = new Date('2026-06-11T00:00:00');
+const TOURNAMENT_END   = new Date('2026-07-19T00:00:00');
+
 let _pinnedIds = new Set();
 let _livePoller = null;
 
 export async function renderMatchesView(container) {
   container.innerHTML = '';
 
-  // Day strip
-  const strip = buildDayStrip();
+  const today = new Date();
+  const todayMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const mode = _tournamentMode(todayMidnight);
+
+  const { strip, selectedDate } = buildDayStrip(todayMidnight, mode);
   container.appendChild(strip);
 
   const feed = document.createElement('div');
@@ -25,7 +31,7 @@ export async function renderMatchesView(container) {
     _pinnedIds = new Set((pinned || []).map(m => m.id));
   } catch (_) {}
 
-  await loadDay(feed, 'today');
+  await loadDay(feed, _loadDayKey(selectedDate, todayMidnight));
   startLivePoller(feed);
 }
 
@@ -34,59 +40,102 @@ export function destroyMatchesView() {
   _livePoller = null;
 }
 
-function buildDayStrip() {
+function _tournamentMode(todayMidnight) {
+  const start = new Date(TOURNAMENT_START.getFullYear(), TOURNAMENT_START.getMonth(), TOURNAMENT_START.getDate());
+  const end   = new Date(TOURNAMENT_END.getFullYear(),   TOURNAMENT_END.getMonth(),   TOURNAMENT_END.getDate());
+  if (todayMidnight < start) return 'pre';
+  if (todayMidnight > end)   return 'post';
+  return 'during';
+}
+
+function _isSameDay(a, b) {
+  return a.getFullYear() === b.getFullYear()
+      && a.getMonth()    === b.getMonth()
+      && a.getDate()     === b.getDate();
+}
+
+function _toDateStr(d) {
+  return d.toISOString().slice(0, 10);
+}
+
+function _defaultSelectedDate(mode, todayMidnight) {
+  if (mode === 'pre') {
+    return new Date(TOURNAMENT_START.getFullYear(), TOURNAMENT_START.getMonth(), TOURNAMENT_START.getDate());
+  }
+  return new Date(todayMidnight);
+}
+
+function _loadDayKey(date, todayMidnight) {
+  if (_isSameDay(date, todayMidnight)) return 'today';
+  const yesterday = new Date(todayMidnight); yesterday.setDate(yesterday.getDate() - 1);
+  const tomorrow  = new Date(todayMidnight); tomorrow.setDate(tomorrow.getDate() + 1);
+  if (_isSameDay(date, yesterday)) return 'yesterday';
+  if (_isSameDay(date, tomorrow))  return 'tomorrow';
+  return _toDateStr(date);
+}
+
+function buildDayStrip(todayMidnight, mode) {
   const strip = document.createElement('div');
   strip.className = 'mn-day-strip';
   strip.id = 'day-strip';
 
-  const today = new Date();
-  const days = [];
-  for (let i = -7; i <= 14; i++) {
-    const d = new Date(today);
-    d.setDate(today.getDate() + i);
-    days.push({ date: d, offset: i });
+  const selectedDate = _defaultSelectedDate(mode, todayMidnight);
+
+  // Pre-tournament: show kickoff countdown pill at far left
+  if (mode === 'pre') {
+    const msLeft = TOURNAMENT_START - todayMidnight;
+    const daysLeft = Math.ceil(msLeft / 86400000);
+    const pill = document.createElement('div');
+    pill.className = 'mn-day-strip-kickoff-pill';
+    pill.textContent = t('matches.days_to_kickoff').replace('{n}', daysLeft);
+    strip.appendChild(pill);
   }
 
-  days.forEach(({ date, offset }) => {
+  // All tournament days with 3-day padding on each side
+  const padStart = new Date(2026, 5,  8); // June 8
+  const padEnd   = new Date(2026, 6, 22); // July 22
+
+  const days = [];
+  for (let d = new Date(padStart); d <= padEnd; d.setDate(d.getDate() + 1)) {
+    days.push(new Date(d));
+  }
+
+  days.forEach(date => {
+    const isSelected = _isSameDay(date, selectedDate);
     const chip = document.createElement('button');
-    chip.className = `mn-day-chip${offset === 0 ? ' active' : ''}`;
-    chip.dataset.offset = offset;
-    chip.textContent = formatDayLabel(date, offset);
+    chip.className = `mn-day-chip${isSelected ? ' active' : ''}`;
+    chip.dataset.datestr = _toDateStr(date);
+    chip.textContent = _formatDayLabel(date, todayMidnight);
     chip.addEventListener('click', async () => {
       document.querySelectorAll('.mn-day-chip').forEach(c => c.classList.remove('active'));
       chip.classList.add('active');
       const feed = document.getElementById('matches-feed');
-      if (feed) await loadDay(feed, dayKey(offset, date));
+      if (feed) await loadDay(feed, _loadDayKey(date, todayMidnight));
     });
     strip.appendChild(chip);
   });
 
-  // Scroll today into center
+  // Scroll selected chip into center
   setTimeout(() => {
     const active = strip.querySelector('.mn-day-chip.active');
     if (active) active.scrollIntoView({ inline: 'center', behavior: 'smooth' });
   }, 50);
 
-  return strip;
+  return { strip, selectedDate };
 }
 
-function formatDayLabel(date, offset) {
+function _formatDayLabel(date, todayMidnight) {
   const lang = currentLang();
-  if (offset === 0) return t('common.today');
-  if (offset === 1) return t('common.tomorrow');
-  if (offset === -1) return t('common.yesterday');
+  if (_isSameDay(date, todayMidnight)) return t('common.today');
+  const yesterday = new Date(todayMidnight); yesterday.setDate(yesterday.getDate() - 1);
+  const tomorrow  = new Date(todayMidnight); tomorrow.setDate(tomorrow.getDate() + 1);
+  if (_isSameDay(date, yesterday)) return t('common.yesterday');
+  if (_isSameDay(date, tomorrow))  return t('common.tomorrow');
   const opts = { weekday: 'short', day: 'numeric', month: 'short' };
   return date.toLocaleDateString(lang === 'he' ? 'he-IL' : 'en-GB', opts);
 }
 
-function dayKey(offset, date) {
-  if (offset === 0) return 'today';
-  if (offset === 1) return 'tomorrow';
-  if (offset === -1) return 'yesterday';
-  return date.toISOString().slice(0, 10);
-}
-
-async function loadDay(feed, dayKey) {
+async function loadDay(feed, key) {
   feed.innerHTML = `
     <div class="mn-skeleton" style="height:80px;margin-bottom:10px;"></div>
     <div class="mn-skeleton" style="height:80px;margin-bottom:10px;"></div>
@@ -95,11 +144,11 @@ async function loadDay(feed, dayKey) {
 
   let matches;
   try {
-    if (['today', 'yesterday', 'tomorrow'].includes(dayKey)) {
-      matches = await api.matchesDay(dayKey);
+    if (['today', 'yesterday', 'tomorrow'].includes(key)) {
+      matches = await api.matchesDay(key);
     } else {
-      const from = dayKey + 'T00:00:00';
-      const to   = dayKey + 'T23:59:59';
+      const from = key + 'T00:00:00';
+      const to   = key + 'T23:59:59';
       matches = await api.matchesRange(from, to);
     }
   } catch (_) {
@@ -118,9 +167,9 @@ async function loadDay(feed, dayKey) {
   // Group by stage
   const byStage = {};
   matches.forEach(m => {
-    const key = m.stage || 'OTHER';
-    if (!byStage[key]) byStage[key] = [];
-    byStage[key].push(m);
+    const k = m.stage || 'OTHER';
+    if (!byStage[k]) byStage[k] = [];
+    byStage[k].push(m);
   });
 
   Object.entries(byStage).forEach(([stage, stageMatches]) => {
@@ -142,7 +191,6 @@ async function loadDay(feed, dayKey) {
 }
 
 async function handlePin(matchId, shouldPin, card, match) {
-  // Optimistic update
   _pinnedIds[shouldPin ? 'add' : 'delete'](matchId);
   const btn = card.querySelector('.mn-pin-btn');
   if (btn) {
@@ -152,7 +200,6 @@ async function handlePin(matchId, shouldPin, card, match) {
   try {
     await api.pinMatch(matchId);
   } catch (_) {
-    // Revert optimistic
     _pinnedIds[shouldPin ? 'delete' : 'add'](matchId);
     if (btn) btn.classList.toggle('pinned', !shouldPin);
   }
@@ -164,7 +211,6 @@ function startLivePoller(feed) {
     if (document.hidden) return;
     try {
       const live = await api.matchesLive();
-      // Update live cards in place
       (live || []).forEach(liveMatch => {
         const existing = feed.querySelector(`[data-match-id="${liveMatch.id}"]`);
         if (existing) {

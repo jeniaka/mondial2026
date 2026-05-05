@@ -50,7 +50,8 @@
     "events": "אירועים",
     "lineups": "הרכבים",
     "stats": "סטטיסטיקה",
-    "no_events_yet": "אין אירועים בינתיים"
+    "no_events_yet": "אין אירועים בינתיים",
+    "days_to_kickoff": "{n} ימים לפתיחה"
   },
   "events": {
     "goal": "גול",

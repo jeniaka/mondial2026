@@ -50,7 +50,8 @@
     "events": "Events",
     "lineups": "Lineups",
     "stats": "Stats",
-    "no_events_yet": "No events yet"
+    "no_events_yet": "No events yet",
+    "days_to_kickoff": "{n} days to kickoff"
   },
   "events": {
     "goal": "Goal",
