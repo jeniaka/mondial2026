@@ -60,7 +60,9 @@ export const api = {
   groupInvite:(id, email)        => fetchJson(`/api/groups/${id}/invite`, { method: 'POST', body: { email } }),
   groupLeave: (id)               => fetchJson(`/api/groups/${id}/leave`, { method: 'POST' }),
   groupKick:  (id, userId)       => fetchJson(`/api/groups/${id}/kick`, { method: 'POST', body: { user_id: userId } }),
-  inviteAccept:(token)           => fetchJson('/api/invites/accept', { method: 'POST', body: { token } }),
+  inviteAccept:     (token)       => fetchJson('/api/invites/accept', { method: 'POST', body: { token } }),
+  groupJoinByCode:  (code)        => fetchJson('/api/groups/join-by-code', { method: 'POST', body: { code } }),
+  updateLocale:     (locale)      => fetchJson('/api/users/me/locale', { method: 'POST', body: { locale } }),
 
   // Predictions
   predictions:       (gid, mid)  => fetchJson(`/api/groups/${gid}/predictions/${mid}`),

@@ -272,11 +272,13 @@ function renderProfileView(container) {
   page.querySelector('#lang-he').addEventListener('click', async () => {
     await setLang('he');
     document.getElementById('lang-toggle').textContent = 'EN';
+    api.updateLocale('he').catch(() => {});
     navigateTo('#/profile');
   });
   page.querySelector('#lang-en').addEventListener('click', async () => {
     await setLang('en');
     document.getElementById('lang-toggle').textContent = 'עב';
+    api.updateLocale('en').catch(() => {});
     navigateTo('#/profile');
   });
 

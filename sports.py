@@ -89,6 +89,11 @@ def get_match(match_id: str):
     return _cached(key, ttl, lambda: _get(f"/matches/{match_id}"))
 
 
+def invalidate(key: str):
+    """Remove an entry from the in-process cache (force fresh fetch on next call)."""
+    _cache.pop(key, None)
+
+
 def get_standings():
     """Fetch group standings."""
     return _cached("standings", TTL_STANDINGS, lambda: _get(

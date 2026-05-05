@@ -3,6 +3,7 @@ mail.py — Brevo HTTP API email wrapper.
 Uses HTTP API (port 443) — Render blocks SMTP ports 587/465.
 """
 import logging
+from datetime import datetime
 
 import requests as http_requests
 
@@ -47,6 +48,83 @@ def send_email(to_email: str, to_name: str, subject: str, html_body: str):
     except Exception as exc:
         log.error("send_email exception: %s", exc)
         return False, str(exc)
+
+
+def build_digest_email(user: dict, matches: list, lang: str, base_url: str) -> tuple:
+    """Build a daily digest email. Returns (subject, html_body)."""
+    name = user.get("name", "")
+    date_str = datetime.now().strftime("%d/%m/%Y")
+
+    if lang == "he":
+        subject = f"מונדיאל 2026 — סיכום יומי {date_str}"
+        greeting = f"שלום {name},"
+        matches_title = "משחקי היום"
+        no_matches_text = "אין משחקים היום"
+        cta_text = "לאפליקציה"
+        direction = "rtl"
+    else:
+        subject = f"Mondial 2026 — Daily digest {date_str}"
+        greeting = f"Hi {name},"
+        matches_title = "Today's matches"
+        no_matches_text = "No matches today"
+        cta_text = "Open app"
+        direction = "ltr"
+
+    match_rows = ""
+    for m in matches:
+        home = m.get("home", {})
+        away = m.get("away", {})
+        home_name = home.get(f"name_{lang}") or home.get("name_en", "")
+        away_name = away.get(f"name_{lang}") or away.get("name_en", "")
+        score = m.get("score", {})
+        status = m.get("status", "")
+        kickoff = m.get("kickoff_utc")
+
+        if status == "FINISHED":
+            sh = score.get("ft_home", score.get("home", "?"))
+            sa = score.get("ft_away", score.get("away", "?"))
+            result = f"{sh}–{sa}"
+        elif status in ("IN_PLAY", "PAUSED", "LIVE"):
+            sh = score.get("home", 0)
+            sa = score.get("away", 0)
+            live_label = "שידור חי" if lang == "he" else "LIVE"
+            result = f"{sh}–{sa} {live_label}"
+        elif kickoff:
+            result = kickoff.strftime("%H:%M")
+        else:
+            result = "–"
+
+        align_home = "right" if lang == "he" else "left"
+        align_away = "left" if lang == "he" else "right"
+        match_rows += (
+            f'<tr>'
+            f'<td style="padding:8px 4px;text-align:{align_home};">{home_name}</td>'
+            f'<td style="padding:8px 14px;text-align:center;font-weight:700;font-variant-numeric:tabular-nums;">{result}</td>'
+            f'<td style="padding:8px 4px;text-align:{align_away};">{away_name}</td>'
+            f'</tr>'
+        )
+
+    if not match_rows:
+        match_rows = f'<tr><td colspan="3" style="padding:16px;text-align:center;color:#6B4A3A;">{no_matches_text}</td></tr>'
+
+    html_body = f"""<!doctype html>
+<html dir="{direction}" lang="{lang}">
+<head><meta charset="utf-8"></head>
+<body style="background:#FFF6E5;font-family:'Heebo',Arial,sans-serif;color:#2A1810;margin:0;padding:0;">
+  <div style="max-width:520px;margin:24px auto;background:#FFFFFF;border-radius:14px;padding:24px;">
+    <div style="text-align:center;font-size:28px;font-weight:800;color:#E8542C;margin-bottom:16px;">מונדיאל 2026</div>
+    <p>{greeting}</p>
+    <h2 style="font-size:16px;font-weight:700;margin:16px 0 8px;">{matches_title}</h2>
+    <table style="width:100%;border-collapse:collapse;font-size:14px;">
+      {match_rows}
+    </table>
+    <p style="text-align:center;margin:28px 0;">
+      <a href="{base_url}" style="display:inline-block;background:#E8542C;color:#FFFFFF;text-decoration:none;padding:12px 28px;border-radius:999px;font-weight:700;">{cta_text}</a>
+    </p>
+  </div>
+</body>
+</html>"""
+    return subject, html_body
 
 
 def build_invite_email_he(from_name: str, group_name: str, accept_url: str) -> tuple:

@@ -359,8 +359,51 @@ def handle_standings_get(handler: BaseHTTPRequestHandler, group: str, **_):
     user = auth.require_user(handler)
     if not user:
         return
-    # Standings served from cached sports data (Phase 4 will populate)
-    send_json(handler, 200, {"group": group, "standings": []})
+    import sports
+    import json as _json
+
+    data = sports.get_standings()
+    if not data:
+        send_json(handler, 200, {"group": group, "standings": []})
+        return
+
+    group_key = f"GROUP_{group.upper()}"
+    target = None
+    for s in data.get("standings", []):
+        if s.get("group") == group_key and s.get("type") == "TOTAL":
+            target = s
+            break
+
+    if not target:
+        send_json(handler, 200, {"group": group, "standings": []})
+        return
+
+    countries_path = os.path.join(os.path.dirname(__file__), "data", "countries.json")
+    with open(countries_path, encoding="utf-8") as f:
+        countries = _json.load(f)
+
+    table = []
+    for row in target.get("table", []):
+        team = row.get("team", {})
+        fifa = team.get("tla", "")
+        country = countries.get(fifa, {})
+        table.append({
+            "position":        row.get("position"),
+            "fifa":            fifa,
+            "name_en":         team.get("name", ""),
+            "name_he":         country.get("name_he", ""),
+            "iso2":            country.get("iso2", ""),
+            "played":          row.get("playedGames", 0),
+            "won":             row.get("won", 0),
+            "draw":            row.get("draw", 0),
+            "lost":            row.get("lost", 0),
+            "points":          row.get("points", 0),
+            "goals_for":       row.get("goalsFor", 0),
+            "goals_against":   row.get("goalsAgainst", 0),
+            "goal_difference": row.get("goalDifference", 0),
+        })
+
+    send_json(handler, 200, {"group": group, "standings": table})
 
 
 def handle_tournament_get(handler: BaseHTTPRequestHandler, **_):
@@ -575,6 +618,37 @@ def handle_group_kick(handler: BaseHTTPRequestHandler, group_id: str, **_):
         return
     db.groups().update_one({"_id": gid}, {"$pull": {"members": {"user_id": kick_id}}})
     send_json(handler, 200, {"ok": True})
+
+
+def handle_group_join_by_code(handler: BaseHTTPRequestHandler, **_):
+    user = auth.require_user(handler)
+    if not user:
+        return
+    body = parse_json_body(handler)
+    code = (body.get("code") or "").strip().upper()
+    if not code or len(code) != 6:
+        send_json(handler, 400, {"error": "invalid code"})
+        return
+    grp = db.groups().find_one({"join_code": code})
+    if not grp:
+        send_json(handler, 404, {"error": "group not found"})
+        return
+    member_ids = [m["user_id"] for m in grp.get("members", [])]
+    if user["_id"] in member_ids:
+        send_json(handler, 200, {
+            "ok": True, "already_member": True,
+            "group_id": str(grp["_id"]), "group_name": grp["name"],
+        })
+        return
+    now = datetime.now(timezone.utc)
+    db.groups().update_one(
+        {"_id": grp["_id"]},
+        {"$push": {"members": {"user_id": user["_id"], "joined_at": now, "role": "member"}}}
+    )
+    send_json(handler, 200, {
+        "ok": True, "already_member": False,
+        "group_id": str(grp["_id"]), "group_name": grp["name"],
+    })
 
 
 def handle_invite_accept(handler: BaseHTTPRequestHandler, **_):
@@ -798,6 +872,19 @@ def handle_my_predictions(handler: BaseHTTPRequestHandler, group_id: str, **_):
 
 # --- Notifications API ---
 
+def handle_update_locale(handler: BaseHTTPRequestHandler, **_):
+    user = auth.require_user(handler)
+    if not user:
+        return
+    body = parse_json_body(handler)
+    locale = body.get("locale", "he")
+    if locale not in ("he", "en"):
+        send_json(handler, 400, {"error": "invalid locale"})
+        return
+    db.users().update_one({"_id": user["_id"]}, {"$set": {"locale_pref": locale}})
+    send_json(handler, 200, {"ok": True})
+
+
 def handle_notifications_list(handler: BaseHTTPRequestHandler, **_):
     user = auth.require_user(handler)
     if not user:
@@ -864,10 +951,12 @@ def handle_internal_sync(handler: BaseHTTPRequestHandler, **_):
     import sports
     import json as _json
 
-    # Load country lookup
     countries_path = os.path.join(os.path.dirname(__file__), "data", "countries.json")
     with open(countries_path, encoding="utf-8") as f:
         countries = _json.load(f)
+
+    # Bypass in-process cache so each cron run hits Football-Data fresh
+    sports.invalidate("fixtures:all")
 
     data = sports.get_fixtures()
     if not data:
@@ -876,29 +965,37 @@ def handle_internal_sync(handler: BaseHTTPRequestHandler, **_):
 
     from pymongo import UpdateOne
 
-    synced = 0
+    new_match_docs = []
     ops = []
     for fd_match in data.get("matches", []):
         match_doc = sports.map_fd_match(fd_match)
-        # Enrich Hebrew names
         for side in ("home", "away"):
             fifa = match_doc[side]["fifa"]
             country = countries.get(fifa, {})
             match_doc[side]["name_he"] = country.get("name_he", "")
             if not match_doc[side]["name_en"]:
                 match_doc[side]["name_en"] = country.get("name_en", fifa)
+        new_match_docs.append(match_doc)
         ops.append(UpdateOne(
             {"_id": match_doc["_id"]},
             {"$set": match_doc},
             upsert=True
         ))
-        synced += 1
 
-    if ops:
-        db.matches().bulk_write(ops, ordered=False)
+    if not ops:
+        send_json(handler, 200, {"ok": True, "synced": 0})
+        return
 
-    # Fire notifications for status transitions (Phase 10)
-    send_json(handler, 200, {"ok": True, "synced": synced})
+    # Snapshot existing states before write so we can diff for notifications
+    ids = [m["_id"] for m in new_match_docs]
+    old_matches = {m["_id"]: m for m in db.matches().find({"_id": {"$in": ids}})}
+
+    db.matches().bulk_write(ops, ordered=False)
+
+    for new_match in new_match_docs:
+        _fire_match_notifications(old_matches.get(new_match["_id"]), new_match)
+
+    send_json(handler, 200, {"ok": True, "synced": len(ops)})
 
 
 def handle_internal_score(handler: BaseHTTPRequestHandler, **_):
@@ -918,23 +1015,125 @@ def handle_internal_score(handler: BaseHTTPRequestHandler, **_):
 def handle_internal_digest(handler: BaseHTTPRequestHandler, **_):
     if not require_internal_token(handler):
         return
-    # Find opted-in users and send digest (full impl Phase 10)
-    from datetime import datetime, timezone
+    from datetime import timedelta
     import mail
-    import i18n
 
-    users = list(db.users().find({"notif_prefs.email_digest": {"$ne": "off"}}))
+    now = datetime.now(timezone.utc)
+    today = now.date()
+    d_from = datetime(today.year, today.month, today.day, tzinfo=timezone.utc)
+    d_to = d_from + timedelta(days=1)
+
+    today_matches = list(db.matches().find({
+        "kickoff_utc": {"$gte": d_from, "$lt": d_to}
+    }).sort("kickoff_utc", 1))
+
+    users_to_notify = list(db.users().find({
+        "notif_prefs.email_digest": {"$in": ["daily", "matchdays_only"]}
+    }))
+
     sent = 0
-    for u in users:
+    for u in users_to_notify:
         if not u.get("email"):
             continue
+        if u.get("notif_prefs", {}).get("email_digest") == "matchdays_only" and not today_matches:
+            continue
         lang = u.get("locale_pref", "he")
-        subject = "Mondial 2026 — " + i18n.t("notifications.title", lang=lang)
-        body = f"<p>Your daily Mondial 2026 digest</p>"  # Phase 10 will flesh this out
-        ok, _ = mail.send_email(u["email"], u.get("name", ""), subject, body)
+        subject, html_body = mail.build_digest_email(u, today_matches, lang, config.APP_BASE_URL)
+        ok, _ = mail.send_email(u["email"], u.get("name", ""), subject, html_body)
         if ok:
             sent += 1
     send_json(handler, 200, {"ok": True, "sent": sent})
+
+
+# ---------------------------------------------------------------------------
+# Notification helpers
+# ---------------------------------------------------------------------------
+
+def _get_pinned_users(match_id: str, pref_key: str) -> list:
+    return [
+        u["_id"] for u in db.users().find(
+            {"pinned_matches": match_id, f"notif_prefs.{pref_key}": {"$ne": False}},
+            {"_id": 1}
+        )
+    ]
+
+
+def _get_interested_users(match_id: str, pref_key: str) -> list:
+    pinners = set(_get_pinned_users(match_id, pref_key))
+    predictor_ids = [p["user_id"] for p in db.predictions().find({"match_id": match_id}, {"user_id": 1})]
+    if predictor_ids:
+        enabled = [
+            u["_id"] for u in db.users().find(
+                {"_id": {"$in": predictor_ids}, f"notif_prefs.{pref_key}": {"$ne": False}},
+                {"_id": 1}
+            )
+        ]
+        return list(pinners | set(enabled))
+    return list(pinners)
+
+
+def _fire_match_notifications(old_match, new_match: dict):
+    now = datetime.now(timezone.utc)
+    match_id = new_match["_id"]
+    old_status = old_match.get("status") if old_match else None
+    new_status = new_match.get("status")
+
+    home_he = new_match.get("home", {}).get("name_he") or new_match.get("home", {}).get("name_en", "")
+    away_he = new_match.get("away", {}).get("name_he") or new_match.get("away", {}).get("name_en", "")
+    home_en = new_match.get("home", {}).get("name_en", "")
+    away_en = new_match.get("away", {}).get("name_en", "")
+
+    notifs = []
+
+    if old_status in (None, "SCHEDULED", "TIMED") and new_status in ("IN_PLAY", "LIVE"):
+        for uid in _get_interested_users(match_id, "match_start"):
+            notifs.append({
+                "user_id": uid, "type": "match_start",
+                "title_he": "המשחק התחיל", "title_en": "Match started",
+                "body_he": f"{home_he} נגד {away_he}",
+                "body_en": f"{home_en} vs {away_en}",
+                "link": f"/match/{match_id}", "read": False, "created_at": now,
+            })
+
+    if old_status in ("IN_PLAY", "PAUSED", "LIVE") and new_status == "FINISHED":
+        score = new_match.get("score", {})
+        sh = score.get("ft_home", score.get("home"))
+        sa = score.get("ft_away", score.get("away"))
+        score_str = f"{sh}–{sa}" if sh is not None and sa is not None else ""
+        for uid in _get_interested_users(match_id, "match_end"):
+            notifs.append({
+                "user_id": uid, "type": "match_end",
+                "title_he": "המשחק הסתיים", "title_en": "Match ended",
+                "body_he": f"{home_he} {score_str} {away_he}",
+                "body_en": f"{home_en} {score_str} {away_en}",
+                "link": f"/match/{match_id}", "read": False, "created_at": now,
+            })
+
+    if old_match and new_status in ("IN_PLAY", "LIVE"):
+        old_ev_keys = {
+            (e.get("minute"), e.get("type"), e.get("scorer"))
+            for e in (old_match.get("events") or [])
+        }
+        home_fifa = new_match.get("home", {}).get("fifa", "")
+        for ev in (new_match.get("events") or []):
+            if ev.get("type") not in ("GOAL", "PENALTY_SCORED"):
+                continue
+            key = (ev.get("minute"), ev.get("type"), ev.get("scorer"))
+            if key in old_ev_keys:
+                continue
+            team_he = home_he if ev.get("team") == home_fifa else away_he
+            team_en = home_en if ev.get("team") == home_fifa else away_en
+            for uid in _get_pinned_users(match_id, "goal_in_pinned"):
+                notifs.append({
+                    "user_id": uid, "type": "goal_in_pinned",
+                    "title_he": "גול!", "title_en": "Goal!",
+                    "body_he": f"גול ל{team_he} דקה {ev.get('minute', '')} — {home_he} נגד {away_he}",
+                    "body_en": f"Goal for {team_en} ({ev.get('minute', '')}) — {home_en} vs {away_en}",
+                    "link": f"/match/{match_id}", "read": False, "created_at": now,
+                })
+
+    if notifs:
+        db.notifications().insert_many(notifs)
 
 
 # ---------------------------------------------------------------------------
@@ -1063,6 +1262,8 @@ ROUTES_POST = [
     (r"^/api/groups/([^/]+)/leave$",            handle_group_leave),
     (r"^/api/groups/([^/]+)/kick$",             handle_group_kick),
     (r"^/api/invites/accept$",                  handle_invite_accept),
+    (r"^/api/groups/join-by-code$",             handle_group_join_by_code),
+    (r"^/api/users/me/locale$",                 handle_update_locale),
     (r"^/api/matches/([^/]+)/pin$",             handle_match_pin),
     (r"^/api/groups/([^/]+)/predictions/([^/]+)$", handle_prediction_submit),
     (r"^/api/notifications/read$",              handle_notifications_read),

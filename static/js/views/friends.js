@@ -18,13 +18,24 @@ export async function renderFriendsView(container) {
   title.style.marginBottom = '0';
   title.textContent = t('groups.my_groups');
 
+  const btnRow = document.createElement('div');
+  btnRow.style.cssText = 'display:flex;gap:8px;';
+
+  const joinBtn = document.createElement('button');
+  joinBtn.className = 'btn-secondary';
+  joinBtn.textContent = t('groups.join_group');
+  joinBtn.addEventListener('click', () => openJoinByCode(page));
+
   const createBtn = document.createElement('button');
   createBtn.className = 'btn-primary';
   createBtn.textContent = t('groups.create_group');
   createBtn.addEventListener('click', () => openCreateGroup(page));
 
+  btnRow.appendChild(joinBtn);
+  btnRow.appendChild(createBtn);
+
   header.appendChild(title);
-  header.appendChild(createBtn);
+  header.appendChild(btnRow);
   page.appendChild(header);
 
   await loadGroups(page);
@@ -157,6 +168,54 @@ function openGroupDetail(group) {
     }
   });
 }
+
+function openJoinByCode(page) {
+  const body = document.createElement('div');
+  body.innerHTML = `
+    <label style="display:block;font-weight:700;margin-bottom:6px;">${t('groups.join_code')}</label>
+    <input type="text" class="mn-input" id="join-code-input"
+      placeholder="ABCD12" maxlength="6"
+      style="text-transform:uppercase;letter-spacing:0.1em;font-weight:700;font-size:var(--mn-fs-lg);">
+    <div id="join-code-error" style="font-size:var(--mn-fs-xs);color:var(--mn-red);margin-top:6px;min-height:1em;"></div>
+  `;
+
+  const { close, el } = openModal({
+    title: t('groups.join_group'),
+    body,
+    actions: [
+      { label: t('common.cancel'), close: true },
+      {
+        label: t('groups.join_group'),
+        primary: true,
+        close: false,
+        action: async () => {
+          const input = el.querySelector('#join-code-input');
+          const errEl = el.querySelector('#join-code-error');
+          const code = input.value.trim().toUpperCase();
+          if (code.length !== 6) {
+            errEl.textContent = t('errors.group_not_found');
+            return;
+          }
+          errEl.textContent = '';
+          try {
+            const res = await api.groupJoinByCode(code);
+            close();
+            showToast(res.already_member ? t('groups.my_groups') : t('groups.invite_sent'));
+            const list = document.getElementById('groups-list');
+            if (list) await loadGroups(page);
+          } catch (err) {
+            errEl.textContent = err.status === 404
+              ? t('errors.group_not_found')
+              : t('common.error_generic');
+          }
+        }
+      }
+    ]
+  });
+
+  el.querySelector('#join-code-input').focus();
+}
+
 
 function openCreateGroup(page) {
   const body = document.createElement('div');
