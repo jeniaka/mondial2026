@@ -42,6 +42,7 @@ export async function renderPredictionsView(container) {
     btn.addEventListener('click', () => {
       page.querySelectorAll('.mn-pred-group-panel').forEach(p => p.remove());
       loadGroupPredictions(page, g);
+      loadBonusBets(page, g);
       groupSel.querySelectorAll('button').forEach((b, j) => {
         b.className = `btn-${j === i ? 'primary' : 'secondary'}`;
         b.style.fontSize = 'var(--mn-fs-xs)';
@@ -52,6 +53,102 @@ export async function renderPredictionsView(container) {
   page.appendChild(groupSel);
 
   await loadGroupPredictions(page, groups[0]);
+  await loadBonusBets(page, groups[0]);
+}
+
+async function loadBonusBets(page, group) {
+  const existing = page.querySelector('.mn-bonus-section');
+  if (existing) existing.remove();
+
+  const section = document.createElement('div');
+  section.className = 'mn-bonus-section';
+  section.style.cssText = 'margin-top:24px;';
+  page.appendChild(section);
+
+  section.innerHTML = `
+    <div style="font-size:var(--mn-fs-xs);font-weight:700;color:var(--mn-ink-soft);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:12px;">${t('bonus.title')}</div>
+    <div style="font-size:var(--mn-fs-xs);color:var(--mn-ink-soft);margin-bottom:16px;">${t('bonus.subtitle')}</div>
+    <div class="mn-prediction-widget">
+      <div class="mn-skeleton" style="height:120px;"></div>
+    </div>
+  `;
+
+  let existing_bet = null;
+  try {
+    const res = await api.tournamentBetGet(group.id);
+    existing_bet = res.bet;
+  } catch (_) {}
+
+  const b = existing_bet || {};
+  section.querySelector('.mn-prediction-widget').innerHTML = `
+    <div style="margin-bottom:14px;">
+      <div style="font-size:var(--mn-fs-xs);font-weight:700;color:var(--mn-ink-soft);margin-bottom:4px;">
+        ${t('bonus.winner')} <span style="color:var(--mn-green);">${t('bonus.points_winner')}</span>
+      </div>
+      <div style="font-size:var(--mn-fs-xs);color:var(--mn-ink-soft);margin-bottom:6px;">${t('bonus.winner_hint')}</div>
+      <input type="text" class="mn-input" id="bonus-winner" maxlength="3" value="${escapeHtml(b.winner_tla || '')}"
+        placeholder="${t('bonus.enter_tla')}"
+        style="text-transform:uppercase;font-weight:700;font-size:var(--mn-fs-lg);letter-spacing:0.1em;width:100px;">
+    </div>
+    <div style="margin-bottom:14px;">
+      <div style="font-size:var(--mn-fs-xs);font-weight:700;color:var(--mn-ink-soft);margin-bottom:4px;">
+        ${t('bonus.top_scorer')} <span style="color:var(--mn-green);">${t('bonus.points_scorer')}</span>
+      </div>
+      <div style="font-size:var(--mn-fs-xs);color:var(--mn-ink-soft);margin-bottom:6px;">${t('bonus.top_scorer_hint')}</div>
+      <input type="text" class="mn-input" id="bonus-scorer" maxlength="80" value="${escapeHtml(b.top_scorer || '')}"
+        placeholder="Mbappé">
+    </div>
+    <div style="margin-bottom:16px;">
+      <div style="font-size:var(--mn-fs-xs);font-weight:700;color:var(--mn-ink-soft);margin-bottom:4px;">
+        ${t('bonus.finalists')} <span style="color:var(--mn-green);">${t('bonus.points_finalists')}</span>
+      </div>
+      <div style="font-size:var(--mn-fs-xs);color:var(--mn-ink-soft);margin-bottom:6px;">${t('bonus.finalists_hint')}</div>
+      <div style="display:flex;gap:8px;">
+        <input type="text" class="mn-input" id="bonus-finalist-a" maxlength="3" value="${escapeHtml(b.finalist_a || '')}"
+          placeholder="${t('bonus.enter_tla')}"
+          style="text-transform:uppercase;font-weight:700;font-size:var(--mn-fs-lg);letter-spacing:0.1em;">
+        <input type="text" class="mn-input" id="bonus-finalist-b" maxlength="3" value="${escapeHtml(b.finalist_b || '')}"
+          placeholder="${t('bonus.enter_tla')}"
+          style="text-transform:uppercase;font-weight:700;font-size:var(--mn-fs-lg);letter-spacing:0.1em;">
+      </div>
+    </div>
+    <button class="btn-primary" id="bonus-save-btn" style="width:100%;">${t('bonus.save')}</button>
+    <div id="bonus-status" style="font-size:var(--mn-fs-xs);margin-top:8px;text-align:center;color:var(--mn-ink-soft);"></div>
+  `;
+
+  // Auto-uppercase TLA inputs
+  ['bonus-winner', 'bonus-finalist-a', 'bonus-finalist-b'].forEach(id => {
+    section.querySelector(`#${id}`).addEventListener('input', e => {
+      const pos = e.target.selectionStart;
+      e.target.value = e.target.value.toUpperCase();
+      e.target.setSelectionRange(pos, pos);
+    });
+  });
+
+  section.querySelector('#bonus-save-btn').addEventListener('click', async () => {
+    const btn = section.querySelector('#bonus-save-btn');
+    const status = section.querySelector('#bonus-status');
+    btn.disabled = true;
+    try {
+      await api.tournamentBetSave(group.id, {
+        winner_tla:  section.querySelector('#bonus-winner').value.trim(),
+        top_scorer:  section.querySelector('#bonus-scorer').value.trim(),
+        finalist_a:  section.querySelector('#bonus-finalist-a').value.trim(),
+        finalist_b:  section.querySelector('#bonus-finalist-b').value.trim(),
+      });
+      status.style.color = 'var(--mn-green)';
+      status.textContent = t('bonus.saved');
+    } catch (_) {
+      status.style.color = 'var(--mn-red)';
+      status.textContent = t('common.error_generic');
+    } finally {
+      btn.disabled = false;
+    }
+  });
+}
+
+function escapeHtml(str) {
+  return (str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
 async function loadGroupPredictions(page, group) {

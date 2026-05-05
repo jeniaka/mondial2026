@@ -79,6 +79,7 @@
   "JAM": { "iso2": "jm", "name_en": "Jamaica",                            "name_he": "ג'מייקה" },
   "TRI": { "iso2": "tt", "name_en": "Trinidad and Tobago",                "name_he": "טרינידד וטובגו" },
   "HAI": { "iso2": "ht", "name_en": "Haiti",                              "name_he": "האיטי" },
+  "HTI": { "iso2": "ht", "name_en": "Haiti",                              "name_he": "האיטי" },
   "CUB": { "iso2": "cu", "name_en": "Cuba",                               "name_he": "קובה" },
   "DOM": { "iso2": "do", "name_en": "Dominican Republic",                  "name_he": "הרפובליקה הדומיניקנית" },
   "BAH": { "iso2": "bs", "name_en": "Bahamas",                            "name_he": "בהאמה" },

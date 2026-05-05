@@ -112,11 +112,16 @@ function openGroupDetail(group) {
   `;
 
   const inviteSection = document.createElement('div');
+  const shareUrl = `${location.origin}/?join=${group.join_code}`;
   inviteSection.innerHTML = `
-    <div style="font-weight:700;margin-bottom:8px;">${t('groups.invite_by_email')}</div>
+    <div style="font-weight:700;margin-bottom:8px;">${t('groups.invite_friends')}</div>
+    <button class="btn-secondary" id="share-link-btn" style="width:100%;margin-bottom:12px;">
+      🔗 ${t('groups.copy_invite_link')}
+    </button>
+    <div style="font-size:var(--mn-fs-xs);color:var(--mn-ink-soft);margin-bottom:12px;text-align:center;">${t('groups.or_invite_by_email')}</div>
     <div style="display:flex;gap:8px;">
       <input type="email" class="mn-input" id="invite-email-input" placeholder="email@example.com" style="flex:1;">
-      <button class="btn-primary" id="invite-send-btn">${t('groups.invite_friends')}</button>
+      <button class="btn-primary" id="invite-send-btn">${t('common.send')}</button>
     </div>
     <div id="invite-status" style="font-size:var(--mn-fs-xs);margin-top:8px;color:var(--mn-ink-soft);"></div>
   `;
@@ -143,6 +148,22 @@ function openGroupDetail(group) {
       membersDiv.appendChild(row);
     });
   }).catch(() => {});
+
+  // Share link / copy
+  el.querySelector('#share-link-btn').addEventListener('click', async () => {
+    const btn = el.querySelector('#share-link-btn');
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: group.name, url: shareUrl });
+      } catch (_) {}
+    } else {
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        btn.textContent = `✓ ${t('common.copied')}`;
+        setTimeout(() => { btn.innerHTML = `🔗 ${t('groups.copy_invite_link')}`; }, 2000);
+      } catch (_) {}
+    }
+  });
 
   // Invite send
   el.querySelector('#invite-send-btn').addEventListener('click', async () => {

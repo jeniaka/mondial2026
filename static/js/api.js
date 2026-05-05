@@ -70,6 +70,10 @@ export const api = {
   leaderboard:       (gid)       => fetchJson(`/api/groups/${gid}/leaderboard`),
   myPredictions:     (gid)       => fetchJson(`/api/groups/${gid}/my-predictions`),
 
+  // Bonus bets
+  tournamentBetGet: (gid)          => fetchJson(`/api/groups/${gid}/tournament-bet`),
+  tournamentBetSave:(gid, data)    => fetchJson(`/api/groups/${gid}/tournament-bet`, { method: 'POST', body: data }),
+
   // Notifications
   notifications:     (page = 1)  => fetchJson(`/api/notifications?page=${page}`),
   unreadCount:       ()          => fetchJson('/api/notifications/unread-count'),

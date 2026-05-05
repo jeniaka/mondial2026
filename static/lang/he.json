@@ -108,7 +108,9 @@
     "invite_sent": "ההזמנה נשלחה",
     "invite_pending_for": "ממתין להצטרפות: {email}",
     "share_link": "שתף את הקישור",
-    "share_link_copied": "הקישור הועתק"
+    "share_link_copied": "הקישור הועתק",
+    "copy_invite_link": "העתק קישור הזמנה",
+    "or_invite_by_email": "או הזמן באמצעות אימייל"
   },
   "leaderboard": {
     "title": "טבלת ניחושים",
@@ -175,7 +177,29 @@
     "no": "לא",
     "today": "היום",
     "tomorrow": "מחר",
-    "yesterday": "אתמול"
+    "yesterday": "אתמול",
+    "send": "שלח",
+    "copied": "הועתק!"
+  },
+  "bonus": {
+    "title": "הימורי בונוס",
+    "subtitle": "נעלו לפני תחילת הטורניר — הנקודות נכנסות לחשבון הקבוצתי שלך.",
+    "winner": "אלוף המונדיאל",
+    "winner_hint": "איזו קבוצה תזכה? (+15 נקודות)",
+    "top_scorer": "שחקן הטורניר",
+    "top_scorer_hint": "מי יזכה בפרס שחקן הטורניר? (+10 נקודות)",
+    "finalists": "שתי הקבוצות בגמר",
+    "finalists_hint": "נחשו אילו שתי קבוצות יגיעו לגמר (סדר לא משנה) (+10 נקודות)",
+    "finalist_a": "קבוצה א'",
+    "finalist_b": "קבוצה ב'",
+    "save": "שמור הימורי בונוס",
+    "saved": "הימורי הבונוס נשמרו",
+    "locked": "הימורי הבונוס נעולים",
+    "enter_tla": "למשל ARG",
+    "no_group_selected": "בחר קבוצה תחילה",
+    "points_winner": "15 נקודות",
+    "points_scorer": "10 נקודות",
+    "points_finalists": "10 נקודות"
   },
   "errors": {
     "must_login": "יש להתחבר כדי להמשיך",

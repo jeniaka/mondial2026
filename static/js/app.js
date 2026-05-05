@@ -16,7 +16,15 @@ import { openNotificationsDrawer, refreshUnreadCount } from './views/notificatio
 let _user = null;
 let _currentView = null;
 
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  localStorage.setItem('theme', theme);
+}
+
 async function boot() {
+  // Apply saved theme immediately (avoids flash)
+  applyTheme(localStorage.getItem('theme') || 'dark');
+
   // Apply saved language immediately (avoids flash)
   const savedLang = localStorage.getItem('lang') || 'he';
   await setLang(savedLang);
@@ -36,6 +44,18 @@ async function boot() {
   }
 
   renderShell();
+
+  // Handle ?join=CODE deep link from shared invite URLs
+  const joinCode = new URLSearchParams(location.search).get('join');
+  if (joinCode) {
+    history.replaceState(null, '', location.pathname + location.hash);
+    try {
+      await api.groupJoinByCode(joinCode.toUpperCase());
+      showToast(t('groups.invite_sent'));
+    } catch (_) {}
+    window.location.hash = '#/friends';
+  }
+
   setupRouter();
   refreshUnreadCount();
 
@@ -65,6 +85,7 @@ function renderShell() {
             ${bellSvg()}
             <span class="mn-bell-badge" id="notif-badge" data-count="0"></span>
           </button>
+          <button class="mn-theme-btn" id="theme-btn" aria-label="Toggle dark mode">${themeSvg()}</button>
           <button class="mn-lang-toggle" id="lang-toggle">${currentLang() === 'he' ? 'EN' : 'עב'}</button>
           ${_user?.picture
             ? `<img src="${_user.picture}" class="mn-avatar" alt="${_user.name}">`
@@ -82,6 +103,13 @@ function renderShell() {
 
   // Bell
   document.getElementById('bell-btn').addEventListener('click', () => openNotificationsDrawer());
+
+  // Dark mode toggle
+  document.getElementById('theme-btn').addEventListener('click', () => {
+    const current = document.documentElement.getAttribute('data-theme') || 'dark';
+    applyTheme(current === 'dark' ? 'light' : 'dark');
+    document.getElementById('theme-btn').innerHTML = themeSvg();
+  });
 
   // Language toggle
   document.getElementById('lang-toggle').addEventListener('click', async () => {
@@ -358,6 +386,16 @@ function escapeHtml(str) {
 // ---------------------------------------------------------------------------
 // Inline SVG icons (Lucide)
 // ---------------------------------------------------------------------------
+
+function themeSvg() {
+  const isDark = (document.documentElement.getAttribute('data-theme') || 'dark') === 'dark';
+  if (isDark) {
+    // Sun icon — switch to light
+    return `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>`;
+  }
+  // Moon icon — switch to dark
+  return `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`;
+}
 
 function logoSvg() {
   return `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--mn-flame)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>`;

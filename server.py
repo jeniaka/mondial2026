@@ -1220,6 +1220,52 @@ def _generate_join_code() -> str:
 
 
 # ---------------------------------------------------------------------------
+# Bonus / tournament bets
+# ---------------------------------------------------------------------------
+
+# Locked once tournament winner is known (after final)
+_BONUS_BET_LOCK_DATE = None  # set in config or leave None for never
+
+def handle_tournament_bet_get(handler: BaseHTTPRequestHandler, group_id=None, **_):
+    user = auth.require_user(handler)
+    if not user:
+        return
+    bet = db.tournament_bets().find_one(
+        {"group_id": group_id, "user_id": str(user["_id"])}
+    )
+    if bet:
+        bet["_id"] = str(bet["_id"])
+    send_json(handler, 200, {"bet": bet})
+
+
+def handle_tournament_bet_post(handler: BaseHTTPRequestHandler, group_id=None, **_):
+    user = auth.require_user(handler)
+    if not user:
+        return
+    body = read_json_body(handler)
+    if not body:
+        send_json(handler, 400, {"error": "body required"})
+        return
+
+    now = datetime.now(timezone.utc)
+    update = {
+        "group_id": group_id,
+        "user_id": str(user["_id"]),
+        "winner_tla":  (body.get("winner_tla") or "").upper()[:3],
+        "top_scorer":  (body.get("top_scorer") or "")[:80],
+        "finalist_a":  (body.get("finalist_a") or "").upper()[:3],
+        "finalist_b":  (body.get("finalist_b") or "").upper()[:3],
+        "updated_at": now,
+    }
+    db.tournament_bets().update_one(
+        {"group_id": group_id, "user_id": str(user["_id"])},
+        {"$set": update, "$setOnInsert": {"created_at": now}},
+        upsert=True,
+    )
+    send_json(handler, 200, {"ok": True})
+
+
+# ---------------------------------------------------------------------------
 # Router
 # ---------------------------------------------------------------------------
 
@@ -1253,6 +1299,8 @@ ROUTES_GET = [
     # Notifications
     (r"^/api/notifications$",                   handle_notifications_list),
     (r"^/api/notifications/unread-count$",      handle_notifications_unread_count),
+    # Bonus bets
+    (r"^/api/groups/([^/]+)/tournament-bet$",   handle_tournament_bet_get),
 ]
 
 ROUTES_POST = [
@@ -1268,6 +1316,8 @@ ROUTES_POST = [
     (r"^/api/groups/([^/]+)/predictions/([^/]+)$", handle_prediction_submit),
     (r"^/api/notifications/read$",              handle_notifications_read),
     (r"^/api/notifications/prefs$",             handle_notifications_prefs),
+    # Bonus bets
+    (r"^/api/groups/([^/]+)/tournament-bet$",   handle_tournament_bet_post),
     (r"^/internal/sync-matches$",               handle_internal_sync),
     (r"^/internal/score-predictions$",          handle_internal_score),
     (r"^/internal/email-digest$",               handle_internal_digest),
@@ -1332,6 +1382,7 @@ _PARAM_NAMES = {
     r"^/api/groups/([^/]+)/predictions/([^/]+)$":   ("group_id", "match_id"),
     r"^/api/groups/([^/]+)/leaderboard$":           ("group_id",),
     r"^/api/groups/([^/]+)/my-predictions$":        ("group_id",),
+    r"^/api/groups/([^/]+)/tournament-bet$":        ("group_id",),
 }
 
 

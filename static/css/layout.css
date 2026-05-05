@@ -59,6 +59,23 @@
 }
 .mn-lang-toggle:hover { border-color: var(--mn-flame); color: var(--mn-flame); }
 
+/* --- Dark mode toggle button --- */
+.mn-theme-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: var(--mn-r-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--mn-ink-soft);
+  transition: background 120ms, color 120ms;
+  background: none;
+  border: none;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.mn-theme-btn:hover { background: rgba(139,148,158, 0.1); color: var(--mn-ink); }
+
 .mn-bell-btn {
   position: relative;
   width: 38px;
@@ -70,7 +87,7 @@
   color: var(--mn-ink-soft);
   transition: background 120ms;
 }
-.mn-bell-btn:hover { background: rgba(232, 84, 44, 0.06); }
+.mn-bell-btn:hover { background: rgba(139,148,158, 0.1); }
 
 .mn-bell-badge {
   position: absolute;
@@ -174,7 +191,7 @@
 /* --- Page container --- */
 .mn-page {
   padding: 16px;
-  max-width: 640px;
+  max-width: 480px;
   margin: 0 auto;
 }
 
@@ -224,7 +241,7 @@
   transition: background 120ms, color 120ms;
   border: none;
 }
-.mn-day-chip:hover  { background: rgba(232, 84, 44, 0.06); color: var(--mn-flame); }
+.mn-day-chip:hover  { background: rgba(63,185,80, 0.08); color: var(--mn-flame); }
 .mn-day-chip.active {
   color: var(--mn-flame);
   position: relative;

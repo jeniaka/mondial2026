@@ -108,7 +108,9 @@
     "invite_sent": "Invitation sent",
     "invite_pending_for": "Pending: {email}",
     "share_link": "Share link",
-    "share_link_copied": "Link copied"
+    "share_link_copied": "Link copied",
+    "copy_invite_link": "Copy invite link",
+    "or_invite_by_email": "or invite by email"
   },
   "leaderboard": {
     "title": "Leaderboard",
@@ -175,7 +177,29 @@
     "no": "No",
     "today": "Today",
     "tomorrow": "Tomorrow",
-    "yesterday": "Yesterday"
+    "yesterday": "Yesterday",
+    "send": "Send",
+    "copied": "Copied!"
+  },
+  "bonus": {
+    "title": "Bonus bets",
+    "subtitle": "Lock in before the tournament starts. These count toward your group score.",
+    "winner": "Tournament winner",
+    "winner_hint": "Which team wins the World Cup? (+15 pts)",
+    "top_scorer": "Player of the tournament",
+    "top_scorer_hint": "Best player award winner (+10 pts)",
+    "finalists": "The two finalists",
+    "finalists_hint": "Predict which two teams meet in the final (any order) (+10 pts)",
+    "finalist_a": "Finalist A",
+    "finalist_b": "Finalist B",
+    "save": "Save bonus bets",
+    "saved": "Bonus bets saved",
+    "locked": "Bonus bets are locked",
+    "enter_tla": "e.g. ARG",
+    "no_group_selected": "Select a group first",
+    "points_winner": "15 pts",
+    "points_scorer": "10 pts",
+    "points_finalists": "10 pts"
   },
   "errors": {
     "must_login": "Please sign in to continue",
