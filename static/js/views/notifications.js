@@ -102,9 +102,16 @@ function formatRelTime(isoStr) {
   const lang = currentLang();
   const h = Math.floor(diffMs / 3600000);
   const m = Math.floor(diffMs / 60000);
-  if (m < 1)  return lang === 'he' ? 'עכשיו' : 'now';
-  if (m < 60) return lang === 'he' ? `לפני ${m} דקות` : `${m}m ago`;
-  if (h < 24) return lang === 'he' ? `לפני ${h} שעות` : `${h}h ago`;
+  if (m < 1)  return t('time.just_now');
+  if (m < 60) {
+    if (lang === 'he') {
+      if (m === 1) return t('time.one_minute_ago');
+      if (m === 2) return t('time.two_minutes_ago');
+      return t('time.minutes_ago').replace('{n}', m);
+    }
+    return t('time.minutes_ago').replace('{n}', m);
+  }
+  if (h < 24) return t('time.hours_ago').replace('{n}', h);
   return d.toLocaleDateString(lang === 'he' ? 'he-IL' : 'en-GB');
 }
 

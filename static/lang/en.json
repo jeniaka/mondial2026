@@ -35,6 +35,7 @@
     "penalties": "Penalties",
     "minute": "{n}'",
     "stage_group": "Group stage — Group {group}",
+    "stage_round_of_32": "Round of 32",
     "stage_round_of_16": "Round of 16",
     "stage_quarter": "Quarter-final",
     "stage_semi": "Semi-final",
@@ -51,7 +52,15 @@
     "lineups": "Lineups",
     "stats": "Stats",
     "no_events_yet": "No events yet",
-    "days_to_kickoff": "{n} days to kickoff"
+    "days_to_kickoff": "{n} days to kickoff",
+    "live_label": "LIVE"
+  },
+  "time": {
+    "just_now": "just now",
+    "one_minute_ago": "1m ago",
+    "two_minutes_ago": "2m ago",
+    "minutes_ago": "{n}m ago",
+    "hours_ago": "{n}h ago"
   },
   "events": {
     "goal": "Goal",
@@ -152,6 +161,8 @@
     "language": "Language",
     "language_he": "עברית",
     "language_en": "English",
+    "switch_to_he": "Hebrew",
+    "switch_to_en": "English",
     "stats": "My stats",
     "total_predictions": "Total predictions",
     "exact_predictions": "Exact predictions",
@@ -162,6 +173,7 @@
     "deleted": "Account deleted"
   },
   "common": {
+    "toggle_theme": "Toggle theme",
     "save": "Save",
     "cancel": "Cancel",
     "close": "Close",

@@ -85,8 +85,8 @@ function renderShell() {
             ${bellSvg()}
             <span class="mn-bell-badge" id="notif-badge" data-count="0"></span>
           </button>
-          <button class="mn-theme-btn" id="theme-btn" aria-label="Toggle dark mode">${themeSvg()}</button>
-          <button class="mn-lang-toggle" id="lang-toggle">${currentLang() === 'he' ? 'EN' : 'עב'}</button>
+          <button class="mn-theme-btn" id="theme-btn" aria-label="${t('common.toggle_theme')}">${themeSvg()}</button>
+          <button class="mn-lang-toggle" id="lang-toggle">${currentLang() === 'he' ? 'EN' : 'HE'}</button>
           ${_user?.picture
             ? `<img src="${_user.picture}" class="mn-avatar" alt="${_user.name}">`
             : `<div class="mn-avatar-placeholder">${(_user?.name || '?')[0]}</div>`}
@@ -116,7 +116,7 @@ function renderShell() {
     const next = currentLang() === 'he' ? 'en' : 'he';
     await setLang(next);
     // Re-render toggle label
-    document.getElementById('lang-toggle').textContent = next === 'he' ? 'EN' : 'עב';
+    document.getElementById('lang-toggle').textContent = next === 'he' ? 'EN' : 'HE';
     // Save preference
     if (_user) {
       api.saveNotifPrefs({}).catch(() => {}); // prefs save; locale pref via separate endpoint (future)
@@ -280,8 +280,8 @@ function renderProfileView(container) {
         <div class="mn-toggle-label">${t('profile.language')}</div>
       </div>
       <div style="display:flex;gap:8px;">
-        <button class="btn-${lang === 'he' ? 'primary' : 'secondary'}" id="lang-he" style="font-size:var(--mn-fs-xs);">עברית</button>
-        <button class="btn-${lang === 'en' ? 'primary' : 'secondary'}" id="lang-en" style="font-size:var(--mn-fs-xs);">English</button>
+        <button class="btn-${lang === 'he' ? 'primary' : 'secondary'}" id="lang-he" style="font-size:var(--mn-fs-xs);">${t('profile.switch_to_he')}</button>
+        <button class="btn-${lang === 'en' ? 'primary' : 'secondary'}" id="lang-en" style="font-size:var(--mn-fs-xs);">${t('profile.switch_to_en')}</button>
       </div>
     </div>
 
@@ -305,7 +305,7 @@ function renderProfileView(container) {
   });
   page.querySelector('#lang-en').addEventListener('click', async () => {
     await setLang('en');
-    document.getElementById('lang-toggle').textContent = 'עב';
+    document.getElementById('lang-toggle').textContent = 'HE';
     api.updateLocale('en').catch(() => {});
     navigateTo('#/profile');
   });

@@ -35,6 +35,7 @@
     "penalties": "פנדלים",
     "minute": "דקה {n}",
     "stage_group": "שלב הבתים — בית {group}",
+    "stage_round_of_32": "שלב ה-32",
     "stage_round_of_16": "שמינית הגמר",
     "stage_quarter": "רבע גמר",
     "stage_semi": "חצי גמר",
@@ -51,7 +52,15 @@
     "lineups": "הרכבים",
     "stats": "סטטיסטיקה",
     "no_events_yet": "אין אירועים בינתיים",
-    "days_to_kickoff": "{n} ימים לפתיחה"
+    "days_to_kickoff": "{n} ימים לפתיחה",
+    "live_label": "שידור חי"
+  },
+  "time": {
+    "just_now": "עכשיו",
+    "one_minute_ago": "לפני דקה אחת",
+    "two_minutes_ago": "לפני שתי דקות",
+    "minutes_ago": "לפני {n} דקות",
+    "hours_ago": "לפני {n} שעות"
   },
   "events": {
     "goal": "גול",
@@ -152,6 +161,8 @@
     "language": "שפה",
     "language_he": "עברית",
     "language_en": "English",
+    "switch_to_he": "עברית",
+    "switch_to_en": "English",
     "stats": "הסטטיסטיקה שלי",
     "total_predictions": "סך ניחושים",
     "exact_predictions": "ניחושים מדויקים",
@@ -162,6 +173,7 @@
     "deleted": "החשבון נמחק"
   },
   "common": {
+    "toggle_theme": "החלף ערכת צבעים",
     "save": "שמור",
     "cancel": "בטל",
     "close": "סגור",

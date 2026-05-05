@@ -55,7 +55,7 @@ function renderMatchContent(container, match) {
 
   container.innerHTML = `
     <div class="mn-match-hero" id="match-hero">
-      ${isLive ? `<div style="text-align:center;margin-bottom:12px;"><span class="mn-live-ribbon"><span class="mn-live-dot" aria-hidden="true"></span> ${lang === 'he' ? 'שידור חי' : 'LIVE'} ${match.minute ? `· ${match.minute}′` : ''}</span></div>` : ''}
+      ${isLive ? `<div style="text-align:center;margin-bottom:12px;"><span class="mn-live-ribbon"><span class="mn-live-dot" aria-hidden="true"></span> ${t('matches.live_label')} ${match.minute ? `· ${match.minute}′` : ''}</span></div>` : ''}
       <div class="mn-hero-teams">
         <div class="mn-hero-team">
           ${flagImg(home.fifa, 'lg')}

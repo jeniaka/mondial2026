@@ -10,7 +10,7 @@ const STAGE_KEYS = {
   SEMI_FINALS:    ()  => t('matches.stage_semi'),
   FINAL:          ()  => t('matches.stage_final'),
   THIRD_PLACE:    ()  => t('matches.stage_third_place'),
-  ROUND_OF_32:    ()  => 'Round of 32',
+  ROUND_OF_32:    ()  => t('matches.stage_round_of_32'),
 };
 
 function formatKickoff(utcStr) {
@@ -69,7 +69,7 @@ export function buildMatchCard(match, { pinned = false, onPin, onClick } = {}) {
     leftLabel.innerHTML = `
       <span class="mn-live-ribbon">
         <span class="mn-live-dot" aria-hidden="true"></span>
-        ${currentLang() === 'he' ? 'שידור חי' : 'LIVE'}
+        ${t('matches.live_label')}
         ${match.minute ? ` · ${match.minute}′` : ''}
       </span>`;
   } else {
