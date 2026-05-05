@@ -28,7 +28,7 @@
   gap: 8px;
   font-weight: 800;
   font-size: var(--mn-fs-md);
-  color: var(--mn-flame);
+  color: var(--mn-pitch-green);
   flex: 1;
 }
 
@@ -57,7 +57,7 @@
   min-width: 36px;
   text-align: center;
 }
-.mn-lang-toggle:hover { border-color: var(--mn-flame); color: var(--mn-flame); }
+.mn-lang-toggle:hover { border-color: var(--mn-pitch-green); color: var(--mn-pitch-green); }
 
 /* --- Dark mode toggle button --- */
 .mn-theme-btn {
@@ -95,7 +95,7 @@
   inset-inline-end: 4px;
   min-width: 16px;
   height: 16px;
-  background: var(--mn-flame);
+  background: var(--mn-pitch-green);
   color: #fff;
   border-radius: var(--mn-r-pill);
   font-size: 10px;
@@ -118,7 +118,7 @@
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: var(--mn-line);
+  background: var(--mn-pitch-green);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -174,7 +174,7 @@
 }
 
 .mn-nav-item.active {
-  color: var(--mn-flame);
+  color: var(--mn-pitch-green);
 }
 .mn-nav-item.active::after {
   content: "";
@@ -184,7 +184,7 @@
   transform: translateX(-50%);
   width: 20px;
   height: 3px;
-  background: var(--mn-flame);
+  background: var(--mn-pitch-green);
   border-radius: 2px 2px 0 0;
 }
 
@@ -241,9 +241,9 @@
   transition: background 120ms, color 120ms;
   border: none;
 }
-.mn-day-chip:hover  { background: rgba(63,185,80, 0.08); color: var(--mn-flame); }
+.mn-day-chip:hover  { background: rgba(26,135,84, 0.08); color: var(--mn-pitch-green); }
 .mn-day-chip.active {
-  color: var(--mn-flame);
+  color: var(--mn-pitch-green);
   position: relative;
 }
 .mn-day-chip.active::after {
@@ -254,7 +254,7 @@
   transform: translateX(-50%);
   width: 20px;
   height: 2px;
-  background: var(--mn-flame);
+  background: var(--mn-pitch-green);
   border-radius: 1px;
 }
 

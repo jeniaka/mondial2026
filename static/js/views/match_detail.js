@@ -13,7 +13,7 @@ export async function renderMatchDetail(container, matchId) {
   container.innerHTML = '';
 
   const back = document.createElement('div');
-  back.style.cssText = 'display:flex;align-items:center;gap:8px;padding:12px 16px;cursor:pointer;color:var(--mn-flame);font-weight:600;';
+  back.style.cssText = 'display:flex;align-items:center;gap:8px;padding:12px 16px;cursor:pointer;color:var(--mn-pitch-green);font-weight:600;';
   back.innerHTML = `<svg class="mn-back-btn" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>${t('common.back')}`;
   back.addEventListener('click', () => history.back());
   container.appendChild(back);

@@ -23,7 +23,7 @@ function applyTheme(theme) {
 
 async function boot() {
   // Apply saved theme immediately (avoids flash)
-  applyTheme(localStorage.getItem('theme') || 'dark');
+  applyTheme(localStorage.getItem('theme') || 'light');
 
   // Apply saved language immediately (avoids flash)
   const savedLang = localStorage.getItem('lang') || 'he';
@@ -398,7 +398,7 @@ function themeSvg() {
 }
 
 function logoSvg() {
-  return `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--mn-flame)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>`;
+  return `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--mn-pitch-green)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>`;
 }
 function bellSvg() {
   return `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>`;

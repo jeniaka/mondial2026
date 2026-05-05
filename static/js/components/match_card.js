@@ -145,5 +145,5 @@ function svgPinOutline() {
   return `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2a7 7 0 0 1 7 7c0 4-4 8-7 13C9 17 2 13 2 9a7 7 0 0 1 10-6.32"/><circle cx="12" cy="9" r="2.5"/></svg>`;
 }
 function svgPinFilled() {
-  return `<svg width="18" height="18" viewBox="0 0 24 24" fill="var(--mn-flame)" stroke="var(--mn-flame)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2a7 7 0 0 1 7 7c0 4-4 8-7 13C9 17 2 13 2 9a7 7 0 0 1 10-6.32"/><circle cx="12" cy="9" r="2.5" fill="white"/></svg>`;
+  return `<svg width="18" height="18" viewBox="0 0 24 24" fill="var(--mn-card-yellow)" stroke="var(--mn-card-yellow)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2a7 7 0 0 1 7 7c0 4-4 8-7 13C9 17 2 13 2 9a7 7 0 0 1 10-6.32"/><circle cx="12" cy="9" r="2.5" fill="white"/></svg>`;
 }

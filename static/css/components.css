@@ -35,14 +35,14 @@
   height: 8px;
   border-radius: 50%;
   background: var(--mn-red);
-  box-shadow: 0 0 0 0 rgba(248, 81, 73, 0.7);
+  box-shadow: 0 0 0 0 rgba(214, 40, 40, 0.7);
   animation: mn-pulse 1.4s infinite;
   flex-shrink: 0;
 }
 @keyframes mn-pulse {
-  0%   { box-shadow: 0 0 0 0   rgba(248, 81, 73, 0.7); }
-  70%  { box-shadow: 0 0 0 10px rgba(248, 81, 73, 0); }
-  100% { box-shadow: 0 0 0 0   rgba(248, 81, 73, 0); }
+  0%   { box-shadow: 0 0 0 0   rgba(214, 40, 40, 0.7); }
+  70%  { box-shadow: 0 0 0 10px rgba(214, 40, 40, 0); }
+  100% { box-shadow: 0 0 0 0   rgba(214, 40, 40, 0); }
 }
 
 /* --- Match card --- */
@@ -61,7 +61,7 @@
 .mn-match-card:hover { transform: translateY(-1px); box-shadow: var(--mn-shadow-md); }
 .mn-match-card.live {
   border-color: var(--mn-red);
-  background: linear-gradient(180deg, rgba(248,81,73,0.06) 0%, var(--mn-paper) 60%);
+  background: linear-gradient(180deg, rgba(214,40,40,0.06) 0%, var(--mn-paper) 60%);
 }
 
 @keyframes mn-card-in {
@@ -107,8 +107,8 @@
   align-items: center;
   justify-content: center;
 }
-.mn-pin-btn:hover  { color: var(--mn-amber); }
-.mn-pin-btn.pinned { color: var(--mn-amber); }
+.mn-pin-btn:hover  { color: var(--mn-card-yellow); }
+.mn-pin-btn.pinned { color: var(--mn-card-yellow); }
 .mn-pin-btn:active { transform: scale(0.9); }
 
 .mn-card-teams {
@@ -144,7 +144,7 @@
   animation: mn-score-flash 400ms ease;
 }
 @keyframes mn-score-flash {
-  0%   { color: var(--mn-flame); }
+  0%   { color: var(--mn-pitch-green); }
   100% { color: var(--mn-ink); }
 }
 
@@ -169,9 +169,9 @@
   background: var(--mn-line);
   color: var(--mn-ink-soft);
 }
-.mn-status-pill.ht { background: var(--mn-amber); color: #fff; }
+.mn-status-pill.ht { background: var(--mn-card-yellow); color: #fff; }
 .mn-status-pill.ft { background: var(--mn-ink-soft); color: #fff; }
-.mn-status-pill.pens { background: var(--mn-rose); color: #fff; }
+.mn-status-pill.pens { background: var(--mn-card-red); color: #fff; }
 
 /* --- Modal --- */
 .mn-backdrop {
@@ -293,12 +293,12 @@
   transition: background 120ms;
 }
 .mn-notif-item:hover { background: rgba(139,148,158, 0.06); }
-.mn-notif-item.unread { background: rgba(63,185,80, 0.06); }
+.mn-notif-item.unread { background: rgba(26,135,84, 0.06); }
 .mn-notif-dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--mn-flame);
+  background: var(--mn-pitch-green);
   flex-shrink: 0;
   margin-top: 6px;
 }
@@ -340,10 +340,10 @@
   font-variant-numeric: tabular-nums;
 }
 .mn-leaderboard-table .mn-me-row td:first-child {
-  border-inline-start: 3px solid var(--mn-rose);
+  border-inline-start: 3px solid var(--mn-card-red);
 }
 .mn-leaderboard-table .mn-me-row td:last-child {
-  border-inline-end: 3px solid var(--mn-rose);
+  border-inline-end: 3px solid var(--mn-card-red);
 }
 
 .mn-lb-rank {
@@ -374,7 +374,7 @@
 .mn-you-badge {
   font-size: 11px;
   font-weight: 700;
-  color: var(--mn-rose);
+  color: var(--mn-card-red);
   white-space: nowrap;
 }
 .mn-lb-total {
@@ -439,7 +439,7 @@
   background: var(--mn-paper);
   transition: border-color 120ms, background 120ms;
 }
-.mn-stepper-btn:hover { border-color: var(--mn-flame); background: rgba(63,185,80,0.08); }
+.mn-stepper-btn:hover { border-color: var(--mn-pitch-green); background: rgba(26,135,84,0.08); }
 .mn-stepper-val {
   width: 36px;
   text-align: center;
@@ -520,7 +520,7 @@
   white-space: nowrap;
 }
 .mn-pred-exact   { color: var(--mn-green); }
-.mn-pred-correct { color: var(--mn-amber-deep); }
+.mn-pred-correct { color: var(--mn-card-yellow); }
 .mn-pred-wrong   { color: var(--mn-red); }
 .mn-pred-hidden  { color: var(--mn-line); font-style: italic; }
 
@@ -604,8 +604,8 @@
   transition: color 120ms, border-color 120ms;
 }
 .mn-tab.active {
-  color: var(--mn-flame);
-  border-bottom-color: var(--mn-flame);
+  color: var(--mn-pitch-green);
+  border-bottom-color: var(--mn-pitch-green);
 }
 
 /* --- Profile / settings toggles --- */
@@ -636,7 +636,7 @@
   transition: background 200ms;
   cursor: pointer;
 }
-.mn-toggle input:checked + .mn-toggle-track { background: var(--mn-flame); }
+.mn-toggle input:checked + .mn-toggle-track { background: var(--mn-pitch-green); }
 .mn-toggle-track::before {
   content: "";
   position: absolute;

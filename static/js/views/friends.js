@@ -89,7 +89,7 @@ function buildGroupCard(group) {
     <div class="mn-group-meta">
       <span>${t('groups.members')}: ${group.member_count}</span>
       <span class="mn-join-code">${group.join_code}</span>
-      ${group.is_owner ? `<span style="color:var(--mn-flame);font-weight:700;">${t('groups.owner')}</span>` : ''}
+      ${group.is_owner ? `<span style="color:var(--mn-pitch-green);font-weight:700;">${t('groups.owner')}</span>` : ''}
     </div>
   `;
   card.addEventListener('click', () => openGroupDetail(group));

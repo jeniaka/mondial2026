@@ -3,8 +3,8 @@
   "short_name": "Mondial",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#FFF6E5",
-  "theme_color": "#E8542C",
+  "background_color": "#E8F5EE",
+  "theme_color": "#1A8754",
   "lang": "he",
   "dir": "rtl",
   "icons": [
