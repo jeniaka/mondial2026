@@ -962,11 +962,10 @@ def handle_predictions_get(handler: BaseHTTPRequestHandler, group_id: str, match
     result = []
     for p in preds:
         if not kicked_off and p["user_id"] != user["_id"]:
-            # Hide prediction until kickoff
             result.append({"user_id": str(p["user_id"]), "hidden": True})
         else:
             result.append(_serialize_prediction(p))
-    send_json(handler, 200, result)
+    send_json(handler, 200, {"predictions": result, "locked": kicked_off})
 
 
 def handle_prediction_submit(handler: BaseHTTPRequestHandler, group_id: str, match_id: str, **_):
@@ -1592,19 +1591,28 @@ def handle_tournament_bet_post(handler: BaseHTTPRequestHandler, group_id=None, *
     if now >= BONUS_LOCK_DT:
         send_json(handler, 423, {"error": "bonus_locked"})
         return
-    body = read_json_body(handler)
+    body = parse_json_body(handler)
     if not body:
         send_json(handler, 400, {"error": "body required"})
         return
 
+    try:
+        final_score_1 = int(body.get("final_score_1") or 0)
+        final_score_2 = int(body.get("final_score_2") or 0)
+    except (TypeError, ValueError):
+        final_score_1 = 0
+        final_score_2 = 0
+
     update = {
-        "group_id": group_id,
-        "user_id": str(user["_id"]),
-        "winner_tla":  (body.get("winner_tla") or "").upper()[:3],
-        "top_scorer":  (body.get("top_scorer") or "")[:80],
-        "finalist_a":  (body.get("finalist_a") or "").upper()[:3],
-        "finalist_b":  (body.get("finalist_b") or "").upper()[:3],
-        "updated_at": now,
+        "group_id":     group_id,
+        "user_id":      str(user["_id"]),
+        "winner":       (body.get("winner") or "")[:80],
+        "top_scorer":   (body.get("top_scorer") or "")[:80],
+        "finalist_1":   (body.get("finalist_1") or "")[:80],
+        "finalist_2":   (body.get("finalist_2") or "")[:80],
+        "final_score_1": final_score_1,
+        "final_score_2": final_score_2,
+        "updated_at":   now,
     }
     db.tournament_bets().update_one(
         {"group_id": group_id, "user_id": str(user["_id"])},
@@ -1618,27 +1626,27 @@ def handle_internal_score_bonus(handler: BaseHTTPRequestHandler, **_):
     """Score all tournament bonus bets. Called by cron after the final."""
     if not require_internal_token(handler):
         return
-    body = read_json_body(handler)
+    body = parse_json_body(handler)
     if not body:
         send_json(handler, 400, {"error": "body required"})
         return
 
-    correct_winner = (body.get("winner_tla") or "").upper()[:3]
+    correct_winner = (body.get("winner") or "").strip().lower()
     correct_scorer = (body.get("top_scorer") or "").strip().lower()
-    correct_fa = (body.get("finalist_a") or "").upper()[:3]
-    correct_fb = (body.get("finalist_b") or "").upper()[:3]
-    correct_finalists = {x for x in (correct_fa, correct_fb) if x}
+    correct_f1 = (body.get("finalist_1") or "").strip().lower()
+    correct_f2 = (body.get("finalist_2") or "").strip().lower()
+    correct_finalists = {x for x in (correct_f1, correct_f2) if x}
 
     now = datetime.now(timezone.utc)
     bets = list(db.tournament_bets().find({}))
     for bet in bets:
         pts = 0
-        if correct_winner and bet.get("winner_tla", "").upper() == correct_winner:
+        if correct_winner and bet.get("winner", "").strip().lower() == correct_winner:
             pts += 15
         if correct_scorer and bet.get("top_scorer", "").strip().lower() == correct_scorer:
             pts += 10
         if correct_finalists:
-            bet_finalists = {x for x in (bet.get("finalist_a", ""), bet.get("finalist_b", "")) if x}
+            bet_finalists = {x.strip().lower() for x in (bet.get("finalist_1", ""), bet.get("finalist_2", "")) if x}
             if bet_finalists == correct_finalists:
                 pts += 10
         db.tournament_bets().update_one(
