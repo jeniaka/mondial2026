@@ -217,7 +217,18 @@ def serve_static(handler: BaseHTTPRequestHandler, rel_path: str):
 # ---------------------------------------------------------------------------
 
 def handle_healthz(handler: BaseHTTPRequestHandler, **_):
-    send_json(handler, 200, {"ok": True, "ts": datetime.now(timezone.utc).isoformat()})
+    index_path = os.path.join(STATIC_DIR, "dist", "index.html")
+    build_present = os.path.isfile(index_path) and os.path.getsize(index_path) > 0
+    build_mtime = (
+        datetime.fromtimestamp(os.path.getmtime(index_path), tz=timezone.utc).isoformat()
+        if build_present else None
+    )
+    send_json(handler, 200, {
+        "ok": True,
+        "build_present": build_present,
+        "build_mtime": build_mtime,
+        "ts": datetime.now(timezone.utc).isoformat(),
+    })
 
 
 def handle_spa(handler: BaseHTTPRequestHandler, **_):
@@ -1874,7 +1885,17 @@ def _startup_validate_countries():
     log.info("STARTUP: countries.json validated — %d teams loaded", count)
 
 
+def _startup_validate_build():
+    index_path = os.path.join(STATIC_DIR, "dist", "index.html")
+    if not os.path.isfile(index_path) or os.path.getsize(index_path) == 0:
+        log.error("STARTUP: static/dist/index.html is missing or empty — frontend was not built.")
+        log.error("STARTUP: Run 'cd frontend && npm ci && npm run build' then redeploy.")
+        raise SystemExit(1)
+    log.info("STARTUP: static/dist/index.html present (%d bytes)", os.path.getsize(index_path))
+
+
 def main():
+    _startup_validate_build()
     _startup_validate_countries()
     db.ensure_indexes()
     host = "0.0.0.0"
