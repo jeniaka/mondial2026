@@ -67,27 +67,53 @@ async function loadBonusBets(page, group) {
 
   section.innerHTML = `
     <div style="font-size:var(--mn-fs-xs);font-weight:700;color:var(--mn-ink-soft);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:12px;">${t('bonus.title')}</div>
-    <div style="font-size:var(--mn-fs-xs);color:var(--mn-ink-soft);margin-bottom:16px;">${t('bonus.subtitle')}</div>
     <div class="mn-prediction-widget">
       <div class="mn-skeleton" style="height:120px;"></div>
     </div>
   `;
 
-  let existing_bet = null;
+  let bet = null, locked = false, lockTs = null;
   try {
     const res = await api.tournamentBetGet(group.id);
-    existing_bet = res.bet;
+    bet = res.bet || null;
+    locked = res.locked || false;
+    lockTs = res.lock_ts ? new Date(res.lock_ts) : null;
   } catch (_) {}
 
-  const b = existing_bet || {};
+  const b = bet || {};
+  const scored = typeof b.bonus_pts === 'number';
+
+  // Lock status banner
+  let lockBanner = '';
+  if (locked) {
+    lockBanner = `<div class="mn-bonus-locked-banner">${t('bonus.locked')}</div>`;
+  } else if (lockTs) {
+    const msLeft = lockTs - Date.now();
+    const daysLeft = Math.ceil(msLeft / 86400000);
+    lockBanner = `<div class="mn-bonus-lock-hint" style="font-size:var(--mn-fs-xs);color:var(--mn-ink-soft);margin-bottom:12px;">${t('bonus.subtitle')}</div>`;
+    if (daysLeft > 0 && daysLeft <= 7) {
+      lockBanner += `<div style="font-size:var(--mn-fs-xs);color:var(--mn-amber,#f59e0b);margin-bottom:12px;">⚠ ${t('predictions.locks_in').replace('{time}', daysLeft === 1 ? '24h' : `${daysLeft}d`)}</div>`;
+    }
+  } else {
+    lockBanner = `<div style="font-size:var(--mn-fs-xs);color:var(--mn-ink-soft);margin-bottom:12px;">${t('bonus.subtitle')}</div>`;
+  }
+
+  // Scored points display
+  let scoredBanner = '';
+  if (scored) {
+    scoredBanner = `<div style="text-align:center;padding:8px 0 16px;font-size:var(--mn-fs-sm);font-weight:700;color:var(--mn-green);">+${b.bonus_pts} ${t('leaderboard.title').toLowerCase()} pts</div>`;
+  }
+
   section.querySelector('.mn-prediction-widget').innerHTML = `
+    ${lockBanner}
+    ${scoredBanner}
     <div style="margin-bottom:14px;">
       <div style="font-size:var(--mn-fs-xs);font-weight:700;color:var(--mn-ink-soft);margin-bottom:4px;">
         ${t('bonus.winner')} <span style="color:var(--mn-green);">${t('bonus.points_winner')}</span>
       </div>
       <div style="font-size:var(--mn-fs-xs);color:var(--mn-ink-soft);margin-bottom:6px;">${t('bonus.winner_hint')}</div>
       <input type="text" class="mn-input" id="bonus-winner" maxlength="3" value="${escapeHtml(b.winner_tla || '')}"
-        placeholder="${t('bonus.enter_tla')}"
+        placeholder="${t('bonus.enter_tla')}" ${locked ? 'disabled' : ''}
         style="text-transform:uppercase;font-weight:700;font-size:var(--mn-fs-lg);letter-spacing:0.1em;width:100px;">
     </div>
     <div style="margin-bottom:14px;">
@@ -96,7 +122,7 @@ async function loadBonusBets(page, group) {
       </div>
       <div style="font-size:var(--mn-fs-xs);color:var(--mn-ink-soft);margin-bottom:6px;">${t('bonus.top_scorer_hint')}</div>
       <input type="text" class="mn-input" id="bonus-scorer" maxlength="80" value="${escapeHtml(b.top_scorer || '')}"
-        placeholder="Mbappé">
+        placeholder="Mbappé" ${locked ? 'disabled' : ''}>
     </div>
     <div style="margin-bottom:16px;">
       <div style="font-size:var(--mn-fs-xs);font-weight:700;color:var(--mn-ink-soft);margin-bottom:4px;">
@@ -105,20 +131,26 @@ async function loadBonusBets(page, group) {
       <div style="font-size:var(--mn-fs-xs);color:var(--mn-ink-soft);margin-bottom:6px;">${t('bonus.finalists_hint')}</div>
       <div style="display:flex;gap:8px;">
         <input type="text" class="mn-input" id="bonus-finalist-a" maxlength="3" value="${escapeHtml(b.finalist_a || '')}"
-          placeholder="${t('bonus.enter_tla')}"
+          placeholder="${t('bonus.finalist_a')}" ${locked ? 'disabled' : ''}
           style="text-transform:uppercase;font-weight:700;font-size:var(--mn-fs-lg);letter-spacing:0.1em;">
         <input type="text" class="mn-input" id="bonus-finalist-b" maxlength="3" value="${escapeHtml(b.finalist_b || '')}"
-          placeholder="${t('bonus.enter_tla')}"
+          placeholder="${t('bonus.finalist_b')}" ${locked ? 'disabled' : ''}
           style="text-transform:uppercase;font-weight:700;font-size:var(--mn-fs-lg);letter-spacing:0.1em;">
       </div>
     </div>
-    <button class="btn-primary" id="bonus-save-btn" style="width:100%;">${t('bonus.save')}</button>
+    ${locked
+      ? `<div class="mn-bonus-locked-label">${t('bonus.locked')}</div>`
+      : `<button class="btn-primary" id="bonus-save-btn" style="width:100%;">${t('bonus.save')}</button>`
+    }
     <div id="bonus-status" style="font-size:var(--mn-fs-xs);margin-top:8px;text-align:center;color:var(--mn-ink-soft);"></div>
   `;
 
+  if (locked) return;
+
   // Auto-uppercase TLA inputs
   ['bonus-winner', 'bonus-finalist-a', 'bonus-finalist-b'].forEach(id => {
-    section.querySelector(`#${id}`).addEventListener('input', e => {
+    const el = section.querySelector(`#${id}`);
+    if (el) el.addEventListener('input', e => {
       const pos = e.target.selectionStart;
       e.target.value = e.target.value.toUpperCase();
       e.target.setSelectionRange(pos, pos);
@@ -138,9 +170,14 @@ async function loadBonusBets(page, group) {
       });
       status.style.color = 'var(--mn-green)';
       status.textContent = t('bonus.saved');
-    } catch (_) {
-      status.style.color = 'var(--mn-red)';
-      status.textContent = t('common.error_generic');
+    } catch (e) {
+      if (e.status === 423) {
+        status.style.color = 'var(--mn-red)';
+        status.textContent = t('bonus.locked');
+      } else {
+        status.style.color = 'var(--mn-red)';
+        status.textContent = t('common.error_generic');
+      }
     } finally {
       btn.disabled = false;
     }

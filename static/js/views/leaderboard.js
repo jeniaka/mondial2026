@@ -84,6 +84,8 @@ async function loadLeaderboard(page, group) {
     return;
   }
 
+  const showBonus = rows.some(r => r.bonus_pts > 0);
+
   const table = document.createElement('table');
   table.className = 'mn-leaderboard-table';
   table.innerHTML = `
@@ -94,6 +96,7 @@ async function loadLeaderboard(page, group) {
         <th style="text-align:center;">${t('leaderboard.predictions_made')}</th>
         <th style="text-align:center;">${t('leaderboard.exact')}</th>
         <th style="text-align:center;">${t('leaderboard.correct')}</th>
+        ${showBonus ? `<th style="text-align:center;">${t('bonus.title')}</th>` : ''}
         <th style="text-align:end;">${t('leaderboard.total_points')}</th>
       </tr>
     </thead>
@@ -115,6 +118,7 @@ async function loadLeaderboard(page, group) {
       <td style="text-align:center;">${row.count}</td>
       <td style="text-align:center;">${row.exact}</td>
       <td style="text-align:center;">${row.correct}</td>
+      ${showBonus ? `<td style="text-align:center;color:var(--mn-green);">+${row.bonus_pts || 0}</td>` : ''}
       <td class="mn-lb-total" style="text-align:end;">${row.total}</td>
     `;
     tbody.appendChild(tr);

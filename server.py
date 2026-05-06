@@ -1022,16 +1022,31 @@ def handle_leaderboard_get(handler: BaseHTTPRequestHandler, group_id: str, **_):
     for rank, row in enumerate(rows, 1):
         u = user_docs.get(row["_id"], {})
         result.append({
-            "rank":    rank,
-            "user_id": str(row["_id"]),
-            "name":    u.get("name", ""),
-            "picture": u.get("picture", ""),
-            "total":   row["total"],
-            "exact":   row["exact"],
-            "correct": row["correct"],
-            "count":   row["count"],
-            "is_me":   row["_id"] == user["_id"],
+            "rank":      rank,
+            "user_id":   str(row["_id"]),
+            "name":      u.get("name", ""),
+            "picture":   u.get("picture", ""),
+            "total":     row["total"],
+            "exact":     row["exact"],
+            "correct":   row["correct"],
+            "count":     row["count"],
+            "bonus_pts": 0,
+            "is_me":     row["_id"] == user["_id"],
         })
+
+    # Add scored bonus bets
+    bonus_cursor = db.tournament_bets().find(
+        {"group_id": group_id, "bonus_pts": {"$exists": True}}
+    )
+    bonus_map = {b["user_id"]: b.get("bonus_pts", 0) for b in bonus_cursor}
+    if bonus_map:
+        for row in result:
+            row["bonus_pts"] = bonus_map.get(row["user_id"], 0)
+            row["total"] += row["bonus_pts"]
+        result.sort(key=lambda r: (-r["total"], -r["exact"], -r["correct"]))
+        for i, r in enumerate(result, 1):
+            r["rank"] = i
+
     send_json(handler, 200, result)
 
 
@@ -1494,8 +1509,9 @@ def handle_debug_missing_flags(handler: BaseHTTPRequestHandler, **_):
 # Bonus / tournament bets
 # ---------------------------------------------------------------------------
 
-# Locked once tournament winner is known (after final)
-_BONUS_BET_LOCK_DATE = None  # set in config or leave None for never
+# Bonus bets lock at the first WC match kickoff
+BONUS_LOCK_DT = datetime(2026, 6, 11, 23, 0, tzinfo=timezone.utc)
+
 
 def handle_tournament_bet_get(handler: BaseHTTPRequestHandler, group_id=None, **_):
     user = auth.require_user(handler)
@@ -1506,19 +1522,28 @@ def handle_tournament_bet_get(handler: BaseHTTPRequestHandler, group_id=None, **
     )
     if bet:
         bet["_id"] = str(bet["_id"])
-    send_json(handler, 200, {"bet": bet})
+    now = datetime.now(timezone.utc)
+    locked = now >= BONUS_LOCK_DT
+    send_json(handler, 200, {
+        "bet": bet,
+        "locked": locked,
+        "lock_ts": BONUS_LOCK_DT.isoformat(),
+    })
 
 
 def handle_tournament_bet_post(handler: BaseHTTPRequestHandler, group_id=None, **_):
     user = auth.require_user(handler)
     if not user:
         return
+    now = datetime.now(timezone.utc)
+    if now >= BONUS_LOCK_DT:
+        send_json(handler, 423, {"error": "bonus_locked"})
+        return
     body = read_json_body(handler)
     if not body:
         send_json(handler, 400, {"error": "body required"})
         return
 
-    now = datetime.now(timezone.utc)
     update = {
         "group_id": group_id,
         "user_id": str(user["_id"]),
@@ -1534,6 +1559,40 @@ def handle_tournament_bet_post(handler: BaseHTTPRequestHandler, group_id=None, *
         upsert=True,
     )
     send_json(handler, 200, {"ok": True})
+
+
+def handle_internal_score_bonus(handler: BaseHTTPRequestHandler, **_):
+    """Score all tournament bonus bets. Called by cron after the final."""
+    if not require_internal_token(handler):
+        return
+    body = read_json_body(handler)
+    if not body:
+        send_json(handler, 400, {"error": "body required"})
+        return
+
+    correct_winner = (body.get("winner_tla") or "").upper()[:3]
+    correct_scorer = (body.get("top_scorer") or "").strip().lower()
+    correct_fa = (body.get("finalist_a") or "").upper()[:3]
+    correct_fb = (body.get("finalist_b") or "").upper()[:3]
+    correct_finalists = {x for x in (correct_fa, correct_fb) if x}
+
+    now = datetime.now(timezone.utc)
+    bets = list(db.tournament_bets().find({}))
+    for bet in bets:
+        pts = 0
+        if correct_winner and bet.get("winner_tla", "").upper() == correct_winner:
+            pts += 15
+        if correct_scorer and bet.get("top_scorer", "").strip().lower() == correct_scorer:
+            pts += 10
+        if correct_finalists:
+            bet_finalists = {x for x in (bet.get("finalist_a", ""), bet.get("finalist_b", "")) if x}
+            if bet_finalists == correct_finalists:
+                pts += 10
+        db.tournament_bets().update_one(
+            {"_id": bet["_id"]},
+            {"$set": {"bonus_pts": pts, "scored_at": now}},
+        )
+    send_json(handler, 200, {"ok": True, "scored": len(bets)})
 
 
 # ---------------------------------------------------------------------------
@@ -1602,6 +1661,7 @@ ROUTES_POST = [
     (r"^/api/groups/([^/]+)/mute$",             handle_group_mute),
     (r"^/internal/sync-matches$",               handle_internal_sync),
     (r"^/internal/score-predictions$",          handle_internal_score),
+    (r"^/internal/score-bonus$",                handle_internal_score_bonus),
     (r"^/internal/email-digest$",               handle_internal_digest),
 ]
 
