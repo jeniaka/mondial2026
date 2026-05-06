@@ -154,6 +154,27 @@ _CACHE_CONTROL = {
     ".ico":  "public, max-age=86400",
 }
 
+_BUILDING_PAGE = b"""<!doctype html>
+<html lang="he" dir="rtl">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mondial 26</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:system-ui,sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;
+background:linear-gradient(135deg,#0f2d1a,#1a3d25);color:#e8f5e9}
+.card{text-align:center;padding:40px 32px;background:rgba(255,255,255,.07);border-radius:24px;border:1px solid rgba(255,255,255,.12)}
+h1{font-size:2rem;font-weight:900;background:linear-gradient(135deg,#4ade80,#facc15);-webkit-background-clip:text;color:transparent;margin-bottom:8px}
+p{color:rgba(232,245,233,.7);font-size:.95rem;margin-bottom:24px}
+.spinner{width:40px;height:40px;border:4px solid rgba(255,255,255,.15);border-top-color:#4ade80;border-radius:50%;animation:spin 1s linear infinite;margin:0 auto}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style></head>
+<body><div class="card">
+<h1>Mondial 26 ⚽</h1>
+<p>האפליקציה נטענת&hellip; / Building&hellip;</p>
+<div class="spinner"></div>
+</div></body></html>"""
+
+
 def serve_static(handler: BaseHTTPRequestHandler, rel_path: str):
     """Serve a file from the static/ directory."""
     safe_path = rel_path.lstrip("/")
@@ -163,6 +184,16 @@ def serve_static(handler: BaseHTTPRequestHandler, rel_path: str):
         send_json(handler, 403, {"error": "forbidden"})
         return
     if not os.path.isfile(full_path):
+        # If the SPA index is missing (build not run yet), serve a loading page
+        if rel_path in ("dist/index.html",):
+            handler.send_response(200)
+            handler.send_header("Content-Type", "text/html; charset=utf-8")
+            handler.send_header("Content-Length", str(len(_BUILDING_PAGE)))
+            handler.send_header("Cache-Control", "no-cache")
+            _set_security_headers(handler)
+            handler.end_headers()
+            handler.wfile.write(_BUILDING_PAGE)
+            return
         send_json(handler, 404, {"error": "not found"})
         return
     ext = os.path.splitext(full_path)[1].lower()
