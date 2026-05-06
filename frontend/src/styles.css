@@ -1,0 +1,177 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-glow: var(--primary-glow);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-live: var(--live);
+  --color-live-foreground: var(--live-foreground);
+  --color-pitch: var(--pitch);
+  --color-pitch-foreground: var(--pitch-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --font-display: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Inter", "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+}
+
+:root {
+  --radius: 0.875rem;
+  /* Soccer palette: pitch green primary, white card, gold accent, championship navy */
+  --background: oklch(0.98 0.012 150);
+  --foreground: oklch(0.22 0.04 160);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.22 0.04 160);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.22 0.04 160);
+
+  --primary: oklch(0.5 0.16 150);             /* pitch green */
+  --primary-foreground: oklch(0.99 0.01 150);
+  --primary-glow: oklch(0.62 0.18 145);
+
+  --secondary: oklch(0.94 0.02 150);          /* chalk line */
+  --secondary-foreground: oklch(0.25 0.05 160);
+
+  --muted: oklch(0.95 0.012 150);
+  --muted-foreground: oklch(0.5 0.03 160);
+
+  --accent: oklch(0.78 0.16 80);              /* championship gold */
+  --accent-foreground: oklch(0.22 0.04 160);
+
+  --destructive: oklch(0.55 0.22 25);
+  --destructive-foreground: oklch(0.99 0.01 70);
+
+  --success: oklch(0.62 0.16 145);
+  --success-foreground: oklch(0.99 0.01 70);
+
+  --live: oklch(0.6 0.24 25);
+  --live-foreground: oklch(0.99 0.01 70);
+
+  --pitch: oklch(0.42 0.13 150);              /* deep pitch */
+  --pitch-foreground: oklch(0.99 0.01 150);
+
+  --border: oklch(0.9 0.02 150);
+  --input: oklch(0.92 0.015 150);
+  --ring: oklch(0.5 0.16 150);
+
+  --gradient-pitch: linear-gradient(135deg, oklch(0.42 0.13 150), oklch(0.55 0.16 145) 60%, oklch(0.62 0.18 130));
+  --gradient-warm: linear-gradient(135deg, oklch(0.5 0.16 150), oklch(0.62 0.18 145) 50%, oklch(0.78 0.16 80));
+  --gradient-ember: linear-gradient(135deg, oklch(0.45 0.14 250), oklch(0.62 0.18 220));
+  --gradient-card: linear-gradient(180deg, oklch(1 0 0), oklch(0.97 0.012 150));
+  --shadow-warm: 0 12px 32px -12px oklch(0.5 0.16 150 / 0.4);
+  --shadow-soft: 0 4px 16px -6px oklch(0.4 0.05 160 / 0.18);
+}
+
+.dark {
+  --background: oklch(0.18 0.025 160);
+  --foreground: oklch(0.96 0.015 150);
+  --card: oklch(0.22 0.03 160);
+  --card-foreground: oklch(0.96 0.015 150);
+  --popover: oklch(0.22 0.03 160);
+  --popover-foreground: oklch(0.96 0.015 150);
+  --primary: oklch(0.65 0.17 145);
+  --primary-foreground: oklch(0.18 0.025 160);
+  --primary-glow: oklch(0.74 0.18 130);
+  --secondary: oklch(0.28 0.04 160);
+  --secondary-foreground: oklch(0.96 0.015 150);
+  --muted: oklch(0.26 0.03 160);
+  --muted-foreground: oklch(0.74 0.03 150);
+  --accent: oklch(0.78 0.16 80);
+  --accent-foreground: oklch(0.18 0.025 160);
+  --destructive: oklch(0.65 0.22 25);
+  --destructive-foreground: oklch(0.99 0.01 70);
+  --success: oklch(0.7 0.14 145);
+  --success-foreground: oklch(0.18 0.025 160);
+  --live: oklch(0.68 0.24 25);
+  --live-foreground: oklch(0.99 0.01 70);
+  --pitch: oklch(0.32 0.1 150);
+  --pitch-foreground: oklch(0.96 0.015 150);
+  --border: oklch(0.32 0.03 160);
+  --input: oklch(0.3 0.03 160);
+  --ring: oklch(0.65 0.17 145);
+  --gradient-card: linear-gradient(180deg, oklch(0.22 0.03 160), oklch(0.2 0.025 160));
+}
+
+@layer base {
+  * { border-color: var(--color-border); }
+  html { font-family: var(--font-sans); -webkit-text-size-adjust: 100%; }
+  body {
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    font-feature-settings: "ss01", "cv11";
+    overflow-x: clip;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  h1, h2, h3, .display { font-family: var(--font-display); letter-spacing: -0.02em; }
+  [dir="rtl"] body { font-family: "Heebo", var(--font-sans); }
+  [dir="rtl"] .lucide-arrow-left, [dir="rtl"] .lucide-chevron-left { transform: scaleX(-1); }
+  /* numbers always LTR even in RTL */
+  .num { direction: ltr; unicode-bidi: isolate; font-variant-numeric: tabular-nums; }
+  button, a { -webkit-tap-highlight-color: transparent; }
+}
+
+@layer utilities {
+  .bg-gradient-warm { background-image: var(--gradient-warm); }
+  .bg-gradient-ember { background-image: var(--gradient-ember); }
+  .bg-gradient-pitch { background-image: var(--gradient-pitch); }
+  .bg-gradient-card { background-image: var(--gradient-card); }
+  .shadow-warm { box-shadow: var(--shadow-warm); }
+  .shadow-soft { box-shadow: var(--shadow-soft); }
+  .text-gradient-warm {
+    background: var(--gradient-warm);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .live-pulse { animation: live-pulse 1.6s ease-in-out infinite; }
+  @keyframes live-pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.55; transform: scale(0.92); }
+  }
+  .press { transition: transform 80ms ease-out, opacity 80ms ease-out; }
+  .press:active { transform: scale(0.97); opacity: 0.9; }
+  .skeleton {
+    background: linear-gradient(90deg, var(--muted) 25%, color-mix(in oklab, var(--muted) 60%, var(--card)) 50%, var(--muted) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.4s ease-in-out infinite;
+    border-radius: 0.75rem;
+  }
+  @keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+  .pitch-stripes {
+    background-image: repeating-linear-gradient(
+      90deg,
+      color-mix(in oklab, var(--primary) 10%, transparent) 0 40px,
+      transparent 40px 80px
+    );
+  }
+}

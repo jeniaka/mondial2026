@@ -1,0 +1,170 @@
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Pin, Calendar as CalIcon, Sparkles } from "lucide-react";
+import { getMatches, type Match } from "@/server/matches.functions";
+import { useAuth } from "@/lib/auth";
+import { useI18n } from "@/lib/i18n";
+import { AppShell } from "@/components/AppShell";
+import { Flag } from "@/components/Flag";
+import { EmptyState, CardSkeleton } from "@/components/States";
+
+export const Route = createFileRoute("/")({ component: HomePage });
+
+function HomePage() {
+  const { user, loading } = useAuth();
+  const nav = useNavigate();
+  const { t, lang } = useI18n();
+  const [pinned, setPinned] = useState<string[]>([]);
+
+  useEffect(() => { if (!loading && !user) nav({ to: "/login" }); }, [user, loading, nav]);
+  useEffect(() => { setPinned(JSON.parse(localStorage.getItem("pinned") ?? "[]")); }, []);
+
+  const { data, isLoading, refetch, isError } = useQuery({
+    queryKey: ["matches"],
+    queryFn: () => getMatches(),
+    refetchInterval: 30_000,
+  });
+
+  if (!user) return null;
+
+  const matches = data?.matches ?? [];
+  const live = matches.filter((m) => isLive(m.status));
+  const upcoming = matches.filter((m) => !isLive(m.status) && m.status !== "FINISHED");
+  const finished = matches.filter((m) => m.status === "FINISHED");
+  const pinnedMatches = matches.filter((m) => pinned.includes(m.id));
+
+  const togglePin = (id: string) => {
+    const next = pinned.includes(id) ? pinned.filter((x) => x !== id) : [...pinned, id];
+    setPinned(next);
+    localStorage.setItem("pinned", JSON.stringify(next));
+  };
+
+  // Group upcoming by date
+  const byDate = upcoming.reduce<Record<string, Match[]>>((acc, m) => {
+    const k = new Date(m.utcDate).toLocaleDateString(lang === "he" ? "he-IL" : "en-GB", { weekday: "long", day: "2-digit", month: "long" });
+    (acc[k] ??= []).push(m);
+    return acc;
+  }, {});
+
+  return (
+    <AppShell>
+      {/* Hero */}
+      <div className="mb-4 overflow-hidden rounded-3xl bg-gradient-warm p-5 shadow-warm">
+        <div className="flex items-center gap-2 text-primary-foreground/85">
+          <Sparkles className="h-4 w-4" /> <span className="text-xs font-bold uppercase tracking-wider">USA · CAN · MEX 2026</span>
+        </div>
+        <h1 className="mt-2 font-display text-2xl font-black leading-tight text-primary-foreground">{t("tagline")}</h1>
+        <p className="mt-1.5 text-xs text-primary-foreground/85">{t("score365rules")}</p>
+      </div>
+
+      {pinnedMatches.length > 0 && (
+        <Section title={`📌 ${t("pinLive")}`}>
+          {pinnedMatches.map((m) => <MatchCard key={m.id} match={m} pinned onTogglePin={togglePin} />)}
+        </Section>
+      )}
+
+      {live.length > 0 && (
+        <Section title={t("live")} live>
+          {live.map((m) => <MatchCard key={m.id} match={m} pinned={pinned.includes(m.id)} onTogglePin={togglePin} />)}
+        </Section>
+      )}
+
+      <h2 className="mb-2 mt-2 flex items-center gap-2 font-display text-lg font-bold">
+        <CalIcon className="h-4 w-4 text-primary" /> {t("upcoming")}
+      </h2>
+      {isLoading ? (
+        <CardSkeleton count={4} />
+      ) : isError ? (
+        <EmptyState
+          title={lang === "he" ? "שגיאת רשת" : "Network error"}
+          hint={lang === "he" ? "לא ניתן לטעון משחקים" : "Could not load matches"}
+          action={<button onClick={() => refetch()} className="press rounded-full bg-primary px-4 py-2 text-sm font-bold text-primary-foreground">{lang === "he" ? "נסה שוב" : "Try again"}</button>}
+        />
+      ) : upcoming.length === 0 ? (
+        <EmptyState title={lang === "he" ? "אין משחקים קרובים" : "No upcoming matches"} hint={lang === "he" ? "המונדיאל מתחיל ב-11 ביוני 2026" : "World Cup starts June 11, 2026"} />
+      ) : (
+        Object.entries(byDate).map(([date, ms]) => (
+          <div key={date} className="mb-4">
+            <div className="sticky top-14 z-10 -mx-4 mb-2 bg-background/85 px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-muted-foreground backdrop-blur">
+              {date}
+            </div>
+            <div className="grid gap-2">
+              {ms.map((m) => <MatchCard key={m.id} match={m} pinned={pinned.includes(m.id)} onTogglePin={togglePin} />)}
+            </div>
+          </div>
+        ))
+      )}
+
+      {finished.length > 0 && (
+        <Section title={t("finished")}>
+          {finished.map((m) => <MatchCard key={m.id} match={m} pinned={pinned.includes(m.id)} onTogglePin={togglePin} />)}
+        </Section>
+      )}
+    </AppShell>
+  );
+}
+
+function Section({ title, children, live }: { title: string; children: React.ReactNode; live?: boolean }) {
+  return (
+    <section className="mb-4">
+      <h2 className="mb-2 flex items-center gap-2 font-display text-lg font-bold">
+        {live && <span className="h-2 w-2 rounded-full bg-live live-pulse" />}
+        {title}
+      </h2>
+      <div className="grid gap-2">{children}</div>
+    </section>
+  );
+}
+
+function MatchCard({ match, pinned, onTogglePin }: { match: Match; pinned: boolean; onTogglePin: (id: string) => void }) {
+  const nav = useNavigate();
+  const { lang } = useI18n();
+  const live = isLive(match.status);
+  const date = new Date(match.utcDate);
+  const time = date.toLocaleTimeString(lang === "he" ? "he-IL" : "en-GB", { hour: "2-digit", minute: "2-digit" });
+
+  return (
+    <div
+      onClick={() => nav({ to: "/match/$id", params: { id: match.id } })}
+      className="press flex cursor-pointer items-center gap-3 rounded-2xl border border-border bg-gradient-card p-3 shadow-soft"
+    >
+      <div className="flex flex-1 items-center justify-end gap-2 truncate">
+        <span className="truncate text-sm font-semibold">{lang === "he" ? match.homeTeamHe : match.homeTeam}</span>
+        <Flag country={match.homeTeam} iso2={match.homeIso2} />
+      </div>
+      <div className="grid min-w-[64px] place-items-center">
+        {match.homeScore != null ? (
+          <div className="num font-display text-2xl font-black">
+            {match.homeScore}<span className="px-1 text-muted-foreground">:</span>{match.awayScore}
+          </div>
+        ) : (
+          <div className="num rounded-md bg-secondary px-2 py-0.5 text-sm font-semibold">{time}</div>
+        )}
+        {live && (
+          <div className="mt-0.5 flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider text-live">
+            <span className="h-1.5 w-1.5 rounded-full bg-live live-pulse" />
+            {match.minute ? `${match.minute}'` : "LIVE"}
+          </div>
+        )}
+      </div>
+      <div className="flex flex-1 items-center gap-2 truncate">
+        <Flag country={match.awayTeam} iso2={match.awayIso2} />
+        <span className="truncate text-sm font-semibold">{lang === "he" ? match.awayTeamHe : match.awayTeam}</span>
+      </div>
+      {live && (
+        <button
+          onClick={(e) => { e.stopPropagation(); onTogglePin(match.id); }}
+          className={`press grid h-9 w-9 place-items-center rounded-full ${pinned ? "bg-primary/15 text-primary" : "text-muted-foreground"}`}
+          aria-label="pin"
+        >
+          <Pin className={`h-4 w-4 ${pinned ? "fill-current" : ""}`} />
+        </button>
+      )}
+    </div>
+  );
+}
+
+function isLive(s: Match["status"]) {
+  return s === "LIVE" || s === "IN_PLAY" || s === "PAUSED";
+}

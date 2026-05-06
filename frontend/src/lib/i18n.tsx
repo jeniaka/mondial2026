@@ -1,0 +1,199 @@
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+
+type Lang = "en" | "he";
+
+const dict = {
+  en: {
+    appName: "Mondial 26",
+    tagline: "Predict. Compete. Crown your champion.",
+    signInGoogle: "Continue with Google",
+    signInTitle: "Welcome to Mondial 26",
+    signInSub: "Bet with friends. Live every match.",
+    matches: "Matches",
+    bets: "My Bets",
+    friends: "Friends",
+    leagues: "Leagues",
+    profile: "Profile",
+    notifications: "Notifications",
+    noNotifications: "You're all caught up.",
+    live: "LIVE",
+    upcoming: "Upcoming",
+    finished: "Finished",
+    today: "Today",
+    tomorrow: "Tomorrow",
+    placeBet: "Place bet",
+    yourPrediction: "Your prediction",
+    save: "Save",
+    saved: "Saved",
+    points: "pts",
+    leaderboard: "Leaderboard",
+    addFriend: "Add friend",
+    inviteCode: "Invite code",
+    createLeague: "Create league",
+    joinLeague: "Join league",
+    leagueName: "League name",
+    create: "Create",
+    join: "Join",
+    challenge: "Challenge",
+    h2h: "Head-to-head",
+    pickWinner: "Pick winner",
+    home: "Home",
+    draw: "Draw",
+    away: "Away",
+    signOut: "Sign out",
+    language: "Language",
+    pinLive: "Pin to live",
+    unpin: "Unpin",
+    score365rules: "Scoring: exact score = 5 pts, correct outcome + goal diff = 3 pts, correct outcome = 1 pt.",
+    loading: "Loading…",
+    matchStarted: "Match started — bets locked.",
+    enterCode: "Enter invite code",
+    members: "Members",
+    you: "You",
+    rank: "Rank",
+    player: "Player",
+    bonusBets: "Bonus picks",
+    bonusIntro: "Lock in your tournament predictions before the opening match.",
+    pickChampion: "Pick the World Cup winner",
+    pickTopPlayer: "Pick the player of the tournament",
+    pickFinalScore: "Predict the final score",
+    bonusRules: "Champion = 15 pts · Player of tournament = 10 pts · Exact final = 10 pts",
+    finalsTeam: "Team",
+    finalsScore: "Score",
+    saveBonus: "Save bonus picks",
+    bonusLocked: "Picks locked — tournament started.",
+    floatScore: "Float live score",
+    closeFloat: "Close",
+    inviteFriend: "Invite friend",
+    invitesTo: "Invites",
+    accept: "Accept",
+    decline: "Decline",
+    pendingInvites: "Pending invites",
+    darkMode: "Dark mode",
+    lightMode: "Light mode",
+    admin: "Admin",
+    kickMember: "Remove",
+    kickConfirm: "Remove this member from the league?",
+    deleteLeague: "Delete league",
+    deleteLeagueConfirm: "Delete this league? This cannot be undone.",
+    leaveLeague: "Leave league",
+    leaveLeagueConfirm: "Leave this league?",
+    manageLeague: "Manage",
+    
+  },
+  he: {
+    appName: "מונדיאל 26",
+    tagline: "נחש. התחרה. הכתר את האלוף שלך.",
+    signInGoogle: "המשך עם Google",
+    signInTitle: "ברוכים הבאים למונדיאל 26",
+    signInSub: "התערב עם חברים. חי כל משחק.",
+    matches: "משחקים",
+    bets: "ההימורים שלי",
+    friends: "חברים",
+    leagues: "ליגות",
+    profile: "פרופיל",
+    notifications: "התראות",
+    noNotifications: "הכל מעודכן.",
+    live: "שידור חי",
+    upcoming: "קרובים",
+    finished: "הסתיימו",
+    today: "היום",
+    tomorrow: "מחר",
+    placeBet: "הימור",
+    yourPrediction: "הניחוש שלך",
+    save: "שמור",
+    saved: "נשמר",
+    points: "נק׳",
+    leaderboard: "טבלת מובילים",
+    addFriend: "הוסף חבר",
+    inviteCode: "קוד הצטרפות",
+    createLeague: "צור ליגה",
+    joinLeague: "הצטרף לליגה",
+    leagueName: "שם הליגה",
+    create: "צור",
+    join: "הצטרף",
+    challenge: "אתגר",
+    h2h: "אחד על אחד",
+    pickWinner: "בחר מנצח",
+    home: "בית",
+    draw: "תיקו",
+    away: "חוץ",
+    signOut: "התנתק",
+    language: "שפה",
+    pinLive: "צמוד לחי",
+    unpin: "בטל הצמדה",
+    score365rules: "ניקוד: תוצאה מדויקת = 5 נק׳, תוצאה נכונה + הפרש = 3 נק׳, תוצאה נכונה = 1 נק׳.",
+    loading: "טוען…",
+    matchStarted: "המשחק התחיל — ההימורים נסגרו.",
+    enterCode: "הזן קוד הזמנה",
+    members: "חברים",
+    you: "אתה",
+    rank: "דירוג",
+    player: "שחקן",
+    bonusBets: "הימורי בונוס",
+    bonusIntro: "נחש לפני המשחק הפותח של המונדיאל.",
+    pickChampion: "מי תזכה במונדיאל",
+    pickTopPlayer: "שחקן הטורניר",
+    pickFinalScore: "תוצאת הגמר",
+    bonusRules: "אלופה = 15 נק׳ · שחקן הטורניר = 10 נק׳ · תוצאת גמר מדויקת = 10 נק׳",
+    finalsTeam: "נבחרת",
+    finalsScore: "תוצאה",
+    saveBonus: "שמור הימורי בונוס",
+    bonusLocked: "ההימורים ננעלו — המונדיאל התחיל.",
+    floatScore: "צמוד תוצאה חיה",
+    closeFloat: "סגור",
+    inviteFriend: "הזמן חבר",
+    invitesTo: "הזמנות",
+    accept: "קבל",
+    decline: "דחה",
+    pendingInvites: "הזמנות ממתינות",
+    darkMode: "מצב כהה",
+    lightMode: "מצב בהיר",
+    admin: "מנהל",
+    kickMember: "הסר",
+    kickConfirm: "להסיר חבר זה מהליגה?",
+    deleteLeague: "מחק ליגה",
+    deleteLeagueConfirm: "למחוק את הליגה? לא ניתן לבטל פעולה זו.",
+    leaveLeague: "עזוב ליגה",
+    leaveLeagueConfirm: "לעזוב את הליגה?",
+    manageLeague: "ניהול",
+  },
+} as const;
+
+type Key = keyof typeof dict.en;
+type Ctx = { lang: Lang; setLang: (l: Lang) => void; t: (k: Key) => string; dir: "ltr" | "rtl" };
+
+const I18nCtx = createContext<Ctx | null>(null);
+
+export function I18nProvider({ children }: { children: ReactNode }) {
+  const [lang, setLangState] = useState<Lang>("he");
+
+  useEffect(() => {
+    const saved = (typeof window !== "undefined" && (localStorage.getItem("lang") as Lang)) || "he";
+    setLangState(saved);
+  }, []);
+
+  useEffect(() => {
+    const dir = lang === "he" ? "rtl" : "ltr";
+    document.documentElement.setAttribute("dir", dir);
+    document.documentElement.setAttribute("lang", lang);
+  }, [lang]);
+
+  const setLang = (l: Lang) => {
+    setLangState(l);
+    if (typeof window !== "undefined") localStorage.setItem("lang", l);
+  };
+
+  const t = (k: Key) => dict[lang][k] ?? dict.en[k] ?? k;
+  return (
+    <I18nCtx.Provider value={{ lang, setLang, t, dir: lang === "he" ? "rtl" : "ltr" }}>
+      {children}
+    </I18nCtx.Provider>
+  );
+}
+
+export function useI18n() {
+  const ctx = useContext(I18nCtx);
+  if (!ctx) throw new Error("useI18n outside provider");
+  return ctx;
+}

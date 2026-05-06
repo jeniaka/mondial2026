@@ -187,18 +187,23 @@ def handle_healthz(handler: BaseHTTPRequestHandler, **_):
     send_json(handler, 200, {"ok": True, "ts": datetime.now(timezone.utc).isoformat()})
 
 
+def handle_spa(handler: BaseHTTPRequestHandler, **_):
+    """Serve the SPA index for all client-side routes."""
+    serve_static(handler, "dist/index.html")
+
+
 def handle_root_get(handler: BaseHTTPRequestHandler, **_):
     user = auth.current_user(handler)
     if not user:
         send_redirect(handler, "/login")
         return
     # Slide the session cookie
-    cookies = auth.set_session_cookie(handler, str(user["_id"]))
-    serve_static(handler, "index.html")
+    auth.set_session_cookie(handler, str(user["_id"]))
+    serve_static(handler, "dist/index.html")
 
 
 def handle_login_get(handler: BaseHTTPRequestHandler, **_):
-    serve_static(handler, "login.html")
+    serve_static(handler, "dist/index.html")
 
 
 def handle_manifest(handler: BaseHTTPRequestHandler, **_):
@@ -876,15 +881,15 @@ def handle_invite_page(handler: BaseHTTPRequestHandler, token: str, **_):
     now = datetime.now(timezone.utc)
     inv = db.invitations().find_one({"token": token, "status": "pending"})
     if not inv or inv["expires_at"] < now:
-        serve_static(handler, "index.html")
+        serve_static(handler, "dist/index.html")
         return
     grp = db.groups().find_one({"_id": inv["group_id"]})
     if not grp:
-        serve_static(handler, "index.html")
+        serve_static(handler, "dist/index.html")
         return
     # Pass invite info in HTML via inline script, then serve the SPA
     # The SPA will detect the invite data and show the join modal
-    serve_static(handler, "index.html")
+    serve_static(handler, "dist/index.html")
 
 
 # --- Predictions API ---
@@ -1607,6 +1612,12 @@ ROUTES_GET = [
     (r"^/static/(.+)$",                         handle_static),
     (r"^/manifest\.json$",                      handle_manifest),
     (r"^/service-worker\.js$",                  handle_service_worker),
+    # SPA client-side routes
+    (r"^/bets$",                                handle_spa),
+    (r"^/bonus$",                               handle_spa),
+    (r"^/leagues$",                             handle_spa),
+    (r"^/friends$",                             handle_spa),
+    (r"^/match/[^/]+$",                         handle_spa),
     # Auth
     (r"^/auth/google/start$",                   handle_auth_google_start),
     (r"^/auth/google/callback$",                handle_auth_google_callback),
