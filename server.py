@@ -620,6 +620,185 @@ def handle_group_kick(handler: BaseHTTPRequestHandler, group_id: str, **_):
     send_json(handler, 200, {"ok": True})
 
 
+def handle_group_patch(handler: BaseHTTPRequestHandler, group_id: str, **_):
+    """PATCH /api/groups/<id> — rename group (owner only)."""
+    user = auth.require_user(handler)
+    if not user:
+        return
+    from bson import ObjectId
+    try:
+        gid = ObjectId(group_id)
+    except Exception:
+        send_json(handler, 404, {"error": "not found"})
+        return
+    grp = db.groups().find_one({"_id": gid})
+    if not grp:
+        send_json(handler, 404, {"error": "not found"})
+        return
+    if grp.get("owner_id") != user["_id"]:
+        send_json(handler, 403, {"error": "owner_only"})
+        return
+    body = parse_json_body(handler)
+    name = (body.get("name") or "").strip()[:60]
+    if not name:
+        send_json(handler, 400, {"error": "name required"})
+        return
+    db.groups().update_one({"_id": gid}, {"$set": {"name": name, "updated_at": datetime.now(timezone.utc)}})
+    send_json(handler, 200, {"ok": True, "name": name})
+
+
+def handle_group_regen_code(handler: BaseHTTPRequestHandler, group_id: str, **_):
+    """POST /api/groups/<id>/regenerate-code — owner only."""
+    user = auth.require_user(handler)
+    if not user:
+        return
+    from bson import ObjectId
+    try:
+        gid = ObjectId(group_id)
+    except Exception:
+        send_json(handler, 404, {"error": "not found"})
+        return
+    grp = db.groups().find_one({"_id": gid})
+    if not grp or grp.get("owner_id") != user["_id"]:
+        send_json(handler, 403, {"error": "owner_only"})
+        return
+    new_code = _generate_join_code()
+    db.groups().update_one({"_id": gid}, {"$set": {"join_code": new_code, "updated_at": datetime.now(timezone.utc)}})
+    send_json(handler, 200, {"ok": True, "join_code": new_code})
+
+
+def handle_group_reset(handler: BaseHTTPRequestHandler, group_id: str, **_):
+    """POST /api/groups/<id>/reset — delete all group predictions (owner only)."""
+    user = auth.require_user(handler)
+    if not user:
+        return
+    from bson import ObjectId
+    try:
+        gid = ObjectId(group_id)
+    except Exception:
+        send_json(handler, 404, {"error": "not found"})
+        return
+    grp = db.groups().find_one({"_id": gid})
+    if not grp or grp.get("owner_id") != user["_id"]:
+        send_json(handler, 403, {"error": "owner_only"})
+        return
+    result = db.predictions().delete_many({"group_id": gid})
+    db.groups().update_one({"_id": gid}, {"$set": {"updated_at": datetime.now(timezone.utc)}})
+    send_json(handler, 200, {"ok": True, "deleted": result.deleted_count})
+
+
+def handle_group_delete(handler: BaseHTTPRequestHandler, group_id: str, **_):
+    """DELETE /api/groups/<id> — owner only."""
+    user = auth.require_user(handler)
+    if not user:
+        return
+    from bson import ObjectId
+    try:
+        gid = ObjectId(group_id)
+    except Exception:
+        send_json(handler, 404, {"error": "not found"})
+        return
+    grp = db.groups().find_one({"_id": gid})
+    if not grp or grp.get("owner_id") != user["_id"]:
+        send_json(handler, 403, {"error": "owner_only"})
+        return
+    db.predictions().delete_many({"group_id": gid})
+    db.invitations().delete_many({"group_id": gid})
+    db.groups().delete_one({"_id": gid})
+    send_json(handler, 200, {"ok": True})
+
+
+def handle_group_transfer(handler: BaseHTTPRequestHandler, group_id: str, **_):
+    """POST /api/groups/<id>/transfer — owner only."""
+    user = auth.require_user(handler)
+    if not user:
+        return
+    from bson import ObjectId
+    try:
+        gid = ObjectId(group_id)
+    except Exception:
+        send_json(handler, 404, {"error": "not found"})
+        return
+    grp = db.groups().find_one({"_id": gid})
+    if not grp or grp.get("owner_id") != user["_id"]:
+        send_json(handler, 403, {"error": "owner_only"})
+        return
+    body = parse_json_body(handler)
+    try:
+        new_owner_id = ObjectId(body.get("user_id", ""))
+    except Exception:
+        send_json(handler, 400, {"error": "invalid user_id"})
+        return
+    member_ids = [m["user_id"] for m in grp.get("members", [])]
+    if new_owner_id not in member_ids or new_owner_id == user["_id"]:
+        send_json(handler, 400, {"error": "invalid transfer target"})
+        return
+    now = datetime.now(timezone.utc)
+    db.groups().update_one({"_id": gid, "members.user_id": user["_id"]},  {"$set": {"members.$.role": "member"}})
+    db.groups().update_one({"_id": gid, "members.user_id": new_owner_id}, {"$set": {"members.$.role": "owner"}})
+    db.groups().update_one({"_id": gid}, {"$set": {"owner_id": new_owner_id, "updated_at": now}})
+    send_json(handler, 200, {"ok": True})
+
+
+def handle_group_mute(handler: BaseHTTPRequestHandler, group_id: str, **_):
+    """POST /api/groups/<id>/mute — toggle mute for calling user."""
+    user = auth.require_user(handler)
+    if not user:
+        return
+    from bson import ObjectId
+    try:
+        gid = ObjectId(group_id)
+    except Exception:
+        send_json(handler, 404, {"error": "not found"})
+        return
+    grp = db.groups().find_one({"_id": gid})
+    if not grp:
+        send_json(handler, 404, {"error": "not found"})
+        return
+    member_ids = [m["user_id"] for m in grp.get("members", [])]
+    if user["_id"] not in member_ids:
+        send_json(handler, 403, {"error": "forbidden"})
+        return
+    body = parse_json_body(handler)
+    muted = bool(body.get("muted", True))
+    db.groups().update_one(
+        {"_id": gid, "members.user_id": user["_id"]},
+        {"$set": {"members.$.muted": muted}}
+    )
+    send_json(handler, 200, {"ok": True, "muted": muted})
+
+
+def handle_group_stats(handler: BaseHTTPRequestHandler, group_id: str, **_):
+    """GET /api/groups/<id>/stats — any member."""
+    user = auth.require_user(handler)
+    if not user:
+        return
+    from bson import ObjectId
+    try:
+        gid = ObjectId(group_id)
+    except Exception:
+        send_json(handler, 404, {"error": "not found"})
+        return
+    grp = db.groups().find_one({"_id": gid})
+    if not grp:
+        send_json(handler, 404, {"error": "not found"})
+        return
+    member_ids = [m["user_id"] for m in grp.get("members", [])]
+    if user["_id"] not in member_ids:
+        send_json(handler, 403, {"error": "forbidden"})
+        return
+    total_preds  = db.predictions().count_documents({"group_id": gid})
+    exact_preds  = db.predictions().count_documents({"group_id": gid, "points_awarded": 3})
+    scored_preds = db.predictions().count_documents({"group_id": gid, "points_awarded": {"$ne": None}})
+    send_json(handler, 200, {
+        "member_count":       len(member_ids),
+        "total_predictions":  total_preds,
+        "exact_predictions":  exact_preds,
+        "scored_predictions": scored_preds,
+        "created_at":         grp["created_at"].isoformat() if grp.get("created_at") else None,
+    })
+
+
 def handle_group_join_by_code(handler: BaseHTTPRequestHandler, **_):
     user = auth.require_user(handler)
     if not user:
@@ -1224,15 +1403,18 @@ def _serialize_match(m: dict) -> dict:
 
 
 def _serialize_group(g: dict, current_uid, include_members: bool = False) -> dict:
+    members = g.get("members", [])
+    me = next((m for m in members if m["user_id"] == current_uid), {})
     d = {
-        "id":       str(g["_id"]),
-        "name":     g.get("name", ""),
-        "join_code": g.get("join_code", ""),
-        "is_owner": g.get("owner_id") == current_uid,
-        "member_count": len(g.get("members", [])),
+        "id":           str(g["_id"]),
+        "name":         g.get("name", ""),
+        "join_code":    g.get("join_code", ""),
+        "is_owner":     g.get("owner_id") == current_uid,
+        "member_count": len(members),
+        "muted":        me.get("muted", False),
     }
     if include_members:
-        member_ids = [m["user_id"] for m in g.get("members", [])]
+        member_ids = [m["user_id"] for m in members]
         user_docs = {u["_id"]: u for u in db.users().find({"_id": {"$in": member_ids}})}
         d["members"] = [
             {
@@ -1240,8 +1422,9 @@ def _serialize_group(g: dict, current_uid, include_members: bool = False) -> dic
                 "role":    m.get("role", "member"),
                 "name":    user_docs.get(m["user_id"], {}).get("name", ""),
                 "picture": user_docs.get(m["user_id"], {}).get("picture", ""),
+                "muted":   m.get("muted", False),
             }
-            for m in g.get("members", [])
+            for m in members
         ]
     return d
 
@@ -1390,6 +1573,8 @@ ROUTES_GET = [
     (r"^/api/notifications/unread-count$",      handle_notifications_unread_count),
     # Bonus bets
     (r"^/api/groups/([^/]+)/tournament-bet$",   handle_tournament_bet_get),
+    # Group management
+    (r"^/api/groups/([^/]+)/stats$",            handle_group_stats),
     # User account
     (r"^/api/users/me/stats$",                  handle_user_stats),
 ]
@@ -1410,9 +1595,23 @@ ROUTES_POST = [
     (r"^/api/notifications/prefs$",             handle_notifications_prefs),
     # Bonus bets
     (r"^/api/groups/([^/]+)/tournament-bet$",   handle_tournament_bet_post),
+    # Group management
+    (r"^/api/groups/([^/]+)/regenerate-code$",  handle_group_regen_code),
+    (r"^/api/groups/([^/]+)/reset$",            handle_group_reset),
+    (r"^/api/groups/([^/]+)/transfer$",         handle_group_transfer),
+    (r"^/api/groups/([^/]+)/mute$",             handle_group_mute),
     (r"^/internal/sync-matches$",               handle_internal_sync),
     (r"^/internal/score-predictions$",          handle_internal_score),
     (r"^/internal/email-digest$",               handle_internal_digest),
+]
+
+
+ROUTES_PATCH = [
+    (r"^/api/groups/([^/]+)$",  handle_group_patch),
+]
+
+ROUTES_DELETE = [
+    (r"^/api/groups/([^/]+)$",  handle_group_delete),
 ]
 
 
@@ -1475,6 +1674,11 @@ _PARAM_NAMES = {
     r"^/api/groups/([^/]+)/leaderboard$":           ("group_id",),
     r"^/api/groups/([^/]+)/my-predictions$":        ("group_id",),
     r"^/api/groups/([^/]+)/tournament-bet$":        ("group_id",),
+    r"^/api/groups/([^/]+)/regenerate-code$":       ("group_id",),
+    r"^/api/groups/([^/]+)/reset$":                 ("group_id",),
+    r"^/api/groups/([^/]+)/transfer$":              ("group_id",),
+    r"^/api/groups/([^/]+)/mute$":                  ("group_id",),
+    r"^/api/groups/([^/]+)/stats$":                 ("group_id",),
 }
 
 
@@ -1502,6 +1706,18 @@ class MondialHandler(BaseHTTPRequestHandler):
         if not handler_passes_csrf(self):
             return
         if not _dispatch2(self, ROUTES_POST):
+            send_json(self, 404, {"error": "not found"})
+
+    def do_PATCH(self):
+        if not handler_passes_csrf(self):
+            return
+        if not _dispatch2(self, ROUTES_PATCH):
+            send_json(self, 404, {"error": "not found"})
+
+    def do_DELETE(self):
+        if not handler_passes_csrf(self):
+            return
+        if not _dispatch2(self, ROUTES_DELETE):
             send_json(self, 404, {"error": "not found"})
 
     def do_OPTIONS(self):
