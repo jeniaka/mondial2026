@@ -130,8 +130,8 @@ function MatchCard({ match, pinned, onTogglePin }: { match: Match; pinned: boole
       className="press flex cursor-pointer items-center gap-3 rounded-2xl border border-border bg-gradient-card p-3 shadow-soft"
     >
       <div className="flex flex-1 items-center justify-end gap-2 truncate">
-        <span className="truncate text-sm font-semibold">{lang === "he" ? match.homeTeamHe : match.homeTeam}</span>
-        <Flag country={match.homeTeam} iso2={match.homeIso2} />
+        <span className="truncate text-sm font-semibold">{match.homeTeam}</span>
+        <Flag country={match.homeTeam} />
       </div>
       <div className="grid min-w-[64px] place-items-center">
         {match.homeScore != null ? (
@@ -149,8 +149,8 @@ function MatchCard({ match, pinned, onTogglePin }: { match: Match; pinned: boole
         )}
       </div>
       <div className="flex flex-1 items-center gap-2 truncate">
-        <Flag country={match.awayTeam} iso2={match.awayIso2} />
-        <span className="truncate text-sm font-semibold">{lang === "he" ? match.awayTeamHe : match.awayTeam}</span>
+        <Flag country={match.awayTeam} />
+        <span className="truncate text-sm font-semibold">{match.awayTeam}</span>
       </div>
       {live && (
         <button

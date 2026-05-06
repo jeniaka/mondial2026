@@ -103,22 +103,15 @@ const subregionFlags: Record<string, string> = {
   "GB-NIR": "🇬🇧",
 };
 
-export function flagEmojiFromCode(code: string): string | null {
-  if (!code) return null;
-  const upper = code.toUpperCase();
-  if (upper.startsWith("GB-")) return subregionFlags[upper] ?? "🇬🇧";
-  if (upper === "XK") return null;
-  if (upper.length !== 2) return null;
-  return upper
-    .split("")
-    .map((c) => String.fromCodePoint(127397 + c.charCodeAt(0)))
-    .join("");
-}
-
 export function flagEmoji(country: string): string | null {
   const code = countryToCode[country.trim()];
   if (!code) return null;
-  return flagEmojiFromCode(code);
+  if (code.startsWith("GB-")) return subregionFlags[code] ?? "🇬🇧";
+  if (code === "XK") return null; // No standard emoji for Kosovo
+  return code
+    .split("")
+    .map((c) => String.fromCodePoint(127397 + c.charCodeAt(0)))
+    .join("");
 }
 
 // Initials fallback (max 3 letters)

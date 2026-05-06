@@ -117,7 +117,7 @@ function MatchDetail() {
 
         <div className="mt-4 grid grid-cols-3 items-center gap-2 text-primary-foreground">
           <div className="text-center">
-            <Flag country={match.homeTeam} iso2={match.homeIso2} size="lg" />
+            <Flag country={match.homeTeam} size="lg" />
             <div className="mt-2 truncate text-sm font-bold">{homeName}</div>
           </div>
           <div className="text-center">
@@ -132,7 +132,7 @@ function MatchDetail() {
             )}
           </div>
           <div className="text-center">
-            <Flag country={match.awayTeam} iso2={match.awayIso2} size="lg" />
+            <Flag country={match.awayTeam} size="lg" />
             <div className="mt-2 truncate text-sm font-bold">{awayName}</div>
           </div>
         </div>
@@ -189,8 +189,8 @@ function MatchDetail() {
 
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen} title={t('yourPrediction')}>
         <div className="flex gap-3">
-          <ScoreStepper value={home} onChange={setHome} label={<><Flag country={match.homeTeam} iso2={match.homeIso2} size="sm" /><span className="ms-1 truncate">{homeName}</span></>} />
-          <ScoreStepper value={away} onChange={setAway} label={<><Flag country={match.awayTeam} iso2={match.awayIso2} size="sm" /><span className="ms-1 truncate">{awayName}</span></>} />
+          <ScoreStepper value={home} onChange={setHome} label={<><Flag country={match.homeTeam} size="sm" /><span className="ms-1 truncate">{homeName}</span></>} />
+          <ScoreStepper value={away} onChange={setAway} label={<><Flag country={match.awayTeam} size="sm" /><span className="ms-1 truncate">{awayName}</span></>} />
         </div>
         <Button onClick={saveBet} disabled={saving} size="lg" className="press mt-5 w-full bg-gradient-warm shadow-warm">
           {saving ? t('loading') : t('save')}

@@ -93,7 +93,7 @@ function BetsPage() {
               <div key={b.id} className="flex items-center gap-2 rounded-2xl border border-border bg-card p-3">
                 <div className="flex flex-1 items-center justify-end gap-1.5 truncate text-sm font-semibold">
                   <span className="truncate">{homeName}</span>
-                  {m && <Flag country={m.homeTeam} iso2={m.homeIso2} size="sm" />}
+                  {m && <Flag country={m.homeTeam} size="sm" />}
                 </div>
                 <div className="grid min-w-[80px] place-items-center">
                   <div className="text-[9px] uppercase tracking-wider text-muted-foreground">{lang === 'he' ? 'ניחוש' : 'Pick'}</div>
@@ -103,7 +103,7 @@ function BetsPage() {
                   )}
                 </div>
                 <div className="flex flex-1 items-center gap-1.5 truncate text-sm font-semibold">
-                  {m && <Flag country={m.awayTeam} iso2={m.awayIso2} size="sm" />}
+                  {m && <Flag country={m.awayTeam} size="sm" />}
                   <span className="truncate">{awayName}</span>
                 </div>
                 <div className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${pts > 0 ? 'bg-success/20 text-success' : 'bg-muted text-muted-foreground'}`}>
