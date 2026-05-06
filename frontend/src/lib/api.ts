@@ -102,7 +102,7 @@ export type User = {
 
 export const api = {
   // Auth
-  me: () => req<{ user: User }>('/auth/me'),
+  me: () => req<User>('/auth/me'),
   logout: () => req<void>('/auth/logout', { method: 'POST' }),
 
   // Matches

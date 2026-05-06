@@ -11,8 +11,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     fetch('/auth/me', { credentials: 'include', headers: { 'X-Requested-With': 'fetch' } })
       .then((r) => (r.ok ? r.json() : null))
-      .then((data: { user: User } | null) => {
-        setUser(data?.user ?? null);
+      .then((data: User | null) => {
+        setUser(data);
         setLoading(false);
       })
       .catch(() => setLoading(false));
