@@ -15,6 +15,8 @@ import { openNotificationsDrawer, refreshUnreadCount } from './views/notificatio
 
 let _user = null;
 let _currentView = null;
+let _avatarMenuEl = null;
+let _pendingScrollTarget = null;
 
 function applyTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);
@@ -87,9 +89,11 @@ function renderShell() {
           </button>
           <button class="mn-theme-btn" id="theme-btn" aria-label="${t('common.toggle_theme')}">${themeSvg()}</button>
           <button class="mn-lang-toggle" id="lang-toggle">${currentLang() === 'he' ? 'EN' : 'HE'}</button>
-          ${_user?.picture
-            ? `<img src="${_user.picture}" class="mn-avatar" alt="${_user.name}">`
-            : `<div class="mn-avatar-placeholder">${(_user?.name || '?')[0]}</div>`}
+          <button class="mn-avatar-btn" id="avatar-btn" aria-label="${t('nav.profile')}">
+            ${_user?.picture
+              ? `<img src="${escapeHtml(_user.picture)}" class="mn-avatar" alt="${escapeHtml(_user.name || '')}">`
+              : `<div class="mn-avatar-placeholder">${(_user?.name || '?')[0].toUpperCase()}</div>`}
+          </button>
         </div>
       </header>
 
@@ -123,6 +127,12 @@ function renderShell() {
     }
     // Re-render current view
     navigateTo(currentHash() || '#/matches');
+  });
+
+  // Avatar dropdown
+  document.getElementById('avatar-btn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    _openAvatarMenu();
   });
 
   // Nav items
@@ -265,34 +275,50 @@ function renderProfileView(container) {
 
   page.innerHTML = `
     <h1 class="mn-page-title">${t('profile.title')}</h1>
-    <div style="display:flex;align-items:center;gap:16px;padding:16px 0;border-bottom:1px solid var(--mn-line);margin-bottom:20px;">
+
+    <!-- User identity card -->
+    <div style="display:flex;align-items:center;gap:16px;padding:16px;background:var(--mn-paper);border:1px solid var(--mn-line);border-radius:var(--mn-r-md);box-shadow:var(--mn-shadow-sm);margin-bottom:20px;">
       ${user.picture
-        ? `<img src="${user.picture}" style="width:56px;height:56px;border-radius:50%;object-fit:cover;" alt="">`
-        : `<div class="mn-avatar-placeholder" style="width:56px;height:56px;font-size:20px;">${(user.name||'?')[0]}</div>`}
-      <div>
-        <div style="font-weight:800;font-size:var(--mn-fs-lg);">${escapeHtml(user.name)}</div>
-        <div style="font-size:var(--mn-fs-sm);color:var(--mn-ink-soft);">${escapeHtml(user.email)}</div>
+        ? `<img src="${escapeHtml(user.picture)}" style="width:56px;height:56px;border-radius:50%;object-fit:cover;flex-shrink:0;" alt="">`
+        : `<div class="mn-avatar-placeholder" style="width:56px;height:56px;font-size:20px;flex-shrink:0;">${(user.name || '?')[0].toUpperCase()}</div>`}
+      <div style="min-width:0;">
+        <div style="font-weight:800;font-size:var(--mn-fs-lg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(user.name)}</div>
+        <div style="font-size:var(--mn-fs-sm);color:var(--mn-ink-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(user.email)}</div>
       </div>
     </div>
 
-    <div class="mn-toggle-row">
-      <div>
-        <div class="mn-toggle-label">${t('profile.language')}</div>
-      </div>
+    <!-- Language -->
+    <div class="mn-toggle-row" style="margin-bottom:20px;">
+      <span class="mn-toggle-label">${t('profile.language')}</span>
       <div style="display:flex;gap:8px;">
-        <button class="btn-${lang === 'he' ? 'primary' : 'secondary'}" id="lang-he" style="font-size:var(--mn-fs-xs);">${t('profile.switch_to_he')}</button>
-        <button class="btn-${lang === 'en' ? 'primary' : 'secondary'}" id="lang-en" style="font-size:var(--mn-fs-xs);">${t('profile.switch_to_en')}</button>
+        <button class="btn-${lang === 'he' ? 'primary' : 'secondary'}" id="lang-he" style="font-size:var(--mn-fs-xs);min-width:70px;">${t('profile.switch_to_he')}</button>
+        <button class="btn-${lang === 'en' ? 'primary' : 'secondary'}" id="lang-en" style="font-size:var(--mn-fs-xs);min-width:70px;">${t('profile.switch_to_en')}</button>
       </div>
     </div>
 
-    <div style="margin-top:24px;">
-      <h2 style="font-size:var(--mn-fs-md);font-weight:700;margin-bottom:12px;">${t('notifications.settings')}</h2>
-      <div id="notif-prefs-form"></div>
-      <button class="btn-primary" style="margin-top:16px;width:100%;" id="save-prefs-btn">${t('notifications.save_prefs')}</button>
+    <!-- My stats -->
+    <div style="margin-bottom:24px;">
+      <h2 class="mn-section-label">${t('profile.stats')}</h2>
+      <div id="profile-stats">
+        <div class="mn-skeleton" style="height:68px;border-radius:var(--mn-r-md);"></div>
+      </div>
     </div>
 
-    <div style="margin-top:32px;border-top:1px solid var(--mn-line);padding-top:16px;">
+    <!-- Notification settings -->
+    <div style="margin-bottom:24px;" id="notifications">
+      <h2 class="mn-section-label">${t('notifications.settings')}</h2>
+      <div style="background:var(--mn-paper);border:1px solid var(--mn-line);border-radius:var(--mn-r-md);overflow:hidden;">
+        <div id="notif-prefs-form"></div>
+        <div style="padding:12px 16px;border-top:1px solid var(--mn-line);">
+          <button class="btn-primary" style="width:100%;" id="save-prefs-btn">${t('notifications.save_prefs')}</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer actions -->
+    <div style="border-top:1px solid var(--mn-line);padding-top:20px;display:flex;flex-direction:column;gap:10px;">
       <button class="btn-secondary" style="width:100%;" id="signout-btn">${t('auth.sign_out')}</button>
+      <button id="delete-btn" style="width:100%;padding:12px;border:1.5px solid var(--mn-card-red);border-radius:var(--mn-r-pill);background:transparent;color:var(--mn-card-red);font-weight:700;font-size:var(--mn-fs-sm);cursor:pointer;transition:background 120ms;" onmouseover="this.style.background='rgba(214,40,40,0.06)'" onmouseout="this.style.background='transparent'">${t('profile.delete_account')}</button>
     </div>
   `;
 
@@ -310,6 +336,31 @@ function renderProfileView(container) {
     navigateTo('#/profile');
   });
 
+  // Load stats
+  api.userStats().then(stats => {
+    const el = page.querySelector('#profile-stats');
+    if (!el) return;
+    el.innerHTML = `
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
+        <div style="background:var(--mn-paper);border:1px solid var(--mn-line);border-radius:var(--mn-r-md);padding:12px 8px;text-align:center;">
+          <div style="font-size:var(--mn-fs-xl);font-weight:800;color:var(--mn-pitch-green);">${stats.total_predictions}</div>
+          <div style="font-size:10px;font-weight:600;color:var(--mn-ink-soft);margin-top:2px;">${t('profile.total_predictions')}</div>
+        </div>
+        <div style="background:var(--mn-paper);border:1px solid var(--mn-line);border-radius:var(--mn-r-md);padding:12px 8px;text-align:center;">
+          <div style="font-size:var(--mn-fs-xl);font-weight:800;color:var(--mn-card-yellow);">${stats.exact_predictions}</div>
+          <div style="font-size:10px;font-weight:600;color:var(--mn-ink-soft);margin-top:2px;">${t('profile.exact_predictions')}</div>
+        </div>
+        <div style="background:var(--mn-paper);border:1px solid var(--mn-line);border-radius:var(--mn-r-md);padding:12px 8px;text-align:center;">
+          <div style="font-size:var(--mn-fs-xl);font-weight:800;color:var(--mn-ink);">${stats.best_rank !== null ? '#' + stats.best_rank : '—'}</div>
+          <div style="font-size:10px;font-weight:600;color:var(--mn-ink-soft);margin-top:2px;">${t('profile.current_rank')}</div>
+        </div>
+      </div>
+    `;
+  }).catch(() => {
+    const el = page.querySelector('#profile-stats');
+    if (el) el.innerHTML = '';
+  });
+
   // Notification prefs
   const prefs = user.notif_prefs || {};
   const prefDefs = [
@@ -323,6 +374,7 @@ function renderProfileView(container) {
   prefDefs.forEach(({ key, label }) => {
     const row = document.createElement('div');
     row.className = 'mn-toggle-row';
+    row.style.cssText = 'padding:12px 16px;border-bottom:1px solid var(--mn-line);';
     row.innerHTML = `
       <span class="mn-toggle-label">${label}</span>
       <label class="mn-toggle" aria-label="${label}">
@@ -333,9 +385,9 @@ function renderProfileView(container) {
     prefsForm.appendChild(row);
   });
 
-  // Email digest row
   const digestRow = document.createElement('div');
   digestRow.className = 'mn-toggle-row';
+  digestRow.style.cssText = 'padding:12px 16px;';
   digestRow.innerHTML = `
     <span class="mn-toggle-label">${t('notifications.email_digest')}</span>
     <select class="mn-input" style="width:auto;padding:6px 10px;" id="digest-select">
@@ -363,6 +415,26 @@ function renderProfileView(container) {
     await api.logout().catch(() => {});
     window.location.href = '/login';
   });
+
+  // Delete account
+  page.querySelector('#delete-btn').addEventListener('click', async () => {
+    if (!confirm(t('profile.delete_confirm'))) return;
+    try {
+      await api.deleteAccount();
+      showToast(t('profile.deleted'));
+      setTimeout(() => { window.location.href = '/login'; }, 1200);
+    } catch (_) { showToast(t('common.error_generic')); }
+  });
+
+  // Scroll to anchor if deep-linked (e.g., from avatar menu Notifications item)
+  if (_pendingScrollTarget) {
+    const target = _pendingScrollTarget;
+    _pendingScrollTarget = null;
+    setTimeout(() => {
+      const el = document.getElementById(target);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 250);
+  }
 }
 
 function setActiveNav(hash) {
@@ -381,6 +453,77 @@ function setActiveNav(hash) {
 
 function escapeHtml(str) {
   return (str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ---------------------------------------------------------------------------
+// Avatar dropdown menu
+// ---------------------------------------------------------------------------
+
+function _openAvatarMenu() {
+  if (_avatarMenuEl) { _closeAvatarMenu(); return; }
+
+  const btn = document.getElementById('avatar-btn');
+  const rect = btn.getBoundingClientRect();
+  const isRtl = document.documentElement.getAttribute('dir') === 'rtl';
+
+  const menu = document.createElement('div');
+  menu.className = 'mn-avatar-dropdown';
+  menu.innerHTML = `
+    <div class="mn-avatar-dropdown-header">
+      <div style="font-weight:700;font-size:var(--mn-fs-sm);color:var(--mn-ink);">${escapeHtml(_user?.name || '')}</div>
+      <div style="font-size:var(--mn-fs-xs);color:var(--mn-ink-soft);">${escapeHtml(_user?.email || '')}</div>
+    </div>
+    <button class="mn-avatar-menu-item" id="amenu-profile">
+      ${personSvg()}
+      <span>${t('nav.profile')}</span>
+    </button>
+    <button class="mn-avatar-menu-item" id="amenu-notifs">
+      ${bellSvg()}
+      <span>${t('notifications.settings')}</span>
+    </button>
+    <button class="mn-avatar-menu-item mn-avatar-menu-danger" id="amenu-signout">
+      ${signOutSvg()}
+      <span>${t('auth.sign_out')}</span>
+    </button>
+  `;
+
+  if (isRtl) {
+    menu.style.left = `${Math.max(8, rect.left)}px`;
+  } else {
+    menu.style.right = `${Math.max(8, window.innerWidth - rect.right)}px`;
+  }
+  menu.style.top = `${rect.bottom + 4}px`;
+
+  document.body.appendChild(menu);
+  _avatarMenuEl = menu;
+
+  menu.querySelector('#amenu-profile').addEventListener('click', () => {
+    _closeAvatarMenu();
+    navigateTo('#/profile');
+  });
+  menu.querySelector('#amenu-notifs').addEventListener('click', () => {
+    _closeAvatarMenu();
+    _pendingScrollTarget = 'notifications';
+    navigateTo('#/profile');
+  });
+  menu.querySelector('#amenu-signout').addEventListener('click', async () => {
+    _closeAvatarMenu();
+    await api.logout().catch(() => {});
+    window.location.href = '/login';
+  });
+
+  setTimeout(() => {
+    document.addEventListener('click', _onOutsideClickMenu, { once: true });
+  }, 0);
+}
+
+function _closeAvatarMenu() {
+  if (_avatarMenuEl) { _avatarMenuEl.remove(); _avatarMenuEl = null; }
+  document.removeEventListener('click', _onOutsideClickMenu);
+}
+
+function _onOutsideClickMenu(e) {
+  if (_avatarMenuEl && !_avatarMenuEl.contains(e.target)) _closeAvatarMenu();
 }
 
 // ---------------------------------------------------------------------------
@@ -417,6 +560,9 @@ function usersSvg() {
 }
 function personSvg() {
   return `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
+}
+function signOutSvg() {
+  return `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>`;
 }
 
 // ---------------------------------------------------------------------------

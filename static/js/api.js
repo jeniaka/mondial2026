@@ -79,6 +79,10 @@ export const api = {
   unreadCount:       ()          => fetchJson('/api/notifications/unread-count'),
   markRead:          (ids)       => fetchJson('/api/notifications/read', { method: 'POST', body: { ids } }),
   saveNotifPrefs:    (prefs)     => fetchJson('/api/notifications/prefs', { method: 'POST', body: prefs }),
+
+  // User account
+  userStats:     ()  => fetchJson('/api/users/me/stats'),
+  deleteAccount: ()  => fetchJson('/api/users/me/delete', { method: 'POST' }),
 };
 
 // --- Toast helper (shared across all modules) ---

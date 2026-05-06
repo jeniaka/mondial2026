@@ -258,6 +258,65 @@
   border-radius: 1px;
 }
 
+/* --- Avatar button --- */
+.mn-avatar-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.mn-avatar-btn:focus-visible {
+  outline: 2px solid var(--mn-pitch-green);
+  outline-offset: 2px;
+}
+
+/* --- Avatar dropdown menu --- */
+.mn-avatar-dropdown {
+  position: fixed;
+  background: var(--mn-paper);
+  border: 1px solid var(--mn-line);
+  border-radius: var(--mn-r-md);
+  box-shadow: var(--mn-shadow-lg);
+  z-index: 600;
+  min-width: 220px;
+  padding: 6px;
+  animation: mn-dropdown-in 150ms ease;
+}
+@keyframes mn-dropdown-in {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.mn-avatar-dropdown-header {
+  padding: 10px 12px 8px;
+  border-bottom: 1px solid var(--mn-line);
+  margin-bottom: 4px;
+}
+.mn-avatar-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 12px;
+  border-radius: var(--mn-r-sm);
+  font-size: var(--mn-fs-sm);
+  font-weight: 600;
+  color: var(--mn-ink);
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: start;
+  transition: background 120ms;
+}
+.mn-avatar-menu-item:hover { background: rgba(26,135,84, 0.08); }
+.mn-avatar-menu-item svg { flex-shrink: 0; color: var(--mn-ink-soft); }
+.mn-avatar-menu-danger { color: var(--mn-card-red); }
+.mn-avatar-menu-danger:hover { background: rgba(214,40,40, 0.06); }
+
 /* --- Kickoff pill (pre-tournament) --- */
 .mn-day-strip-kickoff-pill {
   flex-shrink: 0;

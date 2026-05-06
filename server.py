@@ -943,6 +943,67 @@ def handle_notifications_unread_count(handler: BaseHTTPRequestHandler, **_):
     send_json(handler, 200, {"count": count})
 
 
+# --- User account endpoints ---
+
+def handle_user_stats(handler: BaseHTTPRequestHandler, **_):
+    user = auth.require_user(handler)
+    if not user:
+        return
+    uid = user["_id"]
+    total = db.predictions().count_documents({"user_id": uid})
+    exact = db.predictions().count_documents({"user_id": uid, "points_awarded": 3})
+    correct = db.predictions().count_documents({"user_id": uid, "points_awarded": 1})
+    # Best rank across all groups the user belongs to
+    groups = list(db.groups().find({"members.user_id": uid}, {"_id": 1}))
+    best_rank = None
+    for grp in groups:
+        pipeline = [
+            {"$match": {"group_id": grp["_id"], "points_awarded": {"$ne": None}}},
+            {"$group": {"_id": "$user_id",
+                        "total": {"$sum": "$points_awarded"},
+                        "exact": {"$sum": {"$cond": [{"$eq": ["$points_awarded", 3]}, 1, 0]}}}},
+            {"$sort": {"total": -1, "exact": -1}},
+        ]
+        for rank, row in enumerate(db.predictions().aggregate(pipeline), 1):
+            if row["_id"] == uid:
+                if best_rank is None or rank < best_rank:
+                    best_rank = rank
+                break
+    send_json(handler, 200, {
+        "total_predictions":   total,
+        "exact_predictions":   exact,
+        "correct_predictions": correct,
+        "best_rank":           best_rank,
+    })
+
+
+def handle_user_delete(handler: BaseHTTPRequestHandler, **_):
+    user = auth.require_user(handler)
+    if not user:
+        return
+    uid = user["_id"]
+    email_lower = user.get("email_lower", "")
+    # Remove from all groups; delete empty groups owned by this user
+    for grp in db.groups().find({"members.user_id": uid}):
+        remaining = [m for m in grp.get("members", []) if m["user_id"] != uid]
+        if not remaining:
+            db.groups().delete_one({"_id": grp["_id"]})
+        else:
+            # Transfer ownership if this user was owner
+            update = {"$pull": {"members": {"user_id": uid}}}
+            if grp.get("owner_id") == uid:
+                update["$set"] = {"owner_id": remaining[0]["user_id"]}
+            db.groups().update_one({"_id": grp["_id"]}, update)
+    db.predictions().delete_many({"user_id": uid})
+    db.notifications().delete_many({"user_id": uid})
+    if email_lower:
+        db.invitations().delete_many({"to_email_lower": email_lower})
+    db.invitations().delete_many({"from_user_id": uid})
+    db.users().delete_one({"_id": uid})
+    headers = auth.clear_session_cookie()
+    send_json(handler, 200, {"ok": True}, extra_headers=headers)
+
+
 # --- Internal / cron endpoints ---
 
 def handle_internal_sync(handler: BaseHTTPRequestHandler, **_):
@@ -1329,6 +1390,8 @@ ROUTES_GET = [
     (r"^/api/notifications/unread-count$",      handle_notifications_unread_count),
     # Bonus bets
     (r"^/api/groups/([^/]+)/tournament-bet$",   handle_tournament_bet_get),
+    # User account
+    (r"^/api/users/me/stats$",                  handle_user_stats),
 ]
 
 ROUTES_POST = [
@@ -1340,6 +1403,7 @@ ROUTES_POST = [
     (r"^/api/invites/accept$",                  handle_invite_accept),
     (r"^/api/groups/join-by-code$",             handle_group_join_by_code),
     (r"^/api/users/me/locale$",                 handle_update_locale),
+    (r"^/api/users/me/delete$",                 handle_user_delete),
     (r"^/api/matches/([^/]+)/pin$",             handle_match_pin),
     (r"^/api/groups/([^/]+)/predictions/([^/]+)$", handle_prediction_submit),
     (r"^/api/notifications/read$",              handle_notifications_read),
