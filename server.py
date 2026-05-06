@@ -615,8 +615,10 @@ def handle_group_invite(handler: BaseHTTPRequestHandler, group_id: str, **_):
     subject, html_body = mail.build_invite_email_he(user.get("name", ""), grp["name"], accept_url)
     ok, err = mail.send_email(to_email, "", subject, html_body)
     if not ok:
-        log.warning("Invite email failed: %s", err)
-    send_json(handler, 200, {"ok": True, "email": to_email})
+        log.error("Invite email failed to %s: %s", to_email, err)
+        send_json(handler, 502, {"error": "email_failed", "detail": err or "unknown", "join_code": grp.get("join_code", "")})
+        return
+    send_json(handler, 200, {"ok": True, "email": to_email, "join_code": grp.get("join_code", "")})
 
 
 def handle_group_leave(handler: BaseHTTPRequestHandler, group_id: str, **_):
@@ -1082,6 +1084,25 @@ def handle_leaderboard_get(handler: BaseHTTPRequestHandler, group_id: str, **_):
             "is_me":     row["_id"] == user["_id"],
         })
 
+    # Append group members with zero scored predictions (always show full roster)
+    scored_ids = {row["user_id"] for row in result}
+    for m in grp.get("members", []):
+        uid_str = str(m["user_id"])
+        if uid_str not in scored_ids:
+            u = user_docs.get(m["user_id"], {})
+            result.append({
+                "rank":      len(result) + 1,
+                "user_id":   uid_str,
+                "name":      u.get("name", ""),
+                "picture":   u.get("picture", ""),
+                "total":     0,
+                "exact":     0,
+                "correct":   0,
+                "count":     0,
+                "bonus_pts": 0,
+                "is_me":     m["user_id"] == user["_id"],
+            })
+
     # Add scored bonus bets
     bonus_cursor = db.tournament_bets().find(
         {"group_id": group_id, "bonus_pts": {"$exists": True}}
@@ -1279,6 +1300,7 @@ def handle_internal_sync(handler: BaseHTTPRequestHandler, **_):
             fifa = match_doc[side]["fifa"]
             country = countries.get(fifa, {})
             match_doc[side]["name_he"] = country.get("name_he", "")
+            match_doc[side]["iso2"] = country.get("iso2", "").upper()
             if not match_doc[side]["name_en"]:
                 match_doc[side]["name_en"] = country.get("name_en", fifa)
         new_match_docs.append(match_doc)

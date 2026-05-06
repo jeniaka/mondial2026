@@ -6,7 +6,6 @@ import { getMatches, type Match } from "@/server/matches.functions";
 import { useAuth } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { AppShell } from "@/components/AppShell";
-import { Flag } from "@/components/Flag";
 import { EmptyState, CardSkeleton } from "@/components/States";
 
 export const Route = createFileRoute("/")({ component: HomePage });
@@ -70,36 +69,46 @@ function HomePage() {
         </Section>
       )}
 
-      <h2 className="mb-2 mt-2 flex items-center gap-2 font-display text-lg font-bold">
-        <CalIcon className="h-4 w-4 text-primary" /> {t("upcoming")}
-      </h2>
       {isLoading ? (
-        <CardSkeleton count={4} />
+        <>
+          <h2 className="mb-2 mt-2 flex items-center gap-2 font-display text-lg font-bold">
+            <CalIcon className="h-4 w-4 text-primary" /> {t("upcoming")}
+          </h2>
+          <CardSkeleton count={4} />
+        </>
       ) : isError ? (
         <EmptyState
           title={lang === "he" ? "שגיאת רשת" : "Network error"}
           hint={lang === "he" ? "לא ניתן לטעון משחקים" : "Could not load matches"}
           action={<button onClick={() => refetch()} className="press rounded-full bg-primary px-4 py-2 text-sm font-bold text-primary-foreground">{lang === "he" ? "נסה שוב" : "Try again"}</button>}
         />
-      ) : upcoming.length === 0 ? (
-        <EmptyState title={lang === "he" ? "אין משחקים קרובים" : "No upcoming matches"} hint={lang === "he" ? "המונדיאל מתחיל ב-11 ביוני 2026" : "World Cup starts June 11, 2026"} />
+      ) : matches.length === 0 ? (
+        <EmptyState title={lang === "he" ? "המשחקים יפורסמו עם פרסומם הרשמי" : "Fixtures will appear once published"} hint={lang === "he" ? "המונדיאל מתחיל ב-11 ביוני 2026" : "World Cup starts June 11, 2026"} />
       ) : (
-        Object.entries(byDate).map(([date, ms]) => (
-          <div key={date} className="mb-4">
-            <div className="sticky top-14 z-10 -mx-4 mb-2 bg-background/85 px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-muted-foreground backdrop-blur">
-              {date}
-            </div>
-            <div className="grid gap-2">
-              {ms.map((m) => <MatchCard key={m.id} match={m} pinned={pinned.includes(m.id)} onTogglePin={togglePin} />)}
-            </div>
-          </div>
-        ))
-      )}
-
-      {finished.length > 0 && (
-        <Section title={t("finished")}>
-          {finished.map((m) => <MatchCard key={m.id} match={m} pinned={pinned.includes(m.id)} onTogglePin={togglePin} />)}
-        </Section>
+        <>
+          {upcoming.length > 0 && (
+            <>
+              <h2 className="mb-2 mt-2 flex items-center gap-2 font-display text-lg font-bold">
+                <CalIcon className="h-4 w-4 text-primary" /> {t("upcoming")}
+              </h2>
+              {Object.entries(byDate).map(([date, ms]) => (
+                <div key={date} className="mb-4">
+                  <div className="sticky top-14 z-10 -mx-4 mb-2 bg-background/85 px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-muted-foreground backdrop-blur">
+                    {date}
+                  </div>
+                  <div className="grid gap-2">
+                    {ms.map((m) => <MatchCard key={m.id} match={m} pinned={pinned.includes(m.id)} onTogglePin={togglePin} />)}
+                  </div>
+                </div>
+              ))}
+            </>
+          )}
+          {finished.length > 0 && (
+            <Section title={t("finished")}>
+              {finished.map((m) => <MatchCard key={m.id} match={m} pinned={pinned.includes(m.id)} onTogglePin={togglePin} />)}
+            </Section>
+          )}
+        </>
       )}
     </AppShell>
   );
@@ -117,26 +126,38 @@ function Section({ title, children, live }: { title: string; children: React.Rea
   );
 }
 
+function IsoChip({ iso2, tla }: { iso2: string; tla: string }) {
+  const code = iso2 || tla.slice(0, 2);
+  if (!code) return null;
+  return (
+    <span className="inline-flex h-5 min-w-[22px] items-center justify-center rounded bg-secondary px-1 text-[10px] font-bold uppercase text-secondary-foreground">
+      {code.slice(0, 2)}
+    </span>
+  );
+}
+
 function MatchCard({ match, pinned, onTogglePin }: { match: Match; pinned: boolean; onTogglePin: (id: string) => void }) {
   const nav = useNavigate();
   const { lang } = useI18n();
   const live = isLive(match.status);
   const date = new Date(match.utcDate);
   const time = date.toLocaleTimeString(lang === "he" ? "he-IL" : "en-GB", { hour: "2-digit", minute: "2-digit" });
+  const homeName = lang === "he" ? match.homeTeamHe : match.homeTeam;
+  const awayName = lang === "he" ? match.awayTeamHe : match.awayTeam;
 
   return (
     <div
       onClick={() => nav({ to: "/match/$id", params: { id: match.id } })}
-      className="press flex cursor-pointer items-center gap-3 rounded-2xl border border-border bg-gradient-card p-3 shadow-soft"
+      className="press flex cursor-pointer items-center gap-2 rounded-2xl border border-border bg-gradient-card p-3 shadow-soft"
     >
-      <div className="flex flex-1 items-center justify-end gap-2 truncate">
-        <span className="truncate text-sm font-semibold">{match.homeTeam}</span>
-        <Flag country={match.homeTeam} />
+      <div className="flex flex-1 items-center justify-end gap-1.5 overflow-hidden">
+        <span className="truncate text-sm font-semibold">{homeName}</span>
+        <IsoChip iso2={match.homeIso2} tla={match.homeTla} />
       </div>
-      <div className="grid min-w-[64px] place-items-center">
+      <div className="grid min-w-[60px] shrink-0 place-items-center">
         {match.homeScore != null ? (
           <div className="num font-display text-2xl font-black">
-            {match.homeScore}<span className="px-1 text-muted-foreground">:</span>{match.awayScore}
+            {match.homeScore}<span className="px-0.5 text-muted-foreground">:</span>{match.awayScore}
           </div>
         ) : (
           <div className="num rounded-md bg-secondary px-2 py-0.5 text-sm font-semibold">{time}</div>
@@ -148,14 +169,14 @@ function MatchCard({ match, pinned, onTogglePin }: { match: Match; pinned: boole
           </div>
         )}
       </div>
-      <div className="flex flex-1 items-center gap-2 truncate">
-        <Flag country={match.awayTeam} />
-        <span className="truncate text-sm font-semibold">{match.awayTeam}</span>
+      <div className="flex flex-1 items-center gap-1.5 overflow-hidden">
+        <IsoChip iso2={match.awayIso2} tla={match.awayTla} />
+        <span className="truncate text-sm font-semibold">{awayName}</span>
       </div>
       {live && (
         <button
           onClick={(e) => { e.stopPropagation(); onTogglePin(match.id); }}
-          className={`press grid h-9 w-9 place-items-center rounded-full ${pinned ? "bg-primary/15 text-primary" : "text-muted-foreground"}`}
+          className={`press grid h-9 w-9 shrink-0 place-items-center rounded-full ${pinned ? "bg-primary/15 text-primary" : "text-muted-foreground"}`}
           aria-label="pin"
         >
           <Pin className={`h-4 w-4 ${pinned ? "fill-current" : ""}`} />

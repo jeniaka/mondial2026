@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Calendar, Trophy, Star, Crown, Users } from "lucide-react";
+import { Calendar, Trophy, Star, Crown, User } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 
 export function BottomTabs() {
@@ -9,7 +9,7 @@ export function BottomTabs() {
     { to: "/bets", icon: Trophy, label: t("bets") },
     { to: "/bonus", icon: Star, label: t("bonusBets") },
     { to: "/leagues", icon: Crown, label: t("leagues") },
-    { to: "/friends", icon: Users, label: t("friends") },
+    { to: "/friends", icon: User, label: t("profile") },
   ];
 
   return (

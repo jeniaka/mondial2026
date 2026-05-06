@@ -264,7 +264,7 @@ function GroupCard({ group, userId, onChanged }: { group: Group; userId: string;
         </div>
       )}
 
-      <InviteSheet open={inviteOpen} onOpenChange={setInviteOpen} groupId={group.id} groupName={group.name} />
+      <InviteSheet open={inviteOpen} onOpenChange={setInviteOpen} groupId={group.id} groupName={group.name} joinCode={group.join_code} />
     </div>
   );
 }
@@ -283,7 +283,7 @@ function Podium({ rank, row, isMe, height }: { rank: 1 | 2 | 3; row: Leaderboard
   );
 }
 
-function InviteSheet({ open, onOpenChange, groupId, groupName }: { open: boolean; onOpenChange: (o: boolean) => void; groupId: string; groupName: string }) {
+function InviteSheet({ open, onOpenChange, groupId, groupName, joinCode }: { open: boolean; onOpenChange: (o: boolean) => void; groupId: string; groupName: string; joinCode: string }) {
   const { t, lang } = useI18n();
   const [email, setEmail] = useState('');
   const [sending, setSending] = useState(false);
@@ -293,12 +293,13 @@ function InviteSheet({ open, onOpenChange, groupId, groupName }: { open: boolean
     setSending(true);
     try {
       await api.groupInvite(groupId, email.trim());
-      toast.success(lang === 'he' ? `הזמנה נשלחה ל-${email}` : `Invite sent to ${email}`);
+      toast.success(lang === 'he' ? `הזמנה נשלחה ל-${email}. אם לא מגיעה — שתף את קוד ההצטרפות.` : `Invite sent to ${email}. If it doesn't arrive, share the join code.`);
       setEmail('');
       onOpenChange(false);
     } catch (e: unknown) {
-      const err = e as { message?: string };
-      toast.error(err?.message ?? 'Error');
+      const err = e as { message?: string; data?: { detail?: string } };
+      const detail = (e as { data?: { detail?: string } })?.data?.detail ?? err?.message ?? 'Error';
+      toast.error(lang === 'he' ? `שליחת ההזמנה נכשלה: ${detail}` : `Invite failed: ${detail}`);
     } finally {
       setSending(false);
     }
@@ -320,6 +321,15 @@ function InviteSheet({ open, onOpenChange, groupId, groupName }: { open: boolean
       <Button onClick={send} disabled={sending || !email.trim()} className="press mt-4 w-full bg-gradient-warm shadow-warm" size="lg">
         {sending ? t('loading') : t('inviteFriend')}
       </Button>
+      <div className="mt-4 rounded-xl bg-muted/50 px-4 py-3 text-center text-sm">
+        <div className="mb-1 text-xs text-muted-foreground">{lang === 'he' ? 'או שתף את קוד ההצטרפות ישירות:' : 'Or share the join code directly:'}</div>
+        <button
+          onClick={() => { navigator.clipboard.writeText(joinCode); toast.success(lang === 'he' ? 'הועתק' : 'Copied'); }}
+          className="num font-mono text-xl font-black tracking-widest text-primary"
+        >
+          {joinCode}
+        </button>
+      </div>
     </Sheet>
   );
 }

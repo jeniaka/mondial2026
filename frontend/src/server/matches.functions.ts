@@ -18,8 +18,8 @@ export type Match = {
   minute?: number | null;
 };
 
-const TOURNAMENT_FROM = '2026-06-11';
-const TOURNAMENT_TO   = '2026-07-20';
+const TOURNAMENT_FROM = '2026-06-01';
+const TOURNAMENT_TO   = '2026-07-31';
 
 function toMatch(m: ApiMatch): Match {
   return {
