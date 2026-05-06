@@ -1135,15 +1135,18 @@ def handle_notifications_list(handler: BaseHTTPRequestHandler, **_):
     qs = parse_qs(handler.path)
     page = max(1, int(qs.get("page", "1")))
     per_page = 20
+    uid = user["_id"]
+    total = db.notifications().count_documents({"user_id": uid})
+    unread = db.notifications().count_documents({"user_id": uid, "read": False})
     cursor = (
         db.notifications()
-        .find({"user_id": user["_id"]})
+        .find({"user_id": uid})
         .sort("created_at", -1)
         .skip((page - 1) * per_page)
         .limit(per_page)
     )
     result = [_serialize_notification(n) for n in cursor]
-    send_json(handler, 200, result)
+    send_json(handler, 200, {"notifications": result, "total": total, "unread": unread})
 
 
 def handle_notifications_read(handler: BaseHTTPRequestHandler, **_):
@@ -1501,6 +1504,7 @@ def _serialize_prediction(p: dict) -> dict:
         "match_id":          p["match_id"],
         "home_score":        p.get("home_score"),
         "away_score":        p.get("away_score"),
+        "locked":            p.get("locked", False),
         "knockout_advances": p.get("knockout_advances"),
         "submitted_at":      p["submitted_at"].isoformat() if p.get("submitted_at") else None,
         "points_awarded":    p.get("points_awarded"),

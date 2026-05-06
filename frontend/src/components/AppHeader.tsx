@@ -21,7 +21,7 @@ export function AppHeader({ title, action }: { title?: string; action?: ReactNod
 
   useEffect(() => {
     if (!user) return;
-    const load = () => api.notifications(1).then((r) => setNotifs(r.notifications)).catch(() => {});
+    const load = () => api.notifications(1).then((r) => setNotifs(r?.notifications ?? [])).catch(() => {});
     load();
     const id = setInterval(load, 60_000);
     return () => clearInterval(id);
