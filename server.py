@@ -1472,19 +1472,28 @@ def _fire_match_notifications(old_match, new_match: dict):
 # Serializers
 # ---------------------------------------------------------------------------
 
+_IDT = timezone(timedelta(hours=3))  # Israel summer time = UTC+3
+
 def _serialize_match(m: dict) -> dict:
     home = dict(m.get("home", {}))
     away = dict(m.get("away", {}))
-    # Ensure `tla` is present — docs from Football-Data store the TLA as `fifa`
     home.setdefault("tla", home.get("fifa", ""))
     away.setdefault("tla", away.get("fifa", ""))
+    kickoff = m.get("kickoff_utc")
+    # Send kickoff as a naive Israel-time string "YYYY-MM-DDTHH:MM:SS" (no tz suffix).
+    # The frontend reads utcDate.slice(11,16) → "22:00" directly — no JS Date parsing needed.
+    if kickoff:
+        idt = kickoff.astimezone(_IDT)
+        kickoff_str = idt.strftime("%Y-%m-%dT%H:%M:%S")
+    else:
+        kickoff_str = None
     return {
         "id":          m["_id"],
         "competition": m.get("competition"),
         "stage":       m.get("stage"),
         "group":       m.get("group"),
         "matchday":    m.get("matchday"),
-        "kickoff_utc": m["kickoff_utc"].isoformat() if m.get("kickoff_utc") else None,
+        "kickoff_utc": kickoff_str,
         "venue":       m.get("venue"),
         "city":        m.get("city"),
         "home":        home,

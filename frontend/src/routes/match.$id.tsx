@@ -127,7 +127,7 @@ function MatchDetail() {
               </div>
             ) : (
               <div className="num font-display text-lg">
-                {(() => { const d = new Date(kickoff.getTime() + 3*3600000); return `${String(d.getUTCDate()).padStart(2,'0')}/${String(d.getUTCMonth()+1).padStart(2,'0')} ${String(d.getUTCHours()).padStart(2,'0')}:${String(d.getUTCMinutes()).padStart(2,'0')}`; })()}
+                {match.utcDate.slice(8,10)}/{match.utcDate.slice(5,7)} {match.utcDate.slice(11,16)}
               </div>
             )}
           </div>

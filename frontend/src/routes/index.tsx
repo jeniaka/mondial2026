@@ -141,18 +141,18 @@ function toFlag(iso2: string): string {
   return [...base].map(c => String.fromCodePoint(0x1F1E6 + c.charCodeAt(0) - 65)).join("");
 }
 
-// Israel = UTC+3 all summer (IDT). Pure arithmetic — no Intl/timezone API needed.
-const IDT_MS = 3 * 60 * 60 * 1000;
-
-function idtTime(utcDate: string): string {
-  const d = new Date(new Date(utcDate).getTime() + IDT_MS);
-  return `${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}`;
+// Server sends kickoff_utc as a naive Israel-time string "YYYY-MM-DDTHH:MM:SS".
+// Slice directly — no Date parsing, no timezone API, works in every browser.
+function idtTime(s: string): string {
+  return s.slice(11, 16); // "22:00"
 }
 
-function idtDateLabel(utcDate: string, lang: string): string {
-  const d = new Date(new Date(utcDate).getTime() + IDT_MS);
-  const local = new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
-  return local.toLocaleDateString(lang === "he" ? "he-IL" : "en-GB", { weekday: "long", day: "2-digit", month: "long" });
+function idtDateLabel(s: string, lang: string): string {
+  const [y, mo, d] = s.slice(0, 10).split("-").map(Number);
+  return new Date(y, mo - 1, d).toLocaleDateString(
+    lang === "he" ? "he-IL" : "en-GB",
+    { weekday: "long", day: "2-digit", month: "long" },
+  );
 }
 
 function MatchCard({ match, pinned, onTogglePin }: { match: Match; pinned: boolean; onTogglePin: (id: string) => void }) {
