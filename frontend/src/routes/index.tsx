@@ -127,11 +127,12 @@ function Section({ title, children, live }: { title: string; children: React.Rea
 }
 
 function IsoChip({ iso2, tla }: { iso2: string; tla: string }) {
-  const code = iso2 || tla.slice(0, 2);
+  // GB sub-nations (gb-eng, GB-ENG, etc.) don't have a clean 2-letter code — use TLA prefix instead
+  const code = iso2.toLowerCase().startsWith("gb-") ? tla.slice(0, 2) : (iso2.slice(0, 2) || tla.slice(0, 2));
   if (!code) return null;
   return (
     <span className="inline-flex h-5 min-w-[22px] items-center justify-center rounded bg-secondary px-1 text-[10px] font-bold uppercase text-secondary-foreground">
-      {code.slice(0, 2)}
+      {code}
     </span>
   );
 }

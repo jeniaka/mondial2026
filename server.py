@@ -1472,6 +1472,11 @@ def _fire_match_notifications(old_match, new_match: dict):
 # ---------------------------------------------------------------------------
 
 def _serialize_match(m: dict) -> dict:
+    home = dict(m.get("home", {}))
+    away = dict(m.get("away", {}))
+    # Ensure `tla` is present — docs from Football-Data store the TLA as `fifa`
+    home.setdefault("tla", home.get("fifa", ""))
+    away.setdefault("tla", away.get("fifa", ""))
     return {
         "id":          m["_id"],
         "competition": m.get("competition"),
@@ -1481,8 +1486,8 @@ def _serialize_match(m: dict) -> dict:
         "kickoff_utc": m["kickoff_utc"].isoformat() if m.get("kickoff_utc") else None,
         "venue":       m.get("venue"),
         "city":        m.get("city"),
-        "home":        m.get("home", {}),
-        "away":        m.get("away", {}),
+        "home":        home,
+        "away":        away,
         "status":      m.get("status"),
         "minute":      m.get("minute"),
         "score":       m.get("score", {}),
@@ -1928,10 +1933,84 @@ def _startup_validate_build():
     log.info("STARTUP: static/dist/index.html present (%d bytes)", os.path.getsize(index_path))
 
 
+def _startup_seed_matches():
+    """On first startup (empty matches collection): try Football-Data.org, then fall back to fixtures_seed.json."""
+    import json as _json
+    try:
+        count = db.matches().count_documents({})
+        if count > 0:
+            log.info("STARTUP: matches collection has %d docs — skipping seed", count)
+            return
+
+        log.info("STARTUP: matches collection is empty — seeding now...")
+
+        countries_path = os.path.join(os.path.dirname(__file__), "data", "countries.json")
+        with open(countries_path, encoding="utf-8") as f:
+            countries = _json.load(f)
+
+        # Primary: Football-Data.org
+        try:
+            import sports
+            data = sports.get_fixtures()
+            if data and data.get("matches"):
+                from pymongo import UpdateOne
+                ops = []
+                for fd_match in data["matches"]:
+                    match_doc = sports.map_fd_match(fd_match)
+                    for side in ("home", "away"):
+                        fifa = match_doc[side]["fifa"]
+                        country = countries.get(fifa, {})
+                        match_doc[side]["name_he"] = country.get("name_he", "")
+                        match_doc[side]["iso2"] = country.get("iso2", "").upper()
+                        if not match_doc[side]["name_en"]:
+                            match_doc[side]["name_en"] = country.get("name_en", fifa)
+                    ops.append(UpdateOne({"_id": match_doc["_id"]}, {"$set": match_doc}, upsert=True))
+                if ops:
+                    db.matches().bulk_write(ops, ordered=False)
+                    log.info("STARTUP: Seeded %d matches from Football-Data.org", len(ops))
+                    return
+            log.warning("STARTUP: Football-Data.org returned no matches — falling back to seed file")
+        except Exception as exc:
+            log.warning("STARTUP: Football-Data fetch failed (%s) — falling back to seed file", exc)
+
+        # Fallback: fixtures_seed.json
+        seed_path = os.path.join(os.path.dirname(__file__), "data", "fixtures_seed.json")
+        if not os.path.isfile(seed_path):
+            log.warning("STARTUP: fixtures_seed.json not found — matches feed will be empty")
+            return
+
+        with open(seed_path, encoding="utf-8") as f:
+            fixtures = _json.load(f)
+
+        from pymongo import UpdateOne
+        ops = []
+        for fix in fixtures:
+            for side in ("home", "away"):
+                if side not in fix:
+                    continue
+                fifa = fix[side].get("fifa", "")
+                country = countries.get(fifa, {})
+                fix[side].setdefault("name_he", country.get("name_he", ""))
+                fix[side].setdefault("iso2", country.get("iso2", "").upper())
+                if not fix[side].get("name_en"):
+                    fix[side]["name_en"] = country.get("name_en", fifa)
+            # Convert kickoff_utc ISO string → datetime
+            if isinstance(fix.get("kickoff_utc"), str):
+                fix["kickoff_utc"] = datetime.fromisoformat(fix["kickoff_utc"])
+            ops.append(UpdateOne({"_id": fix["_id"]}, {"$setOnInsert": fix}, upsert=True))
+
+        if ops:
+            db.matches().bulk_write(ops, ordered=False)
+            log.info("STARTUP: Seeded %d matches from fixtures_seed.json (fallback)", len(ops))
+    except Exception as exc:
+        log.error("STARTUP: _startup_seed_matches failed: %s", exc)
+
+
 def main():
     _startup_validate_build()
     _startup_validate_countries()
     db.ensure_indexes()
+    _startup_seed_matches()
     host = "0.0.0.0"
     port = config.PORT
     server = ThreadingHTTPServer((host, port), MondialHandler)
