@@ -126,15 +126,19 @@ function Section({ title, children, live }: { title: string; children: React.Rea
   );
 }
 
-function IsoChip({ iso2, tla }: { iso2: string; tla: string }) {
-  // GB sub-nations (gb-eng, GB-ENG, etc.) don't have a clean 2-letter code — use TLA prefix instead
-  const code = iso2.toLowerCase().startsWith("gb-") ? tla.slice(0, 2) : (iso2.slice(0, 2) || tla.slice(0, 2));
-  if (!code) return null;
-  return (
-    <span className="inline-flex h-5 min-w-[22px] items-center justify-center rounded bg-secondary px-1 text-[10px] font-bold uppercase text-secondary-foreground">
-      {code}
-    </span>
-  );
+const GB_FLAGS: Record<string, string> = {
+  "GB-ENG": "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
+  "GB-SCT": "🏴󠁧󠁢󠁳󠁣󠁴󠁿",
+  "GB-WLS": "🏴󠁧󠁢󠁷󠁬󠁳󠁿",
+  "GB-NIR": "🇬🇧",
+};
+
+function toFlag(iso2: string): string {
+  const code = iso2.toUpperCase();
+  if (GB_FLAGS[code]) return GB_FLAGS[code];
+  const base = code.slice(0, 2);
+  if (!/^[A-Z]{2}$/.test(base)) return base;
+  return [...base].map(c => String.fromCodePoint(0x1F1E6 + c.charCodeAt(0) - 65)).join("");
 }
 
 function MatchCard({ match, pinned, onTogglePin }: { match: Match; pinned: boolean; onTogglePin: (id: string) => void }) {
@@ -153,7 +157,7 @@ function MatchCard({ match, pinned, onTogglePin }: { match: Match; pinned: boole
     >
       <div className="flex flex-1 items-center justify-end gap-1.5 overflow-hidden">
         <span className="truncate text-sm font-semibold">{homeName}</span>
-        <IsoChip iso2={match.homeIso2} tla={match.homeTla} />
+        <span className="shrink-0 text-xl leading-none">{toFlag(match.homeIso2)}</span>
       </div>
       <div className="grid min-w-[60px] shrink-0 place-items-center">
         {match.homeScore != null ? (
@@ -171,7 +175,7 @@ function MatchCard({ match, pinned, onTogglePin }: { match: Match; pinned: boole
         )}
       </div>
       <div className="flex flex-1 items-center gap-1.5 overflow-hidden">
-        <IsoChip iso2={match.awayIso2} tla={match.awayTla} />
+        <span className="shrink-0 text-xl leading-none">{toFlag(match.awayIso2)}</span>
         <span className="truncate text-sm font-semibold">{awayName}</span>
       </div>
       {live && (
