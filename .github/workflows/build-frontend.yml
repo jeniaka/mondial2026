@@ -36,6 +36,6 @@ jobs:
           if git diff --staged --quiet; then
             echo "static/dist is already up to date, nothing to commit"
           else
-            git commit -m "build: update static/dist [skip ci]"
+            git commit -m "build: update static/dist [skip actions]"
             git push
           fi

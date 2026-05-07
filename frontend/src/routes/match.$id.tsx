@@ -127,7 +127,7 @@ function MatchDetail() {
               </div>
             ) : (
               <div className="num font-display text-lg">
-                {kickoff.toLocaleString(lang === 'he' ? 'he-IL' : 'en-GB', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jerusalem' })}
+                {(() => { const d = new Date(kickoff.getTime() + 3*3600000); return `${String(d.getUTCDate()).padStart(2,'0')}/${String(d.getUTCMonth()+1).padStart(2,'0')} ${String(d.getUTCHours()).padStart(2,'0')}:${String(d.getUTCMinutes()).padStart(2,'0')}`; })()}
               </div>
             )}
           </div>
