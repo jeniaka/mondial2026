@@ -1934,15 +1934,17 @@ def _startup_validate_build():
 
 
 def _startup_seed_matches():
-    """On first startup (empty matches collection): try Football-Data.org, then fall back to fixtures_seed.json."""
+    """Seed matches from Football-Data.org (primary) or fixtures_seed.json (fallback).
+    Always re-applies the seed JSON so updated kickoff times propagate on redeploy.
+    Skips seeding only if real (non-seed) Football-Data.org data is already present."""
     import json as _json
     try:
-        count = db.matches().count_documents({})
-        if count > 0:
-            log.info("STARTUP: matches collection has %d docs — skipping seed", count)
+        live_count = db.matches().count_documents({"source": {"$ne": "seed"}})
+        if live_count > 0:
+            log.info("STARTUP: %d live FD.org matches present — skipping seed", live_count)
             return
 
-        log.info("STARTUP: matches collection is empty — seeding now...")
+        log.info("STARTUP: No live match data — seeding now...")
 
         countries_path = os.path.join(os.path.dirname(__file__), "data", "countries.json")
         with open(countries_path, encoding="utf-8") as f:
@@ -1997,7 +1999,7 @@ def _startup_seed_matches():
             # Convert kickoff_utc ISO string → datetime
             if isinstance(fix.get("kickoff_utc"), str):
                 fix["kickoff_utc"] = datetime.fromisoformat(fix["kickoff_utc"])
-            ops.append(UpdateOne({"_id": fix["_id"]}, {"$setOnInsert": fix}, upsert=True))
+            ops.append(UpdateOne({"_id": fix["_id"]}, {"$set": fix}, upsert=True))
 
         if ops:
             db.matches().bulk_write(ops, ordered=False)
