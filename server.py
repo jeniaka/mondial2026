@@ -1,6 +1,7 @@
 """
 server.py — Main HTTP server and request router.
 Uses Python standard-library ThreadingHTTPServer (no frameworks).
+All match times served in UTC; frontend formats to Asia/Jerusalem (IDT = UTC+3).
 """
 import json
 import logging
