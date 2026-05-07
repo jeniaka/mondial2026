@@ -127,7 +127,7 @@ function MatchDetail() {
               </div>
             ) : (
               <div className="num font-display text-lg">
-                {kickoff.toLocaleString(lang === 'he' ? 'he-IL' : 'en-GB', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                {kickoff.toLocaleString(lang === 'he' ? 'he-IL' : 'en-GB', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jerusalem' })}
               </div>
             )}
           </div>

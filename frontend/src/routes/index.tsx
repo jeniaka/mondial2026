@@ -41,7 +41,7 @@ function HomePage() {
 
   // Group upcoming by date
   const byDate = upcoming.reduce<Record<string, Match[]>>((acc, m) => {
-    const k = new Date(m.utcDate).toLocaleDateString(lang === "he" ? "he-IL" : "en-GB", { weekday: "long", day: "2-digit", month: "long" });
+    const k = new Date(m.utcDate).toLocaleDateString(lang === "he" ? "he-IL" : "en-GB", { weekday: "long", day: "2-digit", month: "long", timeZone: "Asia/Jerusalem" });
     (acc[k] ??= []).push(m);
     return acc;
   }, {});
@@ -146,7 +146,7 @@ function MatchCard({ match, pinned, onTogglePin }: { match: Match; pinned: boole
   const { lang } = useI18n();
   const live = isLive(match.status);
   const date = new Date(match.utcDate);
-  const time = date.toLocaleTimeString(lang === "he" ? "he-IL" : "en-GB", { hour: "2-digit", minute: "2-digit" });
+  const time = date.toLocaleTimeString(lang === "he" ? "he-IL" : "en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Jerusalem" });
   const homeName = lang === "he" ? match.homeTeamHe : match.homeTeam;
   const awayName = lang === "he" ? match.awayTeamHe : match.awayTeam;
 
