@@ -217,6 +217,21 @@ def serve_static(handler: BaseHTTPRequestHandler, rel_path: str):
 # Route handlers
 # ---------------------------------------------------------------------------
 
+def handle_time_test(handler: BaseHTTPRequestHandler, **_):
+    """Public endpoint: shows first match kickoff_utc as the server serializes it."""
+    m = db.matches().find_one({}, sort=[("kickoff_utc", 1)])
+    if not m:
+        send_json(handler, 200, {"error": "no matches"})
+        return
+    raw = m.get("kickoff_utc")
+    plus3 = (raw + timedelta(hours=3)).strftime("%Y-%m-%dT%H:%M:%S") if raw else None
+    send_json(handler, 200, {
+        "stored_utc": raw.isoformat() if raw else None,
+        "plus3_hours": plus3,
+        "display_slice": plus3[11:16] if plus3 else None,
+    })
+
+
 def handle_healthz(handler: BaseHTTPRequestHandler, **_):
     index_path = os.path.join(STATIC_DIR, "dist", "index.html")
     build_present = os.path.isfile(index_path) and os.path.getsize(index_path) > 0
@@ -1480,11 +1495,9 @@ def _serialize_match(m: dict) -> dict:
     home.setdefault("tla", home.get("fifa", ""))
     away.setdefault("tla", away.get("fifa", ""))
     kickoff = m.get("kickoff_utc")
-    # Send kickoff as a naive Israel-time string "YYYY-MM-DDTHH:MM:SS" (no tz suffix).
-    # The frontend reads utcDate.slice(11,16) → "22:00" directly — no JS Date parsing needed.
+    # Add 3 hours (IDT = UTC+3) and format as naive string so frontend slice(11,16) = "22:00"
     if kickoff:
-        idt = kickoff.astimezone(_IDT)
-        kickoff_str = idt.strftime("%Y-%m-%dT%H:%M:%S")
+        kickoff_str = (kickoff + timedelta(hours=3)).strftime("%Y-%m-%dT%H:%M:%S")
     else:
         kickoff_str = None
     return {
@@ -1701,6 +1714,7 @@ ROUTES_GET = [
     (r"^/$",                                    handle_root_get),
     (r"^/login$",                               handle_login_get),
     (r"^/healthz$",                             handle_healthz),
+    (r"^/api/time-test$",                       handle_time_test),
     (r"^/invite/([^/]+)$",                      handle_invite_page),
     (r"^/static/(.+)$",                         handle_static),
     (r"^/manifest\.json$",                      handle_manifest),
