@@ -1,5 +1,5 @@
 /* service-worker.js — PWA offline shell */
-const CACHE = 'mondial-v1';
+const CACHE = 'mondial-v2';
 
 const PRECACHE = [
   '/',
