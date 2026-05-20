@@ -1339,10 +1339,15 @@ def handle_internal_sync(handler: BaseHTTPRequestHandler, **_):
 
     db.matches().bulk_write(ops, ordered=False)
 
+    # Purge seed-file documents now that FD.org data is authoritative
+    seed_deleted = db.matches().delete_many({"source": "seed"}).deleted_count
+    if seed_deleted:
+        log.info("Sync: purged %d stale seed matches", seed_deleted)
+
     for new_match in new_match_docs:
         _fire_match_notifications(old_matches.get(new_match["_id"]), new_match)
 
-    send_json(handler, 200, {"ok": True, "synced": len(ops), "missing_flags": missing_flags})
+    send_json(handler, 200, {"ok": True, "synced": len(ops), "missing_flags": missing_flags, "seed_purged": seed_deleted})
 
 
 def handle_internal_score(handler: BaseHTTPRequestHandler, **_):
@@ -1965,7 +1970,12 @@ def _startup_seed_matches():
     try:
         live_count = db.matches().count_documents({"source": {"$ne": "seed"}})
         if live_count > 0:
-            log.info("STARTUP: %d live FD.org matches present — skipping seed", live_count)
+            # FD.org data present — purge any stale seed documents that would cause duplicates
+            deleted = db.matches().delete_many({"source": "seed"}).deleted_count
+            if deleted:
+                log.info("STARTUP: Purged %d stale seed matches (FD.org data present)", deleted)
+            else:
+                log.info("STARTUP: %d live FD.org matches present — skipping seed", live_count)
             return
 
         log.info("STARTUP: No live match data — seeding now...")
