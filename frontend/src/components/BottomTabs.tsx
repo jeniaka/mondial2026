@@ -20,7 +20,7 @@ export function BottomTabs() {
 
   return (
     <nav
-      className="fixed bottom-0 left-1/2 z-40 w-full max-w-[480px] -translate-x-1/2 border-t border-border/60 bg-card/95 backdrop-blur-xl"
+      className="fixed bottom-0 inset-x-0 z-40 mx-auto w-full max-w-[480px] border-t border-border/60 bg-card/95 backdrop-blur-xl"
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
       <ul className="flex items-stretch justify-around px-1 pt-1.5">

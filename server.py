@@ -908,7 +908,10 @@ def handle_invite_accept(handler: BaseHTTPRequestHandler, **_):
         return
     now = datetime.now(timezone.utc)
     inv = db.invitations().find_one({"token": token, "status": "pending"})
-    if not inv or inv["expires_at"] < now:
+    exp = inv["expires_at"] if inv else None
+    if exp and exp.tzinfo is None:
+        exp = exp.replace(tzinfo=timezone.utc)
+    if not inv or not exp or exp < now:
         send_json(handler, 410, {"error": "invite_invalid"})
         return
     from bson import ObjectId
@@ -942,7 +945,10 @@ def handle_invite_page(handler: BaseHTTPRequestHandler, token: str, **_):
     # Validate invite
     now = datetime.now(timezone.utc)
     inv = db.invitations().find_one({"token": token, "status": "pending"})
-    if not inv or inv["expires_at"] < now:
+    exp = inv["expires_at"] if inv else None
+    if exp and exp.tzinfo is None:
+        exp = exp.replace(tzinfo=timezone.utc)
+    if not inv or not exp or exp < now:
         serve_static(handler, "dist/index.html")
         return
     grp = db.groups().find_one({"_id": inv["group_id"]})
@@ -1006,6 +1012,8 @@ def handle_prediction_submit(handler: BaseHTTPRequestHandler, group_id: str, mat
         return
     # Check lock: cannot predict after kickoff
     kickoff = match.get("kickoff_utc")
+    if kickoff and kickoff.tzinfo is None:
+        kickoff = kickoff.replace(tzinfo=timezone.utc)
     now = datetime.now(timezone.utc)
     if match.get("status") not in ("SCHEDULED", "TIMED") or (kickoff and now >= kickoff):
         send_json(handler, 423, {"error": "match_locked"})

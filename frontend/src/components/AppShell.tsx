@@ -9,8 +9,8 @@ export function AppShell({ title, children, action }: { title?: string; children
   const { dir } = useI18n();
   const loc = useLocation();
   return (
-    <div dir={dir} className="min-h-screen bg-background">
-      <div className="relative mx-auto min-h-screen w-full max-w-[480px] bg-background">
+    <div dir={dir} className="overflow-x-hidden min-h-screen bg-background">
+      <div className="relative mx-auto overflow-x-hidden min-h-screen w-full max-w-[480px] bg-background">
         <FlyingBall />
         <AppHeader title={title} action={action} />
         <main
