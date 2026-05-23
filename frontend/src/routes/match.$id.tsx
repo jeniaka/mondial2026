@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate, Link } from '@tanstack/react-router';
 import { useEffect, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Pin } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { getMatches } from '@/server/matches.functions';
 import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
@@ -17,6 +17,8 @@ import { StadiumBg } from '@/components/StadiumBg';
 import { BurstConfetti } from '@/components/BurstConfetti';
 import { ParticleBurst } from '@/components/ParticleBurst';
 import { haptic } from '@/hooks/useHaptic';
+import { PinLiveButton } from '@/components/PinLiveButton';
+import { CountdownTimer } from '@/components/CountdownTimer';
 
 export const Route = createFileRoute('/match/$id')({ component: MatchDetail });
 
@@ -89,6 +91,7 @@ function MatchDetail() {
   if (isLoading || !match) return <AppShell><CardSkeleton count={3} /></AppShell>;
 
   const live = liveFlag;
+  const finished = match.status === 'FINISHED';
   const kickoff = new Date(match.utcDate);
   const locked = kickoff.getTime() <= Date.now();
   const homeName = lang === 'he' ? match.homeTeamHe : match.homeTeam;
@@ -162,15 +165,25 @@ function MatchDetail() {
           </div>
         </div>
 
-        {live && (
-          <div className="mt-4 flex gap-2">
-            <Button onClick={togglePin} size="sm" className="flex-1 bg-primary-foreground text-primary press">
-              <Pin className={`mr-2 h-4 w-4 ${pinned ? 'fill-current' : ''}`} />
-              {pinned ? t('unpin') : t('pinLive')}
-            </Button>
-            <FloatingScore match={match} label={t('floatScore')} />
-          </div>
-        )}
+        <div className="relative mt-4 flex items-center gap-2">
+          {!locked && !live && (
+            <div className="flex-1 rounded-2xl bg-primary-foreground/15 px-3 py-2 text-primary-foreground backdrop-blur">
+              <div className="text-[9px] font-bold uppercase tracking-wider opacity-70">{lang === 'he' ? 'בעוד' : 'Starts in'}</div>
+              <CountdownTimer target={match.utcDate} lang={lang as 'he' | 'en'} compact />
+            </div>
+          )}
+          {!finished && (
+            <PinLiveButton
+              matchId={match.id}
+              live={live}
+              size="lg"
+              showLabel
+              lang={lang as 'he' | 'en'}
+              onChange={(p) => setPinned(p)}
+            />
+          )}
+          {live && <FloatingScore match={match} label={t('floatScore')} />}
+        </div>
       </div>
 
       {groups && groups.length > 1 && (

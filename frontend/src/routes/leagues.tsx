@@ -15,6 +15,7 @@ import { Confetti } from '@/components/Confetti';
 import { useCountUp } from '@/hooks/useCountUp';
 import { haptic } from '@/hooks/useHaptic';
 import { Check } from 'lucide-react';
+import { RankIndicator } from '@/components/RankIndicator';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
@@ -115,6 +116,7 @@ function GroupCard({ group, userId, onChanged }: { group: Group; userId: string;
   const [inviteOpen, setInviteOpen] = useState(false);
   const [leaderOpen, setLeaderOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [prevRanks, setPrevRanks] = useState<Record<string, number>>({});
 
   const { data: leaderboard } = useQuery<LeaderboardRow[]>({
     queryKey: ['leaderboard', group.id],
@@ -124,6 +126,23 @@ function GroupCard({ group, userId, onChanged }: { group: Group; userId: string;
 
   const top3 = (leaderboard ?? []).slice(0, 3);
   const rest = (leaderboard ?? []).slice(3);
+
+  // Track previous ranks per user via localStorage to show ↑↓ indicators
+  useEffect(() => {
+    if (!leaderboard) return;
+    const key = `lb_ranks_${group.id}`;
+    const stored = JSON.parse(localStorage.getItem(key) ?? '{}');
+    setPrevRanks(stored);
+    const next: Record<string, number> = {};
+    leaderboard.forEach((row, i) => { next[row.user_id] = i + 1; });
+    localStorage.setItem(key, JSON.stringify(next));
+  }, [leaderboard, group.id]);
+
+  const rankDelta = (userId: string, idx: number): number => {
+    const prev = prevRanks[userId];
+    if (prev == null) return 0;
+    return prev - (idx + 1); // positive = moved up
+  };
 
   const deleteGroup = async () => {
     try { await api.groupDelete(group.id); onChanged(); toast.success(t('deleteLeague') + ' ✓'); }
@@ -245,6 +264,7 @@ function GroupCard({ group, userId, onChanged }: { group: Group; userId: string;
                       <div key={row.user_id} className={`reveal flex items-center justify-between rounded-lg px-2 py-1.5 text-sm ${row.is_me ? 'bg-primary/10' : ''}`} style={{ animationDelay: `${i * 55}ms` }}>
                         <div className="flex min-w-0 items-center gap-2">
                           <span className="num w-6 text-xs font-bold text-muted-foreground">#{idx + 1}</span>
+                          <RankIndicator delta={rankDelta(row.user_id, idx)} />
                           <span className="truncate font-medium">{row.name}</span>
                           {row.is_me && <span className="text-[10px] text-muted-foreground">({t('you')})</span>}
                         </div>

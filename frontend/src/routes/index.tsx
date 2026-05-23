@@ -1,13 +1,18 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Pin, Calendar as CalIcon, Sparkles } from "lucide-react";
+import { Calendar as CalIcon, Sparkles } from "lucide-react";
 import { getMatches, type Match } from "@/server/matches.functions";
 import { useAuth } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { AppShell } from "@/components/AppShell";
 import { EmptyState, CardSkeleton } from "@/components/States";
 import { ParticleBurst } from "@/components/ParticleBurst";
+import { PinLiveButton } from "@/components/PinLiveButton";
+import { PullToRefresh } from "@/components/PullToRefresh";
+import { GoalCelebration } from "@/components/GoalCelebration";
+import { CountdownTimer } from "@/components/CountdownTimer";
+import { usePinned } from "@/hooks/usePinned";
 import { haptic } from "@/hooks/useHaptic";
 
 export const Route = createFileRoute("/")({ component: HomePage });
@@ -16,10 +21,11 @@ function HomePage() {
   const { user, loading } = useAuth();
   const nav = useNavigate();
   const { t, lang } = useI18n();
-  const [pinned, setPinned] = useState<string[]>([]);
+  const { ids: pinned } = usePinned();
+  const [goalTrigger, setGoalTrigger] = useState(0);
+  const prevScoresRef = useRef<Record<string, string>>({});
 
   useEffect(() => { if (!loading && !user) nav({ to: "/login" }); }, [user, loading, nav]);
-  useEffect(() => { setPinned(JSON.parse(localStorage.getItem("pinned") ?? "[]")); }, []);
 
   const { data, isLoading, refetch, isError } = useQuery({
     queryKey: ["matches"],
@@ -34,12 +40,21 @@ function HomePage() {
   const upcoming = matches.filter((m) => !isLive(m.status) && m.status !== "FINISHED");
   const finished = matches.filter((m) => m.status === "FINISHED");
   const pinnedMatches = matches.filter((m) => pinned.includes(m.id));
+  const nextMatch = upcoming[0];
 
-  const togglePin = (id: string) => {
-    const next = pinned.includes(id) ? pinned.filter((x) => x !== id) : [...pinned, id];
-    setPinned(next);
-    localStorage.setItem("pinned", JSON.stringify(next));
-  };
+  // Trigger goal celebration when a PINNED LIVE match scores
+  useEffect(() => {
+    for (const m of live) {
+      if (!pinned.includes(m.id)) continue;
+      const key = `${m.homeScore}-${m.awayScore}`;
+      const prev = prevScoresRef.current[m.id];
+      if (prev && prev !== key && m.homeScore != null) {
+        setGoalTrigger((n) => n + 1);
+        haptic("success");
+      }
+      prevScoresRef.current[m.id] = key;
+    }
+  }, [live, pinned]);
 
   // Group upcoming by date in Israel time (UTC+3)
   const byDate = upcoming.reduce<Record<string, Match[]>>((acc, m) => {
@@ -50,6 +65,9 @@ function HomePage() {
 
   return (
     <AppShell>
+      <PullToRefresh onRefresh={() => refetch()} />
+      <GoalCelebration trigger={goalTrigger} />
+
       {/* Hero */}
       <div className="shine-sweep card-lift mb-4 overflow-hidden rounded-3xl bg-gradient-warm p-5 shadow-warm">
         <div className="flex items-center gap-2 text-primary-foreground/85">
@@ -57,17 +75,32 @@ function HomePage() {
         </div>
         <h1 className="mt-2 font-display text-2xl font-black leading-tight text-primary-foreground">{t("tagline")}</h1>
         <p className="mt-1.5 text-xs text-primary-foreground/85">{t("score365rules")}</p>
+        {nextMatch && (
+          <div className="mt-3 flex items-center justify-between rounded-2xl bg-primary-foreground/15 px-3 py-2 backdrop-blur">
+            <div className="min-w-0">
+              <div className="text-[9px] font-bold uppercase tracking-wider text-primary-foreground/70">
+                {lang === "he" ? "המשחק הבא" : "Next match"}
+              </div>
+              <div className="truncate text-xs font-bold text-primary-foreground">
+                {(lang === "he" ? nextMatch.homeTeamHe : nextMatch.homeTeam)} vs {(lang === "he" ? nextMatch.awayTeamHe : nextMatch.awayTeam)}
+              </div>
+            </div>
+            <div className="text-primary-foreground">
+              <CountdownTimer target={nextMatch.utcDate} lang={lang as "he" | "en"} compact />
+            </div>
+          </div>
+        )}
       </div>
 
       {pinnedMatches.length > 0 && (
         <Section title={`📌 ${t("pinLive")}`}>
-          {pinnedMatches.map((m, i) => <MatchCard key={m.id} match={m} pinned index={i} onTogglePin={togglePin} />)}
+          {pinnedMatches.map((m, i) => <MatchCard key={m.id} match={m} index={i} />)}
         </Section>
       )}
 
       {live.length > 0 && (
         <Section title={t("live")} live>
-          {live.map((m, i) => <MatchCard key={m.id} match={m} pinned={pinned.includes(m.id)} index={i} onTogglePin={togglePin} />)}
+          {live.map((m, i) => <MatchCard key={m.id} match={m} index={i} />)}
         </Section>
       )}
 
@@ -99,7 +132,7 @@ function HomePage() {
                     {date}
                   </div>
                   <div className="grid gap-2">
-                    {ms.map((m, i) => <MatchCard key={m.id} match={m} pinned={pinned.includes(m.id)} index={i} onTogglePin={togglePin} />)}
+                    {ms.map((m, i) => <MatchCard key={m.id} match={m} index={i} />)}
                   </div>
                 </div>
               ))}
@@ -107,7 +140,7 @@ function HomePage() {
           )}
           {finished.length > 0 && (
             <Section title={t("finished")}>
-              {finished.map((m, i) => <MatchCard key={m.id} match={m} pinned={pinned.includes(m.id)} index={i} onTogglePin={togglePin} />)}
+              {finished.map((m, i) => <MatchCard key={m.id} match={m} index={i} />)}
             </Section>
           )}
         </>
@@ -157,10 +190,11 @@ function idtDateLabel(s: string, lang: string): string {
   );
 }
 
-function MatchCard({ match, pinned, index = 0, onTogglePin }: { match: Match; pinned: boolean; index?: number; onTogglePin: (id: string) => void }) {
+function MatchCard({ match, index = 0 }: { match: Match; index?: number }) {
   const nav = useNavigate();
   const { lang } = useI18n();
   const live = isLive(match.status);
+  const finished = match.status === "FINISHED";
   const time = idtTime(match.utcDate);
   const homeName = lang === "he" ? match.homeTeamHe : match.homeTeam;
   const awayName = lang === "he" ? match.awayTeamHe : match.awayTeam;
@@ -206,14 +240,10 @@ function MatchCard({ match, pinned, index = 0, onTogglePin }: { match: Match; pi
         <span className="flag-wave shrink-0 text-xl leading-none">{toFlag(match.awayIso2)}</span>
         <span className="truncate text-sm font-semibold">{awayName}</span>
       </div>
-      {live && (
-        <button
-          onClick={(e) => { e.stopPropagation(); haptic("medium"); onTogglePin(match.id); }}
-          className={`press grid h-9 w-9 shrink-0 place-items-center rounded-full ${pinned ? "bg-primary/15 text-primary glow-pulse" : "text-muted-foreground"}`}
-          aria-label="pin"
-        >
-          <Pin className={`h-4 w-4 ${pinned ? "fill-current" : ""}`} />
-        </button>
+      {!finished && (
+        <div onClick={(e) => e.stopPropagation()}>
+          <PinLiveButton matchId={match.id} live={live} size="sm" lang={lang as "he" | "en"} />
+        </div>
       )}
     </div>
   );

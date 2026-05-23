@@ -14,6 +14,8 @@ import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { BurstConfetti } from '@/components/BurstConfetti';
 import { haptic } from '@/hooks/useHaptic';
+import { FlagCarousel } from '@/components/FlagCarousel';
+import { CountdownTimer } from '@/components/CountdownTimer';
 
 export const Route = createFileRoute('/bonus')({ component: BonusPage });
 
@@ -117,6 +119,16 @@ function BonusPage() {
         <div className="mt-3 inline-flex rounded-full bg-primary-foreground/15 px-2.5 py-1 text-[10px] font-semibold text-primary-foreground backdrop-blur">
           {t('bonusRules')}
         </div>
+        {lockTs && !locked && (
+          <div className="mt-3 flex items-center justify-between rounded-2xl bg-primary-foreground/15 px-3 py-2 backdrop-blur">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-primary-foreground/80">
+              {lang === 'he' ? 'נעילה בעוד' : 'Locks in'}
+            </span>
+            <div className="text-primary-foreground">
+              <CountdownTimer target={lockTs} lang={lang as 'he' | 'en'} compact />
+            </div>
+          </div>
+        )}
       </div>
 
       {groups && groups.length > 1 && (
@@ -140,7 +152,7 @@ function BonusPage() {
       )}
 
       <BonusSection title={t('pickChampion')} pts={15} icon={<Trophy className="h-4 w-4" />}>
-        <CountrySelect value={winner} onChange={setWinner} disabled={locked} options={wc26Nations} />
+        <FlagCarousel options={wc26Nations} value={winner} onChange={setWinner} disabled={locked} />
       </BonusSection>
 
       <BonusSection title={t('pickTopPlayer')} pts={10} icon={<span>⭐</span>}>

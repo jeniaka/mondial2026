@@ -18,6 +18,9 @@ import {
 } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 import { BurstConfetti } from '@/components/BurstConfetti';
+import { StatsRadar } from '@/components/StatsRadar';
+import { AchievementWall } from '@/components/AchievementWall';
+import { TierBadge } from '@/components/TierBadge';
 
 export const Route = createFileRoute('/friends')({ component: ProfilePage });
 
@@ -69,11 +72,52 @@ function ProfilePage() {
 
       {/* Stats */}
       {isLoading ? <CardSkeleton count={3} /> : stats && (
-        <div className="mb-4 grid grid-cols-3 gap-2">
-          <StatCard icon={<Trophy className="h-5 w-5" />} value={stats.total_predictions} label={lang === 'he' ? 'ניחושים' : 'Picks'} />
-          <StatCard icon={<Target className="h-5 w-5" />} value={stats.exact_predictions} label={lang === 'he' ? 'מדויקים' : 'Exact'} />
-          <StatCard icon={<Award className="h-5 w-5" />} value={stats.best_rank ?? '—'} label={lang === 'he' ? 'דירוג מירב' : 'Best rank'} />
-        </div>
+        <>
+          <div className="mb-3">
+            <TierBadge points={(stats.exact_predictions * 5) + stats.total_predictions} lang={lang as 'he' | 'en'} />
+          </div>
+          <div className="mb-4 grid grid-cols-3 gap-2">
+            <StatCard icon={<Trophy className="h-5 w-5" />} value={stats.total_predictions} label={lang === 'he' ? 'ניחושים' : 'Picks'} />
+            <StatCard icon={<Target className="h-5 w-5" />} value={stats.exact_predictions} label={lang === 'he' ? 'מדויקים' : 'Exact'} />
+            <StatCard icon={<Award className="h-5 w-5" />} value={stats.best_rank ?? '—'} label={lang === 'he' ? 'דירוג מירב' : 'Best rank'} />
+          </div>
+
+          {/* Radar */}
+          <div className="reveal mb-4 rounded-3xl border border-border bg-card p-4 shadow-soft text-primary">
+            <h3 className="mb-2 text-center text-[11px] font-black uppercase tracking-wider text-primary">
+              {lang === 'he' ? 'פרופיל הביצועים שלך' : 'Your performance'}
+            </h3>
+            <div className="grid place-items-center">
+              <StatsRadar
+                size={220}
+                values={[
+                  { label: lang === 'he' ? 'דיוק' : 'Accuracy', value: stats.total_predictions > 0 ? stats.exact_predictions / stats.total_predictions : 0 },
+                  { label: lang === 'he' ? 'נפח' : 'Volume', value: Math.min(1, stats.total_predictions / 30) },
+                  { label: lang === 'he' ? 'דירוג' : 'Rank', value: stats.best_rank ? Math.max(0, 1 - (stats.best_rank - 1) / 20) : 0 },
+                  { label: lang === 'he' ? 'מדויקים' : 'Exacts', value: Math.min(1, stats.exact_predictions / 10) },
+                  { label: lang === 'he' ? 'התמדה' : 'Consistency', value: Math.min(1, stats.total_predictions / 20) },
+                ]}
+              />
+            </div>
+          </div>
+
+          {/* Achievements */}
+          <div className="reveal mb-4 rounded-3xl border border-border bg-card p-4 shadow-soft">
+            <h3 className="mb-3 text-[11px] font-black uppercase tracking-wider text-primary">
+              {lang === 'he' ? 'הישגים' : 'Achievements'}
+            </h3>
+            <AchievementWall
+              lang={lang as 'he' | 'en'}
+              stats={{
+                total_predictions: stats.total_predictions,
+                exact_predictions: stats.exact_predictions,
+                best_rank: stats.best_rank,
+                current_streak: 0,
+                total_points: (stats.exact_predictions * 5) + stats.total_predictions,
+              }}
+            />
+          </div>
+        </>
       )}
 
       {/* Settings */}

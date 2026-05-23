@@ -5,6 +5,7 @@ import { useI18n } from "@/lib/i18n";
 import { AppHeader } from "@/components/AppHeader";
 import { BottomTabs } from "@/components/BottomTabs";
 import { FlyingBall } from "@/components/FlyingBall";
+import { PinnedTray } from "@/components/PinnedTray";
 import { useSwipe } from "@/hooks/useSwipe";
 import { haptic } from "@/hooks/useHaptic";
 
@@ -77,6 +78,7 @@ export function AppShell({ title, children, action }: { title?: string; children
         </main>
         <BottomTabs />
       </div>
+      <PinnedTray />
     </div>
   );
 }
