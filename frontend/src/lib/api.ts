@@ -10,8 +10,16 @@ async function req<T>(path: string, opts: RequestInit = {}): Promise<T> {
   }
   const res = await fetch(path, { ...opts, headers, credentials: 'include' });
   if (res.status === 401) {
-    window.location.href = '/login';
-    throw Object.assign(new Error('unauthenticated'), { status: 401 });
+    // Don't auto-redirect for explicit auth endpoints — caller handles error
+    const isAuthEndpoint = path === '/auth/login' || path === '/auth/register' || path === '/auth/me';
+    if (!isAuthEndpoint && typeof window !== 'undefined' && window.location.pathname !== '/login') {
+      window.location.href = '/login';
+    }
+    const err = await res.json().catch(() => ({})) as Record<string, unknown>;
+    throw Object.assign(new Error((err.error as string) || 'unauthenticated'), {
+      status: 401,
+      data: err,
+    });
   }
   if (!res.ok) {
     const err = await res.json().catch(() => ({})) as Record<string, unknown>;
@@ -116,6 +124,10 @@ export const api = {
   // Auth
   me: () => req<User>('/auth/me'),
   logout: () => req<void>('/auth/logout', { method: 'POST' }),
+  register: (data: { name: string; email: string; password: string }) =>
+    req<{ ok: true; id: string }>('/auth/register', { method: 'POST', body: json(data) }),
+  login: (data: { email: string; password: string }) =>
+    req<{ ok: true; id: string }>('/auth/login', { method: 'POST', body: json(data) }),
 
   // Matches
   matches: (from: string, to: string) => req<ApiMatch[]>(`/api/matches?from=${from}&to=${to}`),

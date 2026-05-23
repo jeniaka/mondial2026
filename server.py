@@ -339,6 +339,49 @@ def handle_auth_google_callback(handler: BaseHTTPRequestHandler, **_):
     send_redirect(handler, dest, extra_headers=session_headers)
 
 
+def handle_auth_register(handler: BaseHTTPRequestHandler, **_):
+    ip = handler.client_address[0]
+    if not _check_rate(f"auth_register:{ip}", 5, 3600):
+        send_json(handler, 429, {"error": "too_many_attempts"})
+        return
+    body = parse_json_body(handler)
+    name     = body.get("name", "")
+    email    = body.get("email", "")
+    password = body.get("password", "")
+
+    user_id, err = auth.register_user(name, email, password)
+    if err:
+        # 409 for duplicate email, 400 for everything else
+        status = 409 if err == "email_exists" else 400
+        send_json(handler, status, {"error": err})
+        return
+
+    cookies = auth.set_session_cookie(handler, user_id)
+    send_json(handler, 201, {"ok": True, "id": user_id}, extra_headers=cookies)
+
+
+def handle_auth_login(handler: BaseHTTPRequestHandler, **_):
+    ip = handler.client_address[0]
+    if not _check_rate(f"auth_login:{ip}", 10, 600):
+        send_json(handler, 429, {"error": "too_many_attempts"})
+        return
+    body = parse_json_body(handler)
+    email    = body.get("email", "")
+    password = body.get("password", "")
+
+    if not email or not password:
+        send_json(handler, 400, {"error": "missing_fields"})
+        return
+
+    user_id = auth.login_password(email, password)
+    if user_id is None:
+        send_json(handler, 401, {"error": "invalid_credentials"})
+        return
+
+    cookies = auth.set_session_cookie(handler, user_id)
+    send_json(handler, 200, {"ok": True, "id": user_id}, extra_headers=cookies)
+
+
 def handle_auth_logout(handler: BaseHTTPRequestHandler, **_):
     headers = auth.clear_session_cookie()
     send_redirect(handler, "/login", extra_headers=headers)
@@ -1741,6 +1784,8 @@ ROUTES_GET = [
     # Auth
     (r"^/auth/google/start$",                   handle_auth_google_start),
     (r"^/auth/google/callback$",                handle_auth_google_callback),
+    (r"^/auth/register$",                       handle_auth_register),
+    (r"^/auth/login$",                          handle_auth_login),
     (r"^/auth/me$",                             handle_auth_me),
     # Match data
     (r"^/api/matches/live$",                    handle_matches_live),

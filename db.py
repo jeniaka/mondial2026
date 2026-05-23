@@ -55,7 +55,16 @@ def ensure_indexes():
     db = get_db()
 
     db["users"].create_index("email_lower", unique=True)
-    db["users"].create_index("google_sub", unique=True)
+    # google_sub is sparse — email/password users don't have it.
+    # Drop legacy non-sparse index if present, then create sparse one.
+    try:
+        existing = db["users"].index_information().get("google_sub_1")
+        if existing and not existing.get("sparse"):
+            db["users"].drop_index("google_sub_1")
+            log.info("Dropped legacy non-sparse google_sub index")
+    except Exception as e:
+        log.warning("google_sub index check skipped: %s", e)
+    db["users"].create_index("google_sub", unique=True, sparse=True)
 
     db["groups"].create_index("join_code", unique=True)
     db["groups"].create_index("members.user_id")

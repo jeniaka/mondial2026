@@ -194,3 +194,94 @@ def upsert_user(userinfo: dict) -> str:
     result = db.users().insert_one(user_doc)
     log.info("New user created: %s (%s)", email, result.inserted_id)
     return str(result.inserted_id)
+
+
+# ---------------------------------------------------------------------------
+# Email / password auth
+# ---------------------------------------------------------------------------
+
+PW_ITERATIONS = 200_000
+
+
+def hash_password(password: str) -> str:
+    """Returns base64-encoded salt+hash (sha256 pbkdf2, 200k rounds)."""
+    salt = secrets.token_bytes(16)
+    dk = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, PW_ITERATIONS)
+    return base64.b64encode(salt + dk).decode()
+
+
+def verify_password(password: str, encoded: str) -> bool:
+    """Constant-time verify a password against stored hash."""
+    try:
+        data = base64.b64decode(encoded.encode())
+        salt, stored = data[:16], data[16:]
+        dk = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, PW_ITERATIONS)
+        return hmac.compare_digest(dk, stored)
+    except Exception:
+        return False
+
+
+def register_user(name: str, email: str, password: str):
+    """Create email/password user. Returns (user_id, err) tuple. err is None on success."""
+    from datetime import datetime, timezone
+
+    name = (name or "").strip()
+    email = (email or "").strip()
+    email_lower = email.lower()
+
+    if not name or not email or not password:
+        return (None, "missing_fields")
+    if "@" not in email or "." not in email_lower.split("@")[-1]:
+        return (None, "invalid_email")
+    if len(password) < 8:
+        return (None, "password_too_short")
+    if len(name) > 80 or len(email) > 200:
+        return (None, "too_long")
+
+    if db.users().find_one({"email_lower": email_lower}):
+        return (None, "email_exists")
+
+    now = datetime.now(timezone.utc)
+    is_admin = email_lower in [e.lower() for e in config.ADMIN_EMAILS]
+    user_doc = {
+        "email":         email,
+        "email_lower":   email_lower,
+        "name":          name,
+        "picture":       "",
+        "password_hash": hash_password(password),
+        "locale_pref":   "he",
+        "is_admin":      is_admin,
+        "created_at":    now,
+        "last_login_at": now,
+        "notif_prefs": {
+            "match_start":        True,
+            "match_end":          True,
+            "goal_in_pinned":     True,
+            "friend_invite":      True,
+            "leaderboard_change": True,
+            "email_digest":       "daily",
+        },
+        "pinned_matches": [],
+    }
+    result = db.users().insert_one(user_doc)
+    log.info("New user (email/pw) registered: %s (%s)", email_lower, result.inserted_id)
+    return (str(result.inserted_id), None)
+
+
+def login_password(email: str, password: str):
+    """Verify email/password. Returns user_id or None."""
+    from datetime import datetime, timezone
+
+    email_lower = (email or "").strip().lower()
+    if not email_lower or not password:
+        return None
+    user = db.users().find_one({"email_lower": email_lower})
+    if not user or not user.get("password_hash"):
+        return None
+    if not verify_password(password, user["password_hash"]):
+        return None
+    db.users().update_one(
+        {"_id": user["_id"]},
+        {"$set": {"last_login_at": datetime.now(timezone.utc)}}
+    )
+    return str(user["_id"])

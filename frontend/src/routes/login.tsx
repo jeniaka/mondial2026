@@ -1,23 +1,76 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
-import { Trophy, Sparkles } from 'lucide-react';
+import { Trophy, Sparkles, Mail, Lock, User as UserIcon, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/auth';
+import { api } from '@/lib/api';
+import { toast } from 'sonner';
+import { haptic } from '@/hooks/useHaptic';
 
 export const Route = createFileRoute('/login')({ component: LoginPage });
+
+type Mode = 'signin' | 'register';
 
 function LoginPage() {
   const { t, lang, setLang } = useI18n();
   const { user, loading } = useAuth();
   const nav = useNavigate();
   const [busy, setBusy] = useState(false);
+  const [mode, setMode] = useState<Mode>('signin');
+  const [showPw, setShowPw] = useState(false);
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
   useEffect(() => { if (!loading && user) nav({ to: '/' }); }, [user, loading, nav]);
 
-  const signIn = () => {
+  const signInGoogle = () => {
+    haptic('light');
     setBusy(true);
     window.location.href = '/auth/google/start';
+  };
+
+  const submit = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (busy) return;
+    const emailTrim = email.trim();
+    if (!emailTrim || !password) {
+      toast.error(lang === 'he' ? 'מלא את כל השדות' : 'Fill all fields');
+      haptic('error');
+      return;
+    }
+    if (mode === 'register' && !name.trim()) {
+      toast.error(lang === 'he' ? 'הזן שם' : 'Enter your name');
+      haptic('error');
+      return;
+    }
+    if (password.length < 8) {
+      toast.error(lang === 'he' ? 'סיסמה צריכה להיות לפחות 8 תווים' : 'Password must be at least 8 characters');
+      haptic('error');
+      return;
+    }
+
+    setBusy(true);
+    try {
+      if (mode === 'register') {
+        await api.register({ name: name.trim(), email: emailTrim, password });
+      } else {
+        await api.login({ email: emailTrim, password });
+      }
+      haptic('success');
+      // Force a hard reload so /auth/me is fetched fresh and AuthCtx picks up cookie
+      window.location.href = '/';
+    } catch (err: unknown) {
+      const e = err as { message?: string };
+      const m = e?.message ?? '';
+      const msg = errorLabel(m, lang, mode);
+      toast.error(msg);
+      haptic('error');
+      setBusy(false);
+    }
   };
 
   return (
@@ -28,15 +81,15 @@ function LoginPage() {
       </div>
 
       <div className="absolute right-4 top-4">
-        <Button variant="ghost" size="sm" onClick={() => setLang(lang === 'en' ? 'he' : 'en')}>
+        <Button variant="ghost" size="sm" onClick={() => { haptic('light'); setLang(lang === 'en' ? 'he' : 'en'); }}>
           {lang === 'en' ? 'עברית' : 'English'}
         </Button>
       </div>
 
       <div className="w-full max-w-md">
-        <div className="mb-10 text-center">
-          <div className="mx-auto mb-6 grid h-20 w-20 place-items-center rounded-3xl bg-gradient-warm shadow-warm">
-            <Trophy className="h-10 w-10 text-primary-foreground" />
+        <div className="mb-8 text-center">
+          <div className="mx-auto mb-5 grid h-20 w-20 place-items-center rounded-3xl bg-gradient-warm shadow-warm shine-sweep">
+            <Trophy className="h-10 w-10 text-primary-foreground wobble" />
           </div>
           <h1 className="font-display text-5xl font-black tracking-tight">
             <span className="text-gradient-warm">{t('appName')}</span>
@@ -44,27 +97,164 @@ function LoginPage() {
           <p className="mt-3 text-base text-muted-foreground">{t('tagline')}</p>
         </div>
 
-        <div className="rounded-3xl border border-border bg-gradient-card p-8 shadow-soft">
-          <div className="mb-6 flex items-center gap-2 text-sm text-muted-foreground">
-            <Sparkles className="h-4 w-4 text-primary" />
-            <span>{t('signInSub')}</span>
+        <div className="glass rounded-3xl p-6 shadow-soft">
+          {/* Tabs */}
+          <div className="mb-5 grid grid-cols-2 gap-1 rounded-full bg-muted/40 p-1">
+            <button
+              onClick={() => { haptic('light'); setMode('signin'); }}
+              className={`ripple rounded-full px-3 py-2 text-sm font-bold transition-all duration-300 ${mode === 'signin' ? 'bg-primary text-primary-foreground shadow-warm' : 'text-muted-foreground'}`}
+            >
+              {lang === 'he' ? 'התחברות' : 'Sign in'}
+            </button>
+            <button
+              onClick={() => { haptic('light'); setMode('register'); }}
+              className={`ripple rounded-full px-3 py-2 text-sm font-bold transition-all duration-300 ${mode === 'register' ? 'bg-primary text-primary-foreground shadow-warm' : 'text-muted-foreground'}`}
+            >
+              {lang === 'he' ? 'הרשמה' : 'Register'}
+            </button>
           </div>
+
+          <form onSubmit={submit} className="space-y-3">
+            {mode === 'register' && (
+              <Field
+                id="name"
+                label={lang === 'he' ? 'שם' : 'Name'}
+                icon={<UserIcon className="h-4 w-4" />}
+                value={name}
+                onChange={setName}
+                autoComplete="name"
+                placeholder={lang === 'he' ? 'השם המלא שלך' : 'Your full name'}
+              />
+            )}
+            <Field
+              id="email"
+              label={lang === 'he' ? 'אימייל' : 'Email'}
+              icon={<Mail className="h-4 w-4" />}
+              type="email"
+              value={email}
+              onChange={setEmail}
+              autoComplete="email"
+              placeholder="you@example.com"
+              dir="ltr"
+            />
+            <div>
+              <Label htmlFor="pw" className="mb-1 ms-1 text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                {lang === 'he' ? 'סיסמה' : 'Password'}
+              </Label>
+              <div className="relative">
+                <span className="pointer-events-none absolute inset-y-0 left-3 grid place-items-center text-muted-foreground">
+                  <Lock className="h-4 w-4" />
+                </span>
+                <Input
+                  id="pw"
+                  type={showPw ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
+                  placeholder={lang === 'he' ? 'לפחות 8 תווים' : 'At least 8 characters'}
+                  className="h-11 pl-9 pr-10"
+                  dir="ltr"
+                />
+                <button
+                  type="button"
+                  onClick={() => { haptic('light'); setShowPw((v) => !v); }}
+                  className="press absolute inset-y-0 right-2 grid place-items-center rounded-md px-2 text-muted-foreground"
+                  aria-label={showPw ? 'Hide' : 'Show'}
+                >
+                  {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
+
+            <Button
+              type="submit"
+              disabled={busy}
+              size="lg"
+              className="press btn-glow ripple shine-sweep w-full bg-gradient-warm shadow-warm"
+            >
+              {busy ? '…' : mode === 'register'
+                ? (lang === 'he' ? 'הירשם' : 'Create account')
+                : (lang === 'he' ? 'התחבר' : 'Sign in')}
+            </Button>
+          </form>
+
+          {/* Divider */}
+          <div className="my-5 flex items-center gap-3">
+            <div className="h-px flex-1 bg-border" />
+            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+              {lang === 'he' ? 'או' : 'or'}
+            </span>
+            <div className="h-px flex-1 bg-border" />
+          </div>
+
+          {/* Google */}
           <Button
-            onClick={signIn}
+            onClick={signInGoogle}
             disabled={busy}
             size="lg"
-            className="w-full gap-3 bg-foreground text-background hover:bg-foreground/90"
+            variant="secondary"
+            className="ripple w-full gap-3"
           >
             <GoogleIcon />
-            {t('signInGoogle')}
+            {lang === 'he' ? 'המשך עם Google' : t('signInGoogle')}
           </Button>
-          <p className="mt-6 text-center text-xs text-muted-foreground">
+
+          <p className="mt-5 flex items-center justify-center gap-1.5 text-center text-xs text-muted-foreground">
+            <Sparkles className="h-3 w-3 text-primary" />
             {t('score365rules')}
           </p>
         </div>
       </div>
     </div>
   );
+}
+
+function Field({
+  id, label, icon, value, onChange, type = 'text', autoComplete, placeholder, dir,
+}: {
+  id: string; label: string; icon: React.ReactNode;
+  value: string; onChange: (v: string) => void;
+  type?: string; autoComplete?: string; placeholder?: string; dir?: 'ltr' | 'rtl';
+}) {
+  return (
+    <div>
+      <Label htmlFor={id} className="mb-1 ms-1 text-xs font-bold uppercase tracking-wider text-muted-foreground">
+        {label}
+      </Label>
+      <div className="relative">
+        <span className="pointer-events-none absolute inset-y-0 left-3 grid place-items-center text-muted-foreground">
+          {icon}
+        </span>
+        <Input
+          id={id}
+          type={type}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          autoComplete={autoComplete}
+          placeholder={placeholder}
+          className="h-11 pl-9"
+          dir={dir}
+        />
+      </div>
+    </div>
+  );
+}
+
+function errorLabel(code: string, lang: string, mode: Mode): string {
+  const he = lang === 'he';
+  if (code.includes('email_exists') || code.includes('409'))
+    return he ? 'אימייל כבר רשום' : 'Email already registered';
+  if (code.includes('invalid_credentials') || code.includes('401'))
+    return he ? 'אימייל או סיסמה שגויים' : 'Invalid email or password';
+  if (code.includes('password_too_short'))
+    return he ? 'סיסמה חייבת להיות לפחות 8 תווים' : 'Password must be at least 8 characters';
+  if (code.includes('invalid_email'))
+    return he ? 'כתובת אימייל לא תקינה' : 'Invalid email';
+  if (code.includes('too_many'))
+    return he ? 'יותר מדי ניסיונות, נסה שוב בעוד מספר דקות' : 'Too many attempts, try again later';
+  return he
+    ? (mode === 'register' ? 'הרשמה נכשלה' : 'התחברות נכשלה')
+    : (mode === 'register' ? 'Registration failed' : 'Sign in failed');
 }
 
 function GoogleIcon() {
