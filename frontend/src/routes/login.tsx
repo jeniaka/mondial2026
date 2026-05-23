@@ -61,8 +61,12 @@ function LoginPage() {
         await api.login({ email: emailTrim, password });
       }
       haptic('success');
-      // Force a hard reload so /auth/me is fetched fresh and AuthCtx picks up cookie
-      window.location.href = '/';
+      // Force a hard reload so /auth/me is fetched fresh and AuthCtx picks up cookie.
+      // If there's a pending invite (from /invite/<token> visited before login), go there.
+      const pending = (typeof sessionStorage !== 'undefined')
+        ? sessionStorage.getItem('pending_invite')
+        : null;
+      window.location.href = pending ? `/invite/${pending}` : '/';
     } catch (err: unknown) {
       const e = err as { message?: string };
       const m = e?.message ?? '';

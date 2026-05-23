@@ -154,7 +154,8 @@ export const api = {
   groupMute: (id: string, muted: boolean) => req<void>(`/api/groups/${id}/mute`, { method: 'POST', body: json({ muted }) }),
   groupStats: (id: string) => req<{ total_predictions: number; active_since: string }>(`/api/groups/${id}/stats`),
   groupInvite: (id: string, email: string) => req<void>(`/api/groups/${id}/invite`, { method: 'POST', body: json({ email }) }),
-  inviteAccept: (token: string) => req<void>('/api/invites/accept', { method: 'POST', body: json({ token }) }),
+  inviteAccept: (token: string) =>
+    req<{ ok: true; group_id: string; group_name: string }>('/api/invites/accept', { method: 'POST', body: json({ token }) }),
 
   // Predictions
   predictions: (gid: string, mid: string) => req<{ predictions: Prediction[]; locked: boolean }>(`/api/groups/${gid}/predictions/${mid}`),
