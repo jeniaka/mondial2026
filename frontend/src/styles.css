@@ -355,14 +355,13 @@ html[data-palette="crimson"].dark {
 
 @layer base {
   * { border-color: var(--color-border); }
-  html { font-family: var(--font-sans); -webkit-text-size-adjust: 100%; overflow-x: hidden; }
+  html { font-family: var(--font-sans); -webkit-text-size-adjust: 100%; }
   body {
     background: var(--background);
     color: var(--foreground);
     font-family: var(--font-sans);
     font-feature-settings: "ss01", "cv11";
-    overflow-x: hidden;
-    overscroll-behavior-y: none;
+    overflow-x: clip;
     -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
   }

@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate, Link } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Pin } from 'lucide-react';
 import { getMatches } from '@/server/matches.functions';
 import { useAuth } from '@/lib/auth';
@@ -20,6 +20,7 @@ function MatchDetail() {
   const { id } = Route.useParams();
   const { user, loading } = useAuth();
   const nav = useNavigate();
+  const queryClient = useQueryClient();
   const { t, lang } = useI18n();
   const [pinned, setPinned] = useState(false);
   const [home, setHome] = useState(0);
@@ -90,6 +91,7 @@ function MatchDetail() {
       setExisting({ home_score: home, away_score: away });
       setSheetOpen(false);
       toast.success(t('saved'));
+      queryClient.invalidateQueries({ queryKey: ['my-predictions'] });
     } catch (e: unknown) {
       const err = e as { message?: string };
       toast.error(err?.message ?? 'Error');
