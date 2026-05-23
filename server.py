@@ -340,12 +340,17 @@ def handle_auth_google_callback(handler: BaseHTTPRequestHandler, **_):
 
 
 def handle_debug_email(handler: BaseHTTPRequestHandler, **_):
-    """GET/POST /api/_debug/email — admin only. Returns Brevo config + sends test."""
+    """GET/POST /api/_debug/email — any authenticated user; only ever sends
+    a test email to the caller's own address, so it can't be abused."""
     user = auth.require_user(handler)
     if not user:
         return
-    if not user.get("is_admin"):
-        send_json(handler, 403, {"error": "admin_only"})
+    ip = handler.client_address[0]
+    if not _check_rate(f"debug_email:{user['_id']}", 10, 600):
+        send_json(handler, 429, {"error": "too_many_attempts"})
+        return
+    if not _check_rate(f"debug_email_ip:{ip}", 20, 600):
+        send_json(handler, 429, {"error": "too_many_attempts"})
         return
 
     info = {
