@@ -52,7 +52,7 @@ export function CountdownTimer({
       {t.d > 0 && <Digit v={t.d} l={labels.d} />}
       <Digit v={t.h} l={labels.h} />
       <Digit v={t.m} l={labels.m} />
-      {!compact && <Digit v={t.s} l={labels.s} />}
+      <Digit v={t.s} l={labels.s} />
     </span>
   );
 }

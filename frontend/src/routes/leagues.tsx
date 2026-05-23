@@ -17,6 +17,8 @@ import { useCountUp } from '@/hooks/useCountUp';
 import { haptic } from '@/hooks/useHaptic';
 import { Check } from 'lucide-react';
 import { RankIndicator } from '@/components/RankIndicator';
+import { MemberAdminMenu } from '@/components/MemberAdminMenu';
+import { useLongPress } from '@/hooks/useLongPress';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
@@ -125,6 +127,14 @@ function GroupCard({ group, userId, onChanged }: { group: Group; userId: string;
   const [prevRanks, setPrevRanks] = useState<Record<string, number>>({});
   const [renameOpen, setRenameOpen] = useState(false);
   const [newName, setNewName] = useState(group.name);
+  const [adminTarget, setAdminTarget] = useState<{ user_id: string; name: string } | null>(null);
+
+  const qc2 = useQueryClient();
+  const onAdminChanged = () => {
+    qc2.invalidateQueries({ queryKey: ['leaderboard', group.id] });
+    qc2.invalidateQueries({ queryKey: ['groups'] });
+    onChanged();
+  };
 
   const renameLeague = async () => {
     const trimmed = newName.trim();
@@ -393,9 +403,12 @@ function GroupCard({ group, userId, onChanged }: { group: Group; userId: string;
             <>
               {top3.length >= 3 && (
                 <div className="relative mb-4 mt-2 grid grid-cols-3 items-end gap-3 px-1">
-                  <Podium rank={2} row={top3[1]} isMe={top3[1]?.is_me} height="h-20" />
-                  <Podium rank={1} row={top3[0]} isMe={top3[0]?.is_me} height="h-28" />
-                  <Podium rank={3} row={top3[2]} isMe={top3[2]?.is_me} height="h-16" />
+                  <Podium rank={2} row={top3[1]} isMe={top3[1]?.is_me} height="h-20"
+                    onLongPress={group.is_owner && !top3[1]?.is_me ? () => setAdminTarget({ user_id: top3[1].user_id, name: top3[1].name }) : undefined} />
+                  <Podium rank={1} row={top3[0]} isMe={top3[0]?.is_me} height="h-28"
+                    onLongPress={group.is_owner && !top3[0]?.is_me ? () => setAdminTarget({ user_id: top3[0].user_id, name: top3[0].name }) : undefined} />
+                  <Podium rank={3} row={top3[2]} isMe={top3[2]?.is_me} height="h-16"
+                    onLongPress={group.is_owner && !top3[2]?.is_me ? () => setAdminTarget({ user_id: top3[2].user_id, name: top3[2].name }) : undefined} />
                 </div>
               )}
               {(top3.length < 3 || rest.length > 0) && (
@@ -403,36 +416,15 @@ function GroupCard({ group, userId, onChanged }: { group: Group; userId: string;
                   {(top3.length < 3 ? leaderboard : rest).map((row, i) => {
                     const idx = top3.length < 3 ? i : i + 3;
                     return (
-                      <div key={row.user_id} className={`reveal flex items-center justify-between rounded-lg px-2 py-1.5 text-sm ${row.is_me ? 'bg-primary/10' : ''}`} style={{ animationDelay: `${i * 55}ms` }}>
-                        <div className="flex min-w-0 items-center gap-2">
-                          <span className="num w-6 text-xs font-bold text-muted-foreground">#{idx + 1}</span>
-                          <RankIndicator delta={rankDelta(row.user_id, idx)} />
-                          <span className="truncate font-medium">{row.name}</span>
-                          {row.is_me && <span className="text-[10px] text-muted-foreground">({t('you')})</span>}
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <span className="num font-display text-base font-bold">{row.total}</span>
-                          {group.is_owner && !row.is_me && (
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <button className="press grid h-7 w-7 place-items-center rounded-full text-muted-foreground hover:text-destructive" aria-label={t('kickMember')}>
-                                  <X className="h-3.5 w-3.5" />
-                                </button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>{t('kickMember')}: {row.name}</AlertDialogTitle>
-                                  <AlertDialogDescription>{t('kickConfirm')}</AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>{t('decline')}</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => kickMember(row.user_id)} className="bg-destructive text-destructive-foreground">{t('kickMember')}</AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          )}
-                        </div>
-                      </div>
+                      <LeaderboardRow
+                        key={row.user_id}
+                        row={row}
+                        idx={idx}
+                        animDelay={i * 55}
+                        rankDelta={rankDelta(row.user_id, idx)}
+                        canAdmin={group.is_owner && !row.is_me}
+                        onLongPress={() => setAdminTarget({ user_id: row.user_id, name: row.name })}
+                      />
                     );
                   })}
                 </div>
@@ -443,20 +435,66 @@ function GroupCard({ group, userId, onChanged }: { group: Group; userId: string;
       )}
 
       <InviteSheet open={inviteOpen} onOpenChange={setInviteOpen} groupId={group.id} groupName={group.name} joinCode={group.join_code} />
+
+      {adminTarget && (
+        <MemberAdminMenu
+          open={!!adminTarget}
+          onOpenChange={(o) => { if (!o) setAdminTarget(null); }}
+          groupId={group.id}
+          member={adminTarget}
+          onChanged={onAdminChanged}
+        />
+      )}
     </div>
   );
 }
 
-function Podium({ rank, row, isMe, height }: { rank: 1 | 2 | 3; row: LeaderboardRow; isMe: boolean; height: string }) {
+function LeaderboardRow({
+  row, idx, animDelay, rankDelta, canAdmin, onLongPress,
+}: {
+  row: LeaderboardRow;
+  idx: number;
+  animDelay: number;
+  rankDelta: number;
+  canAdmin: boolean;
+  onLongPress: () => void;
+}) {
+  const { t } = useI18n();
+  const lp = useLongPress(() => onLongPress());
+  const handlers = canAdmin ? lp : {};
+  return (
+    <div
+      {...handlers}
+      className={`reveal flex items-center justify-between rounded-lg px-2 py-1.5 text-sm ${row.is_me ? 'bg-primary/10' : ''} ${canAdmin ? 'cursor-pointer select-none' : ''}`}
+      style={{ animationDelay: `${animDelay}ms` }}
+    >
+      <div className="flex min-w-0 items-center gap-2">
+        <span className="num w-6 text-xs font-bold text-muted-foreground">#{idx + 1}</span>
+        <RankIndicator delta={rankDelta} />
+        <span className="truncate font-medium">{row.name}</span>
+        {row.is_me && <span className="text-[10px] text-muted-foreground">({t('you')})</span>}
+      </div>
+      <div className="flex items-center gap-1.5">
+        <span className="num font-display text-base font-bold">{row.total}</span>
+      </div>
+    </div>
+  );
+}
+
+function Podium({ rank, row, isMe, height, onLongPress }: { rank: 1 | 2 | 3; row: LeaderboardRow; isMe: boolean; height: string; onLongPress?: () => void }) {
   const total = useCountUp(row?.total ?? 0);
+  const lp = useLongPress(() => onLongPress?.());
   const bg =
     rank === 1
       ? 'bg-gradient-to-b from-[oklch(0.82_0.18_80)] to-[oklch(0.62_0.2_60)] text-[oklch(0.18_0.04_40)]'
       : rank === 2
       ? 'bg-gradient-to-b from-[oklch(0.92_0.01_240)] to-[oklch(0.72_0.02_240)] text-[oklch(0.2_0.03_240)]'
       : 'bg-gradient-to-b from-[oklch(0.74_0.13_50)] to-[oklch(0.5_0.13_40)] text-[oklch(0.18_0.04_40)]';
+  // Spread long-press handlers only when an admin action is wired
+  const lpHandlers = onLongPress ? lp : {};
   return (
-    <div className={`reveal relative flex flex-col items-center ${rank === 1 ? 'podium-glow-1' : ''}`}
+    <div {...lpHandlers}
+         className={`reveal relative flex flex-col items-center ${rank === 1 ? 'podium-glow-1' : ''} ${onLongPress ? 'cursor-pointer select-none' : ''}`}
          style={{ animationDelay: `${(rank === 1 ? 0 : rank === 2 ? 80 : 160)}ms` }}>
       {rank === 1 && <Confetti count={16} />}
       <Medal rank={rank} size={rank === 1 ? 56 : 44} />

@@ -148,6 +148,10 @@ export const api = {
   groupRename: (id: string, name: string) => req<void>(`/api/groups/${id}`, { method: 'PATCH', body: json({ name }) }),
   groupSetPrivate: (id: string, is_private: boolean) =>
     req<void>(`/api/groups/${id}`, { method: 'PATCH', body: json({ is_private }) }),
+  groupAdjustPoints: (id: string, userId: string, delta: number) =>
+    req<{ ok: true; delta: number }>(`/api/groups/${id}/adjust-points`, {
+      method: 'POST', body: json({ user_id: userId, delta }),
+    }),
   groupRegenCode: (id: string) => req<{ join_code: string }>(`/api/groups/${id}/regenerate-code`, { method: 'POST' }),
   groupReset: (id: string) => req<void>(`/api/groups/${id}/reset`, { method: 'POST' }),
   groupTransfer: (id: string, userId: string) => req<void>(`/api/groups/${id}/transfer`, { method: 'POST', body: json({ user_id: userId }) }),

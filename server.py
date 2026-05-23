@@ -1300,15 +1300,70 @@ def handle_leaderboard_get(handler: BaseHTTPRequestHandler, group_id: str, **_):
         {"group_id": group_id, "bonus_pts": {"$exists": True}}
     )
     bonus_map = {b["user_id"]: b.get("bonus_pts", 0) for b in bonus_cursor}
-    if bonus_map:
+
+    # Admin-applied adjustments (per-group, stored on member)
+    adjust_map = {str(m["user_id"]): int(m.get("admin_adjust", 0)) for m in grp.get("members", [])}
+
+    if bonus_map or any(adjust_map.values()):
         for row in result:
-            row["bonus_pts"] = bonus_map.get(row["user_id"], 0)
-            row["total"] += row["bonus_pts"]
+            row["bonus_pts"]  = bonus_map.get(row["user_id"], 0)
+            row["adjust_pts"] = adjust_map.get(row["user_id"], 0)
+            row["total"] += row["bonus_pts"] + row["adjust_pts"]
         result.sort(key=lambda r: (-r["total"], -r["exact"], -r["correct"]))
         for i, r in enumerate(result, 1):
             r["rank"] = i
+    else:
+        for row in result:
+            row["adjust_pts"] = 0
 
     send_json(handler, 200, result)
+
+
+def handle_group_adjust_points(handler: BaseHTTPRequestHandler, group_id: str, **_):
+    """POST /api/groups/<id>/adjust-points — owner only. Body: {user_id, delta:±1}.
+    Adds delta to that member's admin_adjust field. Used to grant/reduce a single
+    point at a time."""
+    user = auth.require_user(handler)
+    if not user:
+        return
+    from bson import ObjectId
+    try:
+        gid = ObjectId(group_id)
+    except Exception:
+        send_json(handler, 404, {"error": "not found"})
+        return
+    grp = db.groups().find_one({"_id": gid})
+    if not grp:
+        send_json(handler, 404, {"error": "not found"})
+        return
+    if grp.get("owner_id") != user["_id"]:
+        send_json(handler, 403, {"error": "owner_only"})
+        return
+    body = parse_json_body(handler)
+    try:
+        target_uid = ObjectId(body.get("user_id", ""))
+    except Exception:
+        send_json(handler, 400, {"error": "bad_user_id"})
+        return
+    try:
+        delta = int(body.get("delta", 0))
+    except (TypeError, ValueError):
+        send_json(handler, 400, {"error": "bad_delta"})
+        return
+    if delta == 0 or abs(delta) > 10:
+        send_json(handler, 400, {"error": "delta_out_of_range"})
+        return
+    # Ensure target is a member
+    member_ids = [m["user_id"] for m in grp.get("members", [])]
+    if target_uid not in member_ids:
+        send_json(handler, 404, {"error": "not_a_member"})
+        return
+    db.groups().update_one(
+        {"_id": gid, "members.user_id": target_uid},
+        {"$inc": {"members.$.admin_adjust": delta},
+         "$set": {"updated_at": datetime.now(timezone.utc)}}
+    )
+    send_json(handler, 200, {"ok": True, "delta": delta})
 
 
 def handle_my_predictions(handler: BaseHTTPRequestHandler, group_id: str, **_):
@@ -1962,6 +2017,7 @@ ROUTES_POST = [
     # Group management
     (r"^/api/groups/([^/]+)/regenerate-code$",  handle_group_regen_code),
     (r"^/api/groups/([^/]+)/reset$",            handle_group_reset),
+    (r"^/api/groups/([^/]+)/adjust-points$",    handle_group_adjust_points),
     (r"^/api/groups/([^/]+)/transfer$",         handle_group_transfer),
     (r"^/api/groups/([^/]+)/mute$",             handle_group_mute),
     (r"^/internal/sync-matches$",               handle_internal_sync),
