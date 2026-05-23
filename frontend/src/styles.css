@@ -410,4 +410,183 @@ html[data-palette="crimson"].dark {
       transparent 40px 80px
     );
   }
+
+  /* === Flying ball ambient background === */
+  .flying-ball {
+    position: absolute;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.12;
+    will-change: transform;
+    filter: blur(0.5px);
+  }
+  .dark .flying-ball { opacity: 0.09; }
+  .flying-ball-1 {
+    top: 12%; left: 8%;
+    width: 64px; height: 64px;
+    animation: ball-orbit-1 32s linear infinite, ball-spin 8s linear infinite;
+  }
+  .flying-ball-2 {
+    top: 55%; right: 6%;
+    width: 48px; height: 48px;
+    animation: ball-orbit-2 26s linear infinite, ball-spin 6s linear infinite reverse;
+  }
+  .flying-ball-3 {
+    bottom: 18%; left: 12%;
+    width: 36px; height: 36px;
+    animation: ball-orbit-3 38s linear infinite, ball-spin 10s linear infinite;
+  }
+  @keyframes ball-orbit-1 {
+    0%   { transform: translate3d(0,   0,   0); }
+    25%  { transform: translate3d(120px, 180px, 0); }
+    50%  { transform: translate3d(40px, 320px, 0); }
+    75%  { transform: translate3d(-60px, 160px, 0); }
+    100% { transform: translate3d(0,   0,   0); }
+  }
+  @keyframes ball-orbit-2 {
+    0%   { transform: translate3d(0,   0,   0); }
+    33%  { transform: translate3d(-90px, -140px, 0); }
+    66%  { transform: translate3d(-160px, 80px, 0); }
+    100% { transform: translate3d(0,   0,   0); }
+  }
+  @keyframes ball-orbit-3 {
+    0%   { transform: translate3d(0,   0,   0); }
+    50%  { transform: translate3d(200px, -260px, 0); }
+    100% { transform: translate3d(0,   0,   0); }
+  }
+  @keyframes ball-spin {
+    from { rotate: 0deg; }
+    to   { rotate: 360deg; }
+  }
+
+  /* === Stagger reveal on mount === */
+  .reveal {
+    opacity: 0;
+    transform: translate3d(0, 14px, 0) scale(0.98);
+    animation: reveal-up 480ms cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
+    animation-delay: calc(var(--i, 0) * 55ms);
+  }
+  @keyframes reveal-up {
+    to { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+  }
+
+  /* === Page transition: fade + slide === */
+  .page-enter {
+    animation: page-enter 380ms cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
+  }
+  @keyframes page-enter {
+    from { opacity: 0; transform: translate3d(0, 16px, 0); }
+    to   { opacity: 1; transform: translate3d(0,  0,  0); }
+  }
+
+  /* === Tab pill indicator === */
+  .tab-active-ring {
+    position: relative;
+  }
+  .tab-active-ring::before {
+    content: "";
+    position: absolute;
+    inset: 4px 8px auto 8px;
+    height: 32px;
+    border-radius: 9999px;
+    background: color-mix(in oklab, var(--primary) 14%, transparent);
+    z-index: -1;
+    animation: pill-pop 360ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  @keyframes pill-pop {
+    0% { transform: scale(0.6); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  .tab-icon-bounce {
+    animation: icon-bounce 540ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  @keyframes icon-bounce {
+    0%   { transform: translateY(0)    scale(1); }
+    35%  { transform: translateY(-6px) scale(1.18); }
+    70%  { transform: translateY(2px)  scale(0.92); }
+    100% { transform: translateY(0)    scale(1); }
+  }
+
+  /* === Hero shine sweep === */
+  .shine-sweep { position: relative; overflow: hidden; isolation: isolate; }
+  .shine-sweep::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.35) 50%, transparent 70%);
+    transform: translateX(-120%);
+    animation: shine-sweep 5.5s ease-in-out 1.2s infinite;
+    pointer-events: none;
+  }
+  @keyframes shine-sweep {
+    0%   { transform: translateX(-120%); }
+    50%  { transform: translateX(120%); }
+    100% { transform: translateX(120%); }
+  }
+
+  /* === Score pop (live updates) === */
+  .score-pop {
+    animation: score-pop 480ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  @keyframes score-pop {
+    0%   { transform: scale(1); color: var(--foreground); }
+    40%  { transform: scale(1.35); color: var(--live); }
+    100% { transform: scale(1); color: var(--foreground); }
+  }
+
+  /* === Card hover/tap lift === */
+  .card-lift {
+    transition: transform 220ms cubic-bezier(0.2, 0.7, 0.2, 1),
+                box-shadow 220ms cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+  .card-lift:hover { transform: translateY(-2px); box-shadow: var(--shadow-warm); }
+  .card-lift:active { transform: translateY(0) scale(0.98); }
+
+  /* === Floating action / bonus pulse glow === */
+  .glow-pulse {
+    animation: glow-pulse 2.4s ease-in-out infinite;
+  }
+  @keyframes glow-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--primary) 40%, transparent); }
+    50%      { box-shadow: 0 0 0 12px color-mix(in oklab, var(--primary) 0%, transparent); }
+  }
+
+  /* === Sticky date header slide-down === */
+  .sticky-slide {
+    animation: sticky-slide 320ms ease-out;
+  }
+  @keyframes sticky-slide {
+    from { transform: translateY(-100%); opacity: 0; }
+    to   { transform: translateY(0); opacity: 1; }
+  }
+
+  /* === Confetti for win moments (used by FloatingScore) === */
+  .confetti-piece {
+    position: absolute;
+    width: 8px; height: 8px;
+    animation: confetti-fall 1.8s ease-out forwards;
+  }
+  @keyframes confetti-fall {
+    0%   { transform: translate3d(0,   0,    0) rotate(0deg); opacity: 1; }
+    100% { transform: translate3d(var(--cx, 60px), 240px, 0) rotate(720deg); opacity: 0; }
+  }
+
+  /* === Scrollbar hidden helper === */
+  .scrollbar-none::-webkit-scrollbar { display: none; }
+  .scrollbar-none { scrollbar-width: none; }
+
+  /* === Smooth scroll for in-page anchors === */
+  html { scroll-behavior: smooth; }
+}
+
+/* === Reduced motion: kill all decorative animations === */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .flying-ball { display: none; }
+  .reveal { opacity: 1; transform: none; }
 }

@@ -47,7 +47,7 @@ function ProfilePage() {
   return (
     <AppShell title={lang === 'he' ? 'פרופיל' : 'Profile'}>
       {/* Avatar + name */}
-      <div className="mb-4 flex items-center gap-4 rounded-3xl bg-gradient-warm p-5 shadow-warm">
+      <div className="shine-sweep card-lift mb-4 flex items-center gap-4 overflow-hidden rounded-3xl bg-gradient-warm p-5 shadow-warm">
         {user.picture ? (
           <img src={user.picture} alt={user.name} className="h-16 w-16 rounded-full object-cover ring-2 ring-primary-foreground/40" />
         ) : (

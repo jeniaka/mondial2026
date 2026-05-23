@@ -104,7 +104,7 @@ function MatchDetail() {
         <ArrowLeft className="h-5 w-5" />
       </Link>
     }>
-      <div className="overflow-hidden rounded-3xl bg-gradient-warm p-5 shadow-warm">
+      <div className="shine-sweep card-lift overflow-hidden rounded-3xl bg-gradient-warm p-5 shadow-warm">
         <div className="flex items-center justify-between">
           <span className="text-[10px] font-bold uppercase tracking-wider text-primary-foreground/80">{match.competition}</span>
           {live && (

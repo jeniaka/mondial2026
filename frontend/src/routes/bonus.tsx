@@ -99,7 +99,7 @@ function BonusPage() {
 
   return (
     <AppShell title={t('bonusBets')}>
-      <div className="mb-4 overflow-hidden rounded-3xl bg-gradient-warm p-5 shadow-warm">
+      <div className="shine-sweep card-lift mb-4 overflow-hidden rounded-3xl bg-gradient-warm p-5 shadow-warm">
         <div className="flex items-center gap-3">
           <span className="grid h-10 w-10 place-items-center rounded-2xl bg-primary-foreground/15 backdrop-blur">
             <Star className="h-5 w-5 text-primary-foreground" />

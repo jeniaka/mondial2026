@@ -226,7 +226,7 @@ function GroupCard({ group, userId, onChanged }: { group: Group; userId: string;
                   {(top3.length < 3 ? leaderboard : rest).map((row, i) => {
                     const idx = top3.length < 3 ? i : i + 3;
                     return (
-                      <div key={row.user_id} className={`flex items-center justify-between rounded-lg px-2 py-1.5 text-sm ${row.is_me ? 'bg-primary/10' : ''}`}>
+                      <div key={row.user_id} className={`reveal flex items-center justify-between rounded-lg px-2 py-1.5 text-sm ${row.is_me ? 'bg-primary/10' : ''}`} style={{ animationDelay: `${i * 55}ms` }}>
                         <div className="flex min-w-0 items-center gap-2">
                           <span className="num w-6 text-xs font-bold text-muted-foreground">#{idx + 1}</span>
                           <span className="truncate font-medium">{row.name}</span>

@@ -49,9 +49,9 @@ function HomePage() {
   return (
     <AppShell>
       {/* Hero */}
-      <div className="mb-4 overflow-hidden rounded-3xl bg-gradient-warm p-5 shadow-warm">
+      <div className="shine-sweep card-lift mb-4 overflow-hidden rounded-3xl bg-gradient-warm p-5 shadow-warm">
         <div className="flex items-center gap-2 text-primary-foreground/85">
-          <Sparkles className="h-4 w-4" /> <span className="text-xs font-bold uppercase tracking-wider">USA · CAN · MEX 2026</span>
+          <Sparkles className="h-4 w-4 tab-icon-bounce" /> <span className="text-xs font-bold uppercase tracking-wider">USA · CAN · MEX 2026</span>
         </div>
         <h1 className="mt-2 font-display text-2xl font-black leading-tight text-primary-foreground">{t("tagline")}</h1>
         <p className="mt-1.5 text-xs text-primary-foreground/85">{t("score365rules")}</p>
@@ -59,13 +59,13 @@ function HomePage() {
 
       {pinnedMatches.length > 0 && (
         <Section title={`📌 ${t("pinLive")}`}>
-          {pinnedMatches.map((m) => <MatchCard key={m.id} match={m} pinned onTogglePin={togglePin} />)}
+          {pinnedMatches.map((m, i) => <MatchCard key={m.id} match={m} pinned index={i} onTogglePin={togglePin} />)}
         </Section>
       )}
 
       {live.length > 0 && (
         <Section title={t("live")} live>
-          {live.map((m) => <MatchCard key={m.id} match={m} pinned={pinned.includes(m.id)} onTogglePin={togglePin} />)}
+          {live.map((m, i) => <MatchCard key={m.id} match={m} pinned={pinned.includes(m.id)} index={i} onTogglePin={togglePin} />)}
         </Section>
       )}
 
@@ -97,7 +97,7 @@ function HomePage() {
                     {date}
                   </div>
                   <div className="grid gap-2">
-                    {ms.map((m) => <MatchCard key={m.id} match={m} pinned={pinned.includes(m.id)} onTogglePin={togglePin} />)}
+                    {ms.map((m, i) => <MatchCard key={m.id} match={m} pinned={pinned.includes(m.id)} index={i} onTogglePin={togglePin} />)}
                   </div>
                 </div>
               ))}
@@ -105,7 +105,7 @@ function HomePage() {
           )}
           {finished.length > 0 && (
             <Section title={t("finished")}>
-              {finished.map((m) => <MatchCard key={m.id} match={m} pinned={pinned.includes(m.id)} onTogglePin={togglePin} />)}
+              {finished.map((m, i) => <MatchCard key={m.id} match={m} pinned={pinned.includes(m.id)} index={i} onTogglePin={togglePin} />)}
             </Section>
           )}
         </>
@@ -155,18 +155,20 @@ function idtDateLabel(s: string, lang: string): string {
   );
 }
 
-function MatchCard({ match, pinned, onTogglePin }: { match: Match; pinned: boolean; onTogglePin: (id: string) => void }) {
+function MatchCard({ match, pinned, index = 0, onTogglePin }: { match: Match; pinned: boolean; index?: number; onTogglePin: (id: string) => void }) {
   const nav = useNavigate();
   const { lang } = useI18n();
   const live = isLive(match.status);
   const time = idtTime(match.utcDate);
   const homeName = lang === "he" ? match.homeTeamHe : match.homeTeam;
   const awayName = lang === "he" ? match.awayTeamHe : match.awayTeam;
+  const scoreKey = `${match.homeScore}-${match.awayScore}`;
 
   return (
     <div
       onClick={() => nav({ to: "/match/$id", params: { id: match.id } })}
-      className="press flex cursor-pointer items-center gap-2 rounded-2xl border border-border bg-gradient-card p-3 shadow-soft"
+      className="reveal press card-lift flex cursor-pointer items-center gap-2 rounded-2xl border border-border bg-gradient-card p-3 shadow-soft"
+      style={{ animationDelay: `${index * 55}ms` }}
     >
       <div className="flex flex-1 items-center justify-end gap-1.5 overflow-hidden">
         <span className="truncate text-sm font-semibold">{homeName}</span>
@@ -174,7 +176,7 @@ function MatchCard({ match, pinned, onTogglePin }: { match: Match; pinned: boole
       </div>
       <div className="grid min-w-[60px] shrink-0 place-items-center">
         {match.homeScore != null ? (
-          <div className="num font-display text-2xl font-black">
+          <div key={scoreKey} className={`num font-display text-2xl font-black ${live ? "score-pop" : ""}`}>
             {match.homeScore}<span className="px-0.5 text-muted-foreground">:</span>{match.awayScore}
           </div>
         ) : (
@@ -194,7 +196,7 @@ function MatchCard({ match, pinned, onTogglePin }: { match: Match; pinned: boole
       {live && (
         <button
           onClick={(e) => { e.stopPropagation(); onTogglePin(match.id); }}
-          className={`press grid h-9 w-9 shrink-0 place-items-center rounded-full ${pinned ? "bg-primary/15 text-primary" : "text-muted-foreground"}`}
+          className={`press grid h-9 w-9 shrink-0 place-items-center rounded-full ${pinned ? "bg-primary/15 text-primary glow-pulse" : "text-muted-foreground"}`}
           aria-label="pin"
         >
           <Pin className={`h-4 w-4 ${pinned ? "fill-current" : ""}`} />

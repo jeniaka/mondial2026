@@ -50,12 +50,12 @@ function BetsPage() {
 
   return (
     <AppShell title={t('bets')}>
-      <div className="mb-4 flex items-center justify-between rounded-3xl bg-gradient-warm p-5 shadow-warm">
+      <div className="shine-sweep card-lift mb-4 flex items-center justify-between overflow-hidden rounded-3xl bg-gradient-warm p-5 shadow-warm">
         <div>
           <div className="text-xs font-bold uppercase tracking-wider text-primary-foreground/80">{t('points')}</div>
-          <div className="num font-display text-5xl font-black text-primary-foreground">{total}</div>
+          <div key={total} className="num font-display text-5xl font-black text-primary-foreground score-pop">{total}</div>
         </div>
-        <Trophy className="h-12 w-12 text-primary-foreground/60" />
+        <Trophy className="h-12 w-12 text-primary-foreground/60 tab-icon-bounce" />
       </div>
 
       {groups && groups.length > 1 && (
@@ -84,13 +84,13 @@ function BetsPage() {
         />
       ) : (
         <div className="grid gap-2">
-          {bets.map((b) => {
+          {bets.map((b, i) => {
             const m = matchMap.get(b.match_id);
             const homeName = m ? (lang === 'he' ? m.homeTeamHe : m.homeTeam) : b.match_id;
             const awayName = m ? (lang === 'he' ? m.awayTeamHe : m.awayTeam) : '';
             const pts = b.points_awarded ?? 0;
             return (
-              <div key={b.id} className="flex items-center gap-2 rounded-2xl border border-border bg-card p-3">
+              <div key={b.id} className="reveal card-lift flex items-center gap-2 rounded-2xl border border-border bg-card p-3" style={{ animationDelay: `${i * 55}ms` }}>
                 <div className="flex flex-1 items-center justify-end gap-1.5 truncate text-sm font-semibold">
                   <span className="truncate">{homeName}</span>
                   {m && <Flag country={m.homeTeam} size="sm" />}
