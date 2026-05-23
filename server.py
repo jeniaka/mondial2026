@@ -17,6 +17,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import config  # validates all env vars at import time
 import db
 import auth
+import mail
 
 log = logging.getLogger(__name__)
 
