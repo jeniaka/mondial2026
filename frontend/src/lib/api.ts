@@ -55,6 +55,7 @@ export type Group = {
   name: string;
   join_code: string;
   is_owner: boolean;
+  is_private: boolean;
   member_count: number;
   muted: boolean;
   members?: Member[];
@@ -145,6 +146,8 @@ export const api = {
   groupKick: (id: string, userId: string) => req<void>(`/api/groups/${id}/kick`, { method: 'POST', body: json({ user_id: userId }) }),
   groupDelete: (id: string) => req<void>(`/api/groups/${id}`, { method: 'DELETE' }),
   groupRename: (id: string, name: string) => req<void>(`/api/groups/${id}`, { method: 'PATCH', body: json({ name }) }),
+  groupSetPrivate: (id: string, is_private: boolean) =>
+    req<void>(`/api/groups/${id}`, { method: 'PATCH', body: json({ is_private }) }),
   groupRegenCode: (id: string) => req<{ join_code: string }>(`/api/groups/${id}/regenerate-code`, { method: 'POST' }),
   groupReset: (id: string) => req<void>(`/api/groups/${id}/reset`, { method: 'POST' }),
   groupTransfer: (id: string, userId: string) => req<void>(`/api/groups/${id}/transfer`, { method: 'POST', body: json({ user_id: userId }) }),
@@ -171,6 +174,10 @@ export const api = {
   unreadCount: () => req<{ count: number }>('/api/notifications/unread-count'),
   markRead: (ids: string[]) => req<void>('/api/notifications/read', { method: 'POST', body: json({ ids }) }),
   notifPrefs: (prefs: NotifPrefs) => req<{ ok: true }>('/api/notifications/prefs', { method: 'POST', body: json(prefs) }),
+
+  // App-level invite (not tied to a league)
+  appInvite: (email: string, lang: 'he' | 'en') =>
+    req<{ ok: true; email: string }>('/api/invite-app', { method: 'POST', body: json({ email, lang }) }),
 
   // User
   userStats: () => req<{ total_predictions: number; exact_predictions: number; best_rank: number | null }>('/api/users/me/stats'),

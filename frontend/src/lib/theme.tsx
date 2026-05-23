@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 
 export type Theme = "light" | "dark";
-export type Palette = "forest" | "ocean" | "sunset" | "galaxy" | "crimson";
+export type Palette = "forest" | "ocean" | "crimson" | "trionda" | "stadium" | "midnight";
 
 type Ctx = {
   theme: Theme;
@@ -14,11 +14,12 @@ type Ctx = {
 const ThemeCtx = createContext<Ctx | null>(null);
 
 const metaColors: Record<Palette, { light: string; dark: string }> = {
-  forest:  { light: "#2d8a4e", dark: "#0f1a14" },
-  ocean:   { light: "#1e6aad", dark: "#0a1220" },
-  sunset:  { light: "#d4681a", dark: "#1a0d07" },
-  galaxy:  { light: "#7b2fd4", dark: "#100820" },
-  crimson: { light: "#c41a2a", dark: "#150508" },
+  forest:   { light: "#2d8a4e", dark: "#0f1a14" },
+  ocean:    { light: "#1e6aad", dark: "#0a1220" },
+  crimson:  { light: "#c41a2a", dark: "#150508" },
+  trionda:  { light: "#d4313c", dark: "#0a0e1a" },
+  stadium:  { light: "#0f2a5c", dark: "#020618" },
+  midnight: { light: "#1a1a1a", dark: "#000000" },
 };
 
 export function ThemeProvider({ children }: { children: ReactNode }) {

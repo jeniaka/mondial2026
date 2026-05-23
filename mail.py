@@ -18,13 +18,19 @@ def send_email(to_email: str, to_name: str, subject: str, html_body: str):
     """
     Send a transactional email via Brevo HTTP API.
     Returns (True, None) on success, (False, error_str) on failure.
+
+    Brevo rejects requests with empty `name` in recipient. Fall back to the
+    local part of the email address.
     """
+    name = (to_name or "").strip()
+    if not name:
+        name = (to_email or "").split("@", 1)[0] or "Friend"
     payload = {
         "sender": {
             "email": config.BREVO_SENDER_EMAIL,
             "name":  config.BREVO_SENDER_NAME,
         },
-        "to": [{"email": to_email, "name": to_name}],
+        "to": [{"email": to_email, "name": name}],
         "subject": subject,
         "htmlContent": html_body,
     }
@@ -156,6 +162,59 @@ def build_invite_email_he(from_name: str, group_name: str, accept_url: str) -> t
     <p style="font-size:12px;color:#6B4A3A;margin-top:24px;">
       ההזמנה תפוג בעוד 14 ימים. אם הודעה זו הגיעה אליך בטעות, ניתן להתעלם ממנה.
     </p>
+  </div>
+</body>
+</html>"""
+    return subject, html_body
+
+
+def build_app_invite_email(from_name: str, app_url: str, lang: str = "he") -> tuple:
+    """App-level invite (no group). Returns (subject, html_body)."""
+    if lang == "he":
+        subject = f"{from_name} מזמין אותך למונדיאל 2026"
+        direction = "rtl"
+        greeting = "שלום,"
+        body_text = (
+            f'<bdi>{from_name}</bdi> חושב שתאהב להצטרף לאפליקציית '
+            f'<strong>מונדיאל 2026</strong> — אפליקציית ניחושים על המונדיאל.'
+        )
+        pitch = "הירשמו, צרו או הצטרפו לליגה עם חברים, ונחשו את תוצאות המונדיאל."
+        cta = "פתח את האפליקציה"
+        font = "Heebo"
+        expiry = ""
+    else:
+        subject = f"{from_name} invited you to Mondial 2026"
+        direction = "ltr"
+        greeting = "Hi,"
+        body_text = (
+            f'<strong>{from_name}</strong> thought you might enjoy '
+            f'<strong>Mondial 2026</strong> — the World Cup predictions app.'
+        )
+        pitch = "Sign up, join a league with friends, predict scores."
+        cta = "Open the app"
+        font = "Inter"
+        expiry = ""
+
+    html_body = f"""<!doctype html>
+<html dir="{direction}" lang="{lang}">
+<head><meta charset="utf-8"></head>
+<body style="background:#FFF6E5;font-family:'{font}',Arial,sans-serif;color:#2A1810;margin:0;padding:0;">
+  <div style="max-width:520px;margin:24px auto;background:#FFFFFF;border-radius:14px;padding:24px;">
+    <div style="text-align:center;font-size:28px;font-weight:800;color:#E8542C;margin-bottom:8px;">
+      Mondial 2026
+    </div>
+    <p>{greeting}</p>
+    <p>{body_text}</p>
+    <p>{pitch}</p>
+    <p style="text-align:center;margin:28px 0;">
+      <a href="{app_url}" style="display:inline-block;background:#E8542C;color:#FFFFFF;text-decoration:none;padding:12px 28px;border-radius:999px;font-weight:700;">
+        {cta}
+      </a>
+    </p>
+    <p style="font-size:13px;color:#6B4A3A;">
+      <span style="word-break:break-all;" dir="ltr">{app_url}</span>
+    </p>
+    {expiry}
   </div>
 </body>
 </html>"""

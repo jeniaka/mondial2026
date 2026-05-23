@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Trophy, Target, Award, LogOut, Trash2, Sun, Moon, Check, Bell, BellRing, Goal, UserPlus, Crown, Mail } from 'lucide-react';
+import { Trophy, Target, Award, LogOut, Sun, Moon, Check, Bell, BellRing, Goal, UserPlus, Crown, Mail, Send } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { haptic } from '@/hooks/useHaptic';
@@ -10,17 +10,11 @@ import { api, type NotifPrefs, type EmailDigest } from '@/lib/api';
 import { AppShell } from '@/components/AppShell';
 import { CardSkeleton } from '@/components/States';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
-  AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 import { BurstConfetti } from '@/components/BurstConfetti';
-import { StatsRadar } from '@/components/StatsRadar';
-import { AchievementWall } from '@/components/AchievementWall';
-import { TierBadge } from '@/components/TierBadge';
 
 export const Route = createFileRoute('/friends')({ component: ProfilePage });
 
@@ -38,16 +32,6 @@ function ProfilePage() {
     enabled: !!user,
   });
 
-  const deleteAccount = async () => {
-    try {
-      await api.deleteAccount();
-      toast.success(lang === 'he' ? 'חשבון נמחק' : 'Account deleted');
-      signOut();
-    } catch (e: unknown) {
-      const err = e as { message?: string };
-      toast.error(err?.message ?? 'Error');
-    }
-  };
 
   if (!user) return null;
 
@@ -72,52 +56,11 @@ function ProfilePage() {
 
       {/* Stats */}
       {isLoading ? <CardSkeleton count={3} /> : stats && (
-        <>
-          <div className="mb-3">
-            <TierBadge points={(stats.exact_predictions * 5) + stats.total_predictions} lang={lang as 'he' | 'en'} />
-          </div>
-          <div className="mb-4 grid grid-cols-3 gap-2">
-            <StatCard icon={<Trophy className="h-5 w-5" />} value={stats.total_predictions} label={lang === 'he' ? 'ניחושים' : 'Picks'} />
-            <StatCard icon={<Target className="h-5 w-5" />} value={stats.exact_predictions} label={lang === 'he' ? 'מדויקים' : 'Exact'} />
-            <StatCard icon={<Award className="h-5 w-5" />} value={stats.best_rank ?? '—'} label={lang === 'he' ? 'דירוג מירב' : 'Best rank'} />
-          </div>
-
-          {/* Radar */}
-          <div className="reveal mb-4 rounded-3xl border border-border bg-card p-4 shadow-soft text-primary">
-            <h3 className="mb-2 text-center text-[11px] font-black uppercase tracking-wider text-primary">
-              {lang === 'he' ? 'פרופיל הביצועים שלך' : 'Your performance'}
-            </h3>
-            <div className="grid place-items-center">
-              <StatsRadar
-                size={220}
-                values={[
-                  { label: lang === 'he' ? 'דיוק' : 'Accuracy', value: stats.total_predictions > 0 ? stats.exact_predictions / stats.total_predictions : 0 },
-                  { label: lang === 'he' ? 'נפח' : 'Volume', value: Math.min(1, stats.total_predictions / 30) },
-                  { label: lang === 'he' ? 'דירוג' : 'Rank', value: stats.best_rank ? Math.max(0, 1 - (stats.best_rank - 1) / 20) : 0 },
-                  { label: lang === 'he' ? 'מדויקים' : 'Exacts', value: Math.min(1, stats.exact_predictions / 10) },
-                  { label: lang === 'he' ? 'התמדה' : 'Consistency', value: Math.min(1, stats.total_predictions / 20) },
-                ]}
-              />
-            </div>
-          </div>
-
-          {/* Achievements */}
-          <div className="reveal mb-4 rounded-3xl border border-border bg-card p-4 shadow-soft">
-            <h3 className="mb-3 text-[11px] font-black uppercase tracking-wider text-primary">
-              {lang === 'he' ? 'הישגים' : 'Achievements'}
-            </h3>
-            <AchievementWall
-              lang={lang as 'he' | 'en'}
-              stats={{
-                total_predictions: stats.total_predictions,
-                exact_predictions: stats.exact_predictions,
-                best_rank: stats.best_rank,
-                current_streak: 0,
-                total_points: (stats.exact_predictions * 5) + stats.total_predictions,
-              }}
-            />
-          </div>
-        </>
+        <div className="mb-4 grid grid-cols-3 gap-2">
+          <StatCard icon={<Trophy className="h-5 w-5" />} value={stats.total_predictions} label={lang === 'he' ? 'ניחושים' : 'Picks'} />
+          <StatCard icon={<Target className="h-5 w-5" />} value={stats.exact_predictions} label={lang === 'he' ? 'מדויקים' : 'Exact'} />
+          <StatCard icon={<Award className="h-5 w-5" />} value={stats.best_rank ?? '—'} label={lang === 'he' ? 'דירוג מירב' : 'Best rank'} />
+        </div>
       )}
 
       {/* Settings */}
@@ -158,7 +101,7 @@ function ProfilePage() {
           {/* Color theme */}
           <div className="rounded-xl bg-muted/40 px-4 py-3">
             <div className="mb-2.5 text-sm font-medium">{t('colorTheme')}</div>
-            <div className="grid grid-cols-5 gap-2">
+            <div className="grid grid-cols-3 gap-2">
               {PALETTES.map((p) => (
                 <button
                   key={p.id}
@@ -186,34 +129,14 @@ function ProfilePage() {
       {/* Notification Settings */}
       <NotificationSettings />
 
+      {/* Invite friends to app */}
+      <AppInviteCard />
+
       {/* Actions */}
       <div className="space-y-2">
-        <Button onClick={() => signOut()} variant="secondary" size="lg" className="press w-full gap-2">
+        <Button onClick={() => { haptic('light'); signOut(); }} variant="secondary" size="lg" className="press ripple w-full gap-2">
           <LogOut className="h-4 w-4" /> {t('signOut')}
         </Button>
-
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button variant="ghost" size="lg" className="press w-full gap-2 text-destructive hover:text-destructive">
-              <Trash2 className="h-4 w-4" />
-              {lang === 'he' ? 'מחק חשבון' : 'Delete account'}
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>{lang === 'he' ? 'מחיקת חשבון' : 'Delete account'}</AlertDialogTitle>
-              <AlertDialogDescription>
-                {lang === 'he' ? 'פעולה זו אינה הפיכה. כל הנתונים ימחקו לצמיתות.' : 'This cannot be undone. All your data will be permanently deleted.'}
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>{t('decline')}</AlertDialogCancel>
-              <AlertDialogAction onClick={deleteAccount} className="bg-destructive text-destructive-foreground">
-                {lang === 'he' ? 'מחק' : 'Delete'}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
       </div>
     </AppShell>
   );
@@ -230,11 +153,12 @@ function StatCard({ icon, value, label }: { icon: React.ReactNode; value: number
 }
 
 const PALETTES: Array<{ id: Palette; label: string; labelHe: string; colorA: string; colorB: string }> = [
-  { id: 'forest',  label: 'Forest',  labelHe: 'יער',      colorA: '#2d8a4e', colorB: '#1a5c32' },
-  { id: 'ocean',   label: 'Ocean',   labelHe: 'אוקיינוס', colorA: '#1e6aad', colorB: '#0e3d75' },
-  { id: 'sunset',  label: 'Sunset',  labelHe: 'שקיעה',    colorA: '#e07020', colorB: '#b04010' },
-  { id: 'galaxy',  label: 'Galaxy',  labelHe: 'גלקסיה',   colorA: '#8b35d4', colorB: '#4a1090' },
-  { id: 'crimson', label: 'Crimson', labelHe: 'קרמזין',   colorA: '#c82030', colorB: '#801018' },
+  { id: 'forest',   label: 'Forest',   labelHe: 'יער',         colorA: '#2d8a4e', colorB: '#1a5c32' },
+  { id: 'ocean',    label: 'Ocean',    labelHe: 'אוקיינוס',    colorA: '#1e6aad', colorB: '#0e3d75' },
+  { id: 'crimson',  label: 'Crimson',  labelHe: 'קרמזין',      colorA: '#c82030', colorB: '#801018' },
+  { id: 'trionda',  label: 'Trionda',  labelHe: 'טריאונדה',    colorA: '#D32F2F', colorB: '#1565C0' },
+  { id: 'stadium',  label: 'Stadium',  labelHe: 'אצטדיון',     colorA: '#0f2a5c', colorB: '#FFD54F' },
+  { id: 'midnight', label: 'Midnight', labelHe: 'חצות',        colorA: '#0a0a14', colorB: '#5e6ad2' },
 ];
 
 const DEFAULT_PREFS: Required<NotifPrefs> = {
@@ -354,6 +278,80 @@ function NotificationSettings() {
         >
           {saving ? '…' : (lang === 'he' ? 'שמור העדפות' : 'Save preferences')}
         </Button>
+      </div>
+    </div>
+  );
+}
+
+function AppInviteCard() {
+  const { lang } = useI18n();
+  const [email, setEmail] = useState('');
+  const [sending, setSending] = useState(false);
+  const [burst, setBurst] = useState(0);
+
+  const send = async () => {
+    const e = email.trim();
+    if (!e || !e.includes('@')) {
+      toast.error(lang === 'he' ? 'הזן אימייל תקין' : 'Enter a valid email');
+      haptic('error');
+      return;
+    }
+    setSending(true);
+    try {
+      await api.appInvite(e, lang as 'he' | 'en');
+      toast.success(lang === 'he' ? `הזמנה נשלחה אל ${e}` : `Invite sent to ${e}`);
+      haptic('success');
+      setBurst((n) => n + 1);
+      setEmail('');
+    } catch (err: unknown) {
+      const x = err as { message?: string };
+      const m = x?.message ?? '';
+      if (m.includes('too_many')) toast.error(lang === 'he' ? 'יותר מדי הזמנות. נסה שוב מאוחר יותר.' : 'Too many invites. Try later.');
+      else if (m.includes('invalid_email')) toast.error(lang === 'he' ? 'אימייל לא תקין' : 'Invalid email');
+      else toast.error(lang === 'he' ? 'שליחת הזמנה נכשלה' : 'Invite failed');
+      haptic('error');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <div className="mb-4 mt-4">
+      <h3 className="mb-2 px-1 text-[11px] font-black uppercase tracking-wider text-primary">
+        {lang === 'he' ? 'הזמן חבר לאפליקציה' : 'Invite a friend'}
+      </h3>
+      <div className="reveal glass card-lift relative overflow-hidden rounded-3xl p-4">
+        {burst > 0 && <BurstConfetti trigger={burst} count={24} />}
+        <p className="mb-3 text-xs text-muted-foreground">
+          {lang === 'he'
+            ? 'שלח קישור הזמנה — החבר יוכל להירשם, להצטרף לליגות ולנחש איתך.'
+            : 'Send an invitation link — they can sign up, join leagues, and predict with you.'}
+        </p>
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <span className="pointer-events-none absolute inset-y-0 left-3 grid place-items-center text-muted-foreground">
+              <Mail className="h-4 w-4" />
+            </span>
+            <Input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="friend@example.com"
+              dir="ltr"
+              autoComplete="email"
+              className="h-11 pl-9"
+              onKeyDown={(e) => { if (e.key === 'Enter') send(); }}
+            />
+          </div>
+          <Button
+            onClick={send}
+            disabled={sending}
+            className="press btn-glow ripple bg-gradient-warm shadow-warm"
+          >
+            <Send className="me-1 h-4 w-4" />
+            {sending ? '…' : (lang === 'he' ? 'שלח' : 'Send')}
+          </Button>
+        </div>
       </div>
     </div>
   );

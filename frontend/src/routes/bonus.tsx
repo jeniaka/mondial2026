@@ -155,12 +155,12 @@ function BonusPage() {
         <FlagCarousel options={wc26Nations} value={winner} onChange={setWinner} disabled={locked} />
       </BonusSection>
 
-      <BonusSection title={t('pickTopPlayer')} pts={10} icon={<span>⭐</span>}>
+      <BonusSection title={t('pickTopPlayer')} pts={10} icon={<span>👟</span>}>
         <Input
           value={player}
           onChange={(e) => setPlayer(e.target.value)}
           disabled={locked}
-          placeholder="Lionel Messi"
+          placeholder={lang === 'he' ? 'הרי קיין · אמבפה · הולנד...' : 'Harry Kane · Mbappé · Haaland...'}
           className="h-12 text-base"
         />
       </BonusSection>

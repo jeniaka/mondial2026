@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useEffect, useState, useCallback } from 'react';
-import { Crown, Plus, LogIn, UserPlus, X, Copy, Trash2, Shield, LogOut, BarChart2 } from 'lucide-react';
+import { Crown, Plus, LogIn, UserPlus, X, Copy, Trash2, Shield, LogOut, BarChart2, Settings, Edit2, Lock, Unlock, RefreshCw, RotateCcw } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
@@ -64,7 +65,12 @@ function LeaguesPage() {
       toast.success(`${t('join')} ✓`);
     } catch (e: unknown) {
       const err = e as { message?: string };
-      toast.error(err?.message ?? (lang === 'he' ? 'קוד לא תקין' : 'Invalid code'));
+      const m = err?.message ?? '';
+      if (m === 'league_closed') {
+        toast.error(lang === 'he' ? 'הליגה סגורה להצטרפות' : 'League is closed to new joins');
+      } else {
+        toast.error(m || (lang === 'he' ? 'קוד לא תקין' : 'Invalid code'));
+      }
     }
   };
 
@@ -117,6 +123,56 @@ function GroupCard({ group, userId, onChanged }: { group: Group; userId: string;
   const [leaderOpen, setLeaderOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [prevRanks, setPrevRanks] = useState<Record<string, number>>({});
+  const [renameOpen, setRenameOpen] = useState(false);
+  const [newName, setNewName] = useState(group.name);
+
+  const renameLeague = async () => {
+    const trimmed = newName.trim();
+    if (!trimmed || trimmed === group.name) { setRenameOpen(false); return; }
+    try {
+      await api.groupRename(group.id, trimmed);
+      toast.success(lang === 'he' ? 'שם הליגה עודכן' : 'League renamed');
+      setRenameOpen(false); onChanged();
+    } catch (e: unknown) {
+      const err = e as { message?: string };
+      toast.error(err?.message ?? 'Error');
+    }
+  };
+
+  const togglePrivate = async () => {
+    try {
+      await api.groupSetPrivate(group.id, !group.is_private);
+      toast.success(!group.is_private
+        ? (lang === 'he' ? 'הליגה סגורה להצטרפות' : 'League closed to joins')
+        : (lang === 'he' ? 'הליגה פתוחה להצטרפות' : 'League open to joins'));
+      onChanged();
+    } catch (e: unknown) {
+      const err = e as { message?: string };
+      toast.error(err?.message ?? 'Error');
+    }
+  };
+
+  const regenerateCode = async () => {
+    try {
+      const r = await api.groupRegenCode(group.id);
+      toast.success(`${lang === 'he' ? 'קוד חדש' : 'New code'}: ${r.join_code}`);
+      onChanged();
+    } catch (e: unknown) {
+      const err = e as { message?: string };
+      toast.error(err?.message ?? 'Error');
+    }
+  };
+
+  const resetPredictions = async () => {
+    try {
+      await api.groupReset(group.id);
+      toast.success(lang === 'he' ? 'הניחושים אופסו' : 'Predictions reset');
+      onChanged();
+    } catch (e: unknown) {
+      const err = e as { message?: string };
+      toast.error(err?.message ?? 'Error');
+    }
+  };
 
   const { data: leaderboard } = useQuery<LeaderboardRow[]>({
     queryKey: ['leaderboard', group.id],
@@ -202,23 +258,94 @@ function GroupCard({ group, userId, onChanged }: { group: Group; userId: string;
             <BarChart2 className="h-4 w-4" />
           </Button>
           {group.is_owner ? (
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button size="icon" variant="ghost" className="press h-9 w-9 text-destructive" aria-label={t('deleteLeague')}>
-                  <Trash2 className="h-4 w-4" />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="icon" variant="ghost" className="press ripple h-9 w-9" aria-label="admin">
+                  <Settings className="h-4 w-4" />
                 </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>{t('deleteLeague')}</AlertDialogTitle>
-                  <AlertDialogDescription>{t('deleteLeagueConfirm')}</AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>{t('decline')}</AlertDialogCancel>
-                  <AlertDialogAction onClick={deleteGroup} className="bg-destructive text-destructive-foreground">{t('deleteLeague')}</AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>{lang === 'he' ? 'תפריט מנהל' : 'Admin menu'}</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+
+                <DropdownMenuItem onSelect={(e) => { e.preventDefault(); haptic('light'); setNewName(group.name); setRenameOpen(true); }}>
+                  <Edit2 className="me-2 h-4 w-4" />
+                  {lang === 'he' ? 'שנה שם ליגה' : 'Rename league'}
+                </DropdownMenuItem>
+
+                <DropdownMenuItem onSelect={(e) => { e.preventDefault(); haptic('medium'); togglePrivate(); }}>
+                  {group.is_private ? <Unlock className="me-2 h-4 w-4" /> : <Lock className="me-2 h-4 w-4" />}
+                  {group.is_private
+                    ? (lang === 'he' ? 'פתח להצטרפות' : 'Open to joins')
+                    : (lang === 'he' ? 'סגור להצטרפות' : 'Close to joins')}
+                </DropdownMenuItem>
+
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                      <RefreshCw className="me-2 h-4 w-4" />
+                      {lang === 'he' ? 'קוד הצטרפות חדש' : 'Regenerate code'}
+                    </DropdownMenuItem>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>{lang === 'he' ? 'יצירת קוד הצטרפות חדש' : 'Regenerate join code'}</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        {lang === 'he' ? 'הקוד הנוכחי יפסיק לעבוד.' : 'The current code will stop working.'}
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>{t('decline')}</AlertDialogCancel>
+                      <AlertDialogAction onClick={regenerateCode}>{lang === 'he' ? 'אשר' : 'Confirm'}</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                      <RotateCcw className="me-2 h-4 w-4" />
+                      {lang === 'he' ? 'אפס ניחושים' : 'Reset predictions'}
+                    </DropdownMenuItem>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>{lang === 'he' ? 'איפוס ניחושים' : 'Reset predictions'}</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        {lang === 'he' ? 'כל הניחושים והנקודות בליגה יימחקו. פעולה זו לא הפיכה.' : 'All predictions and points in this league will be deleted. This cannot be undone.'}
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>{t('decline')}</AlertDialogCancel>
+                      <AlertDialogAction onClick={resetPredictions} className="bg-destructive text-destructive-foreground">
+                        {lang === 'he' ? 'אפס' : 'Reset'}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+
+                <DropdownMenuSeparator />
+
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive">
+                      <Trash2 className="me-2 h-4 w-4" />
+                      {t('deleteLeague')}
+                    </DropdownMenuItem>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>{t('deleteLeague')}</AlertDialogTitle>
+                      <AlertDialogDescription>{t('deleteLeagueConfirm')}</AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>{t('decline')}</AlertDialogCancel>
+                      <AlertDialogAction onClick={deleteGroup} className="bg-destructive text-destructive-foreground">{t('deleteLeague')}</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </DropdownMenuContent>
+            </DropdownMenu>
           ) : (
             <AlertDialog>
               <AlertDialogTrigger asChild>
@@ -240,6 +367,21 @@ function GroupCard({ group, userId, onChanged }: { group: Group; userId: string;
           )}
         </div>
       </div>
+
+      {/* Rename sheet */}
+      <Sheet open={renameOpen} onOpenChange={setRenameOpen} title={lang === 'he' ? 'שנה שם ליגה' : 'Rename league'}>
+        <Input value={newName} onChange={(e) => setNewName(e.target.value)} className="h-12" maxLength={60} />
+        <Button onClick={renameLeague} className="press mt-4 w-full bg-gradient-warm shadow-warm" size="lg">
+          {lang === 'he' ? 'שמור' : 'Save'}
+        </Button>
+      </Sheet>
+
+      {/* Private indicator under header */}
+      {group.is_private && (
+        <div className="-mt-2 mb-1 inline-flex items-center gap-1 rounded-full bg-muted/60 px-2 py-0.5 text-[10px] font-bold text-muted-foreground">
+          <Lock className="h-2.5 w-2.5" /> {lang === 'he' ? 'סגור להצטרפות' : 'Closed'}
+        </div>
+      )}
 
       <div className="text-xs text-muted-foreground">{group.member_count} {lang === 'he' ? 'משתתפים' : 'members'}</div>
 

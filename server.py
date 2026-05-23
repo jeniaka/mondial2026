@@ -339,6 +339,37 @@ def handle_auth_google_callback(handler: BaseHTTPRequestHandler, **_):
     send_redirect(handler, dest, extra_headers=session_headers)
 
 
+def handle_app_invite(handler: BaseHTTPRequestHandler, **_):
+    """POST /api/invite-app — send an app-level invitation email to a friend."""
+    user = auth.require_user(handler)
+    if not user:
+        return
+    ip = handler.client_address[0]
+    if not _check_rate(f"app_invite:{user['_id']}", 20, 3600):
+        send_json(handler, 429, {"error": "too_many_attempts"})
+        return
+    if not _check_rate(f"app_invite_ip:{ip}", 40, 3600):
+        send_json(handler, 429, {"error": "too_many_attempts"})
+        return
+
+    body = parse_json_body(handler)
+    to_email = (body.get("email") or "").strip().lower()
+    lang     = body.get("lang") if body.get("lang") in ("he", "en") else "he"
+
+    if not to_email or "@" not in to_email:
+        send_json(handler, 400, {"error": "invalid_email"})
+        return
+
+    from_name = user.get("name") or user.get("email", "").split("@")[0] or "Friend"
+    subject, html_body = mail.build_app_invite_email(from_name, config.APP_BASE_URL, lang)
+    invitee_name = to_email.split("@", 1)[0]
+    ok, err = mail.send_email(to_email, invitee_name, subject, html_body)
+    if not ok:
+        send_json(handler, 502, {"error": "email_failed", "detail": err or "unknown"})
+        return
+    send_json(handler, 200, {"ok": True, "email": to_email})
+
+
 def handle_auth_register(handler: BaseHTTPRequestHandler, **_):
     ip = handler.client_address[0]
     if not _check_rate(f"auth_register:{ip}", 5, 3600):
@@ -672,7 +703,9 @@ def handle_group_invite(handler: BaseHTTPRequestHandler, group_id: str, **_):
     accept_url = f"{config.APP_BASE_URL}/invite/{token}"
     import mail
     subject, html_body = mail.build_invite_email_he(user.get("name", ""), grp["name"], accept_url)
-    ok, err = mail.send_email(to_email, "", subject, html_body)
+    # Use local-part as fallback name (Brevo requires non-empty name in `to`)
+    invitee_name = to_email.split("@", 1)[0] if "@" in to_email else to_email
+    ok, err = mail.send_email(to_email, invitee_name, subject, html_body)
     if not ok:
         log.error("Invite email failed to %s: %s", to_email, err)
         send_json(handler, 502, {"error": "email_failed", "detail": err or "unknown", "join_code": grp.get("join_code", "")})
@@ -749,12 +782,21 @@ def handle_group_patch(handler: BaseHTTPRequestHandler, group_id: str, **_):
         send_json(handler, 403, {"error": "owner_only"})
         return
     body = parse_json_body(handler)
-    name = (body.get("name") or "").strip()[:60]
-    if not name:
-        send_json(handler, 400, {"error": "name required"})
+    updates = {}
+    if "name" in body:
+        name = (body.get("name") or "").strip()[:60]
+        if not name:
+            send_json(handler, 400, {"error": "name required"})
+            return
+        updates["name"] = name
+    if "is_private" in body:
+        updates["is_private"] = bool(body.get("is_private"))
+    if not updates:
+        send_json(handler, 400, {"error": "no_fields"})
         return
-    db.groups().update_one({"_id": gid}, {"$set": {"name": name, "updated_at": datetime.now(timezone.utc)}})
-    send_json(handler, 200, {"ok": True, "name": name})
+    updates["updated_at"] = datetime.now(timezone.utc)
+    db.groups().update_one({"_id": gid}, {"$set": updates})
+    send_json(handler, 200, {"ok": True, **{k: v for k, v in updates.items() if k != "updated_at"}})
 
 
 def handle_group_regen_code(handler: BaseHTTPRequestHandler, group_id: str, **_):
@@ -928,6 +970,10 @@ def handle_group_join_by_code(handler: BaseHTTPRequestHandler, **_):
             "ok": True, "already_member": True,
             "group_id": str(grp["_id"]), "group_name": grp["name"],
         })
+        return
+    # Admin can close league to new joins
+    if grp.get("is_private", False):
+        send_json(handler, 403, {"error": "league_closed"})
         return
     now = datetime.now(timezone.utc)
     db.groups().update_one(
@@ -1582,6 +1628,7 @@ def _serialize_group(g: dict, current_uid, include_members: bool = False) -> dic
         "name":         g.get("name", ""),
         "join_code":    g.get("join_code", ""),
         "is_owner":     g.get("owner_id") == current_uid,
+        "is_private":   g.get("is_private", False),
         "member_count": len(members),
         "muted":        me.get("muted", False),
     }
@@ -1786,6 +1833,7 @@ ROUTES_GET = [
     (r"^/auth/google/callback$",                handle_auth_google_callback),
     (r"^/auth/register$",                       handle_auth_register),
     (r"^/auth/login$",                          handle_auth_login),
+    (r"^/api/invite-app$",                      handle_app_invite),
     (r"^/auth/me$",                             handle_auth_me),
     # Match data
     (r"^/api/matches/live$",                    handle_matches_live),
