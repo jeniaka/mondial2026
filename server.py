@@ -1904,11 +1904,8 @@ ROUTES_GET = [
     # Auth
     (r"^/auth/google/start$",                   handle_auth_google_start),
     (r"^/auth/google/callback$",                handle_auth_google_callback),
-    (r"^/auth/register$",                       handle_auth_register),
-    (r"^/auth/login$",                          handle_auth_login),
-    (r"^/api/invite-app$",                      handle_app_invite),
-    (r"^/api/_debug/email$",                    handle_debug_email),
     (r"^/auth/me$",                             handle_auth_me),
+    (r"^/api/_debug/email$",                    handle_debug_email),
     # Match data
     (r"^/api/matches/live$",                    handle_matches_live),
     (r"^/api/matches/pinned$",                  handle_matches_pinned),
@@ -1938,6 +1935,10 @@ ROUTES_GET = [
 
 ROUTES_POST = [
     (r"^/auth/logout$",                         handle_auth_logout),
+    (r"^/auth/register$",                       handle_auth_register),
+    (r"^/auth/login$",                          handle_auth_login),
+    (r"^/api/invite-app$",                      handle_app_invite),
+    (r"^/api/_debug/email$",                    handle_debug_email),
     (r"^/api/groups$",                          handle_groups_create),
     (r"^/api/groups/([^/]+)/invite$",           handle_group_invite),
     (r"^/api/groups/([^/]+)/leave$",            handle_group_leave),

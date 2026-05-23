@@ -33,8 +33,7 @@ function HomePage() {
     refetchInterval: 30_000,
   });
 
-  if (!user) return null;
-
+  // Compute lists from data (safe when data is undefined)
   const matches = data?.matches ?? [];
   const live = matches.filter((m) => isLive(m.status));
   const upcoming = matches.filter((m) => !isLive(m.status) && m.status !== "FINISHED");
@@ -43,6 +42,7 @@ function HomePage() {
   const nextMatch = upcoming[0];
 
   // Trigger goal celebration when a PINNED LIVE match scores
+  // (must be BEFORE any early return — Rules of Hooks)
   useEffect(() => {
     for (const m of live) {
       if (!pinned.includes(m.id)) continue;
@@ -55,6 +55,8 @@ function HomePage() {
       prevScoresRef.current[m.id] = key;
     }
   }, [live, pinned]);
+
+  if (!user) return null;
 
   // Group upcoming by date in Israel time (UTC+3)
   const byDate = upcoming.reduce<Record<string, Match[]>>((acc, m) => {
