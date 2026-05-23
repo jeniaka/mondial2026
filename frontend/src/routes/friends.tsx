@@ -1,20 +1,23 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Trophy, Target, Award, LogOut, Trash2, Sun, Moon, Check } from 'lucide-react';
+import { Trophy, Target, Award, LogOut, Trash2, Sun, Moon, Check, Bell, BellRing, Goal, UserPlus, Crown, Mail } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { haptic } from '@/hooks/useHaptic';
 import { useTheme, type Palette } from '@/lib/theme';
-import { api } from '@/lib/api';
+import { api, type NotifPrefs, type EmailDigest } from '@/lib/api';
 import { AppShell } from '@/components/AppShell';
 import { CardSkeleton } from '@/components/States';
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
+import { BurstConfetti } from '@/components/BurstConfetti';
 
 export const Route = createFileRoute('/friends')({ component: ProfilePage });
 
@@ -136,6 +139,9 @@ function ProfilePage() {
         </div>
       </div>
 
+      {/* Notification Settings */}
+      <NotificationSettings />
+
       {/* Actions */}
       <div className="space-y-2">
         <Button onClick={() => signOut()} variant="secondary" size="lg" className="press w-full gap-2">
@@ -186,3 +192,125 @@ const PALETTES: Array<{ id: Palette; label: string; labelHe: string; colorA: str
   { id: 'galaxy',  label: 'Galaxy',  labelHe: 'גלקסיה',   colorA: '#8b35d4', colorB: '#4a1090' },
   { id: 'crimson', label: 'Crimson', labelHe: 'קרמזין',   colorA: '#c82030', colorB: '#801018' },
 ];
+
+const DEFAULT_PREFS: Required<NotifPrefs> = {
+  match_start: true,
+  match_end: true,
+  goal_in_pinned: true,
+  friend_invite: true,
+  leaderboard_change: true,
+  email_digest: 'daily',
+};
+
+function NotificationSettings() {
+  const { user } = useAuth();
+  const { lang } = useI18n();
+  const initial: Required<NotifPrefs> = { ...DEFAULT_PREFS, ...(user?.notif_prefs ?? {}) };
+  const [prefs, setPrefs] = useState<Required<NotifPrefs>>(initial);
+  const [saving, setSaving] = useState(false);
+  const [burst, setBurst] = useState(0);
+
+  // Sync from server when user loads/changes
+  useEffect(() => {
+    if (user?.notif_prefs) {
+      setPrefs({ ...DEFAULT_PREFS, ...user.notif_prefs });
+    }
+  }, [user?.notif_prefs]);
+
+  const set = <K extends keyof NotifPrefs>(k: K, v: NotifPrefs[K]) => {
+    haptic('light');
+    setPrefs((p) => ({ ...p, [k]: v }));
+  };
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      await api.notifPrefs(prefs);
+      toast.success(lang === 'he' ? 'נשמר' : 'Saved');
+      haptic('success');
+      setBurst((n) => n + 1);
+    } catch (e: unknown) {
+      const err = e as { message?: string };
+      toast.error(err?.message ?? 'Error');
+      haptic('error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const rows: Array<{ key: keyof NotifPrefs; icon: React.ReactNode; label: string; labelHe: string }> = [
+    { key: 'match_start',        icon: <BellRing className="h-4 w-4" />, label: 'Match start',         labelHe: 'תחילת משחק' },
+    { key: 'match_end',          icon: <Bell className="h-4 w-4" />,     label: 'Match end',           labelHe: 'סיום משחק' },
+    { key: 'goal_in_pinned',     icon: <Goal className="h-4 w-4" />,     label: 'Goal in pinned match', labelHe: 'שער במשחק מקובע' },
+    { key: 'friend_invite',      icon: <UserPlus className="h-4 w-4" />, label: 'Friend invitation',   labelHe: 'הזמנת חבר' },
+    { key: 'leaderboard_change', icon: <Crown className="h-4 w-4" />,    label: 'Leaderboard change',  labelHe: 'שינוי בדירוג' },
+  ];
+
+  return (
+    <div className="mb-4 mt-4">
+      <h3 className="mb-2 px-1 text-[11px] font-black uppercase tracking-wider text-primary">
+        {lang === 'he' ? 'הגדרות התראות' : 'Notification settings'}
+      </h3>
+      <div className="reveal glass card-lift overflow-hidden rounded-3xl p-2">
+        <ul className="divide-y divide-border/40">
+          {rows.map((row, i) => (
+            <li
+              key={row.key}
+              className="reveal flex items-center justify-between gap-3 rounded-xl px-3 py-3"
+              style={{ animationDelay: `${i * 40}ms` }}
+            >
+              <div className="flex min-w-0 items-center gap-2.5">
+                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+                  {row.icon}
+                </span>
+                <span className="truncate text-sm font-semibold">
+                  {lang === 'he' ? row.labelHe : row.label}
+                </span>
+              </div>
+              <Switch
+                checked={!!prefs[row.key]}
+                onCheckedChange={(v) => set(row.key, v)}
+                aria-label={lang === 'he' ? row.labelHe : row.label}
+              />
+            </li>
+          ))}
+          <li
+            className="reveal flex items-center justify-between gap-3 rounded-xl px-3 py-3"
+            style={{ animationDelay: `${rows.length * 40}ms` }}
+          >
+            <div className="flex min-w-0 items-center gap-2.5">
+              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+                <Mail className="h-4 w-4" />
+              </span>
+              <span className="truncate text-sm font-semibold">
+                {lang === 'he' ? 'תקציר במייל' : 'Email digest'}
+              </span>
+            </div>
+            <Select value={prefs.email_digest} onValueChange={(v) => set('email_digest', v as EmailDigest)}>
+              <SelectTrigger className="h-9 w-32 text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="off">{lang === 'he' ? 'כבוי' : 'Off'}</SelectItem>
+                <SelectItem value="daily">{lang === 'he' ? 'יומי' : 'Daily'}</SelectItem>
+                <SelectItem value="matchdays_only">{lang === 'he' ? 'ימי משחק בלבד' : 'Matchdays only'}</SelectItem>
+              </SelectContent>
+            </Select>
+          </li>
+        </ul>
+      </div>
+
+      <div className="relative mt-3">
+        {burst > 0 && <BurstConfetti trigger={burst} count={28} />}
+        <Button
+          onClick={save}
+          disabled={saving}
+          size="lg"
+          className="press btn-glow ripple shine-sweep w-full bg-gradient-warm shadow-warm"
+        >
+          {saving ? '…' : (lang === 'he' ? 'שמור העדפות' : 'Save preferences')}
+        </Button>
+      </div>
+    </div>
+  );
+}

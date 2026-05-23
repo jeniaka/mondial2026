@@ -41,8 +41,6 @@ function BetsPage() {
     enabled: !!gid,
   });
 
-  if (!user) return null;
-
   const matchMap = new Map<string, Match>(
     (matchData?.matches ?? []).map((m) => [m.id, m])
   );
@@ -50,6 +48,8 @@ function BetsPage() {
   const bets = (preds ?? []).filter((p) => p.home_score != null);
   const total = bets.reduce((s, b) => s + (b.points_awarded ?? 0), 0);
   const totalAnim = useCountUp(total, 900);
+
+  if (!user) return null;
 
   return (
     <AppShell title={t('bets')}>

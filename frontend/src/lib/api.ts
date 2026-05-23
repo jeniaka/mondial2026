@@ -92,12 +92,24 @@ export type Notification = {
   created_at: string;
 };
 
+export type EmailDigest = "off" | "daily" | "matchdays_only";
+
+export type NotifPrefs = {
+  match_start?: boolean;
+  match_end?: boolean;
+  goal_in_pinned?: boolean;
+  friend_invite?: boolean;
+  leaderboard_change?: boolean;
+  email_digest?: EmailDigest;
+};
+
 export type User = {
   id: string;
   name: string;
   email: string;
   picture: string;
   is_admin: boolean;
+  notif_prefs?: NotifPrefs;
 };
 
 export const api = {
@@ -146,6 +158,7 @@ export const api = {
   notifications: (page = 1) => req<{ notifications: Notification[]; total: number; unread: number }>(`/api/notifications?page=${page}`),
   unreadCount: () => req<{ count: number }>('/api/notifications/unread-count'),
   markRead: (ids: string[]) => req<void>('/api/notifications/read', { method: 'POST', body: json({ ids }) }),
+  notifPrefs: (prefs: NotifPrefs) => req<{ ok: true }>('/api/notifications/prefs', { method: 'POST', body: json(prefs) }),
 
   // User
   userStats: () => req<{ total_predictions: number; exact_predictions: number; best_rank: number | null }>('/api/users/me/stats'),
