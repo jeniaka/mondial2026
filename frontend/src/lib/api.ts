@@ -160,6 +160,8 @@ export const api = {
   predictions: (gid: string, mid: string) => req<{ predictions: Prediction[]; locked: boolean }>(`/api/groups/${gid}/predictions/${mid}`),
   submitPrediction: (gid: string, mid: string, data: object) =>
     req<void>(`/api/groups/${gid}/predictions/${mid}`, { method: 'POST', body: json(data) }),
+  deletePrediction: (gid: string, mid: string) =>
+    req<void>(`/api/groups/${gid}/predictions/${mid}`, { method: 'DELETE' }),
   myPredictions: (gid: string) => req<Prediction[]>(`/api/groups/${gid}/my-predictions`),
   leaderboard: (gid: string) => req<LeaderboardRow[]>(`/api/groups/${gid}/leaderboard`),
 

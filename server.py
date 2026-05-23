@@ -339,6 +339,44 @@ def handle_auth_google_callback(handler: BaseHTTPRequestHandler, **_):
     send_redirect(handler, dest, extra_headers=session_headers)
 
 
+def handle_debug_email(handler: BaseHTTPRequestHandler, **_):
+    """GET/POST /api/_debug/email — admin only. Returns Brevo config + sends test."""
+    user = auth.require_user(handler)
+    if not user:
+        return
+    if not user.get("is_admin"):
+        send_json(handler, 403, {"error": "admin_only"})
+        return
+
+    info = {
+        "brevo_api_key_set":  bool(getattr(config, "BREVO_API_KEY", "")),
+        "brevo_api_key_len":  len(getattr(config, "BREVO_API_KEY", "") or ""),
+        "brevo_sender_email": getattr(config, "BREVO_SENDER_EMAIL", ""),
+        "brevo_sender_name":  getattr(config, "BREVO_SENDER_NAME", ""),
+        "user_email":         user.get("email", ""),
+        "user_name":          user.get("name", ""),
+    }
+
+    if handler.command == "GET":
+        send_json(handler, 200, info)
+        return
+
+    # POST → actually send a test email
+    to_email = user.get("email", "")
+    to_name  = user.get("name", "") or to_email.split("@", 1)[0]
+    subject  = "Mondial 2026 — Brevo test"
+    html_body = (
+        "<p>Hello,</p>"
+        "<p>This is a test email from your Mondial 2026 deployment to verify Brevo integration.</p>"
+        "<p>If you received this, the Brevo HTTP API + sender are working.</p>"
+    )
+    ok, err = mail.send_email(to_email, to_name, subject, html_body)
+    info["sent_ok"] = ok
+    info["error"]   = err or ""
+    info["to"]      = to_email
+    send_json(handler, 200 if ok else 502, info)
+
+
 def handle_app_invite(handler: BaseHTTPRequestHandler, **_):
     """POST /api/invite-app — send an app-level invitation email to a friend."""
     user = auth.require_user(handler)
@@ -1144,6 +1182,41 @@ def handle_prediction_submit(handler: BaseHTTPRequestHandler, group_id: str, mat
     send_json(handler, 200, {"ok": True})
 
 
+def handle_prediction_delete(handler: BaseHTTPRequestHandler, group_id: str, match_id: str, **_):
+    """DELETE /api/groups/<gid>/predictions/<mid> — delete user's own bet
+    only if the match hasn't kicked off yet."""
+    user = auth.require_user(handler)
+    if not user:
+        return
+    from bson import ObjectId
+    try:
+        gid = ObjectId(group_id)
+    except Exception:
+        send_json(handler, 404, {"error": "not found"})
+        return
+    match = db.matches().find_one({"_id": match_id})
+    if not match:
+        send_json(handler, 404, {"error": "match not found"})
+        return
+    kickoff = match.get("kickoff_utc")
+    if kickoff and kickoff.tzinfo is None:
+        kickoff = kickoff.replace(tzinfo=timezone.utc)
+    now = datetime.now(timezone.utc)
+    # Cannot delete after kickoff or once the match has been scored
+    if (kickoff and now >= kickoff) or match.get("status") not in ("SCHEDULED", "TIMED"):
+        send_json(handler, 423, {"error": "match_locked"})
+        return
+    result = db.predictions().delete_one({
+        "user_id":  user["_id"],
+        "group_id": gid,
+        "match_id": match_id,
+    })
+    if result.deleted_count == 0:
+        send_json(handler, 404, {"error": "prediction_not_found"})
+        return
+    send_json(handler, 200, {"ok": True})
+
+
 def handle_leaderboard_get(handler: BaseHTTPRequestHandler, group_id: str, **_):
     user = auth.require_user(handler)
     if not user:
@@ -1834,6 +1907,7 @@ ROUTES_GET = [
     (r"^/auth/register$",                       handle_auth_register),
     (r"^/auth/login$",                          handle_auth_login),
     (r"^/api/invite-app$",                      handle_app_invite),
+    (r"^/api/_debug/email$",                    handle_debug_email),
     (r"^/auth/me$",                             handle_auth_me),
     # Match data
     (r"^/api/matches/live$",                    handle_matches_live),
@@ -1895,7 +1969,8 @@ ROUTES_PATCH = [
 ]
 
 ROUTES_DELETE = [
-    (r"^/api/groups/([^/]+)$",  handle_group_delete),
+    (r"^/api/groups/([^/]+)$",                     handle_group_delete),
+    (r"^/api/groups/([^/]+)/predictions/([^/]+)$", handle_prediction_delete),
 ]
 
 

@@ -1,6 +1,12 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { Trophy, Trash2 } from 'lucide-react';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
+  AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import { toast } from 'sonner';
 import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { api, type Prediction, type Group } from '@/lib/api';
@@ -8,11 +14,9 @@ import { getMatches, type Match } from '@/server/matches.functions';
 import { AppShell } from '@/components/AppShell';
 import { Flag } from '@/components/Flag';
 import { EmptyState, CardSkeleton } from '@/components/States';
-import { Trophy } from 'lucide-react';
 import { useCountUp } from '@/hooks/useCountUp';
 import { haptic } from '@/hooks/useHaptic';
 import { FireStreak } from '@/components/FireStreak';
-import { TierBadge } from '@/components/TierBadge';
 import { FlipCard } from '@/components/FlipCard';
 
 export const Route = createFileRoute('/bets')({ component: BetsPage });
@@ -21,7 +25,26 @@ function BetsPage() {
   const { user, loading } = useAuth();
   const nav = useNavigate();
   const { t, lang } = useI18n();
+  const qc = useQueryClient();
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
+
+  const handleDeleteBet = async (groupId: string, matchId: string) => {
+    try {
+      await api.deletePrediction(groupId, matchId);
+      haptic('medium');
+      toast.success(lang === 'he' ? 'ההימור נמחק' : 'Bet deleted');
+      qc.invalidateQueries({ queryKey: ['my-predictions'] });
+    } catch (e: unknown) {
+      const err = e as { message?: string };
+      const m = err?.message ?? '';
+      if (m === 'match_locked') {
+        toast.error(lang === 'he' ? 'המשחק כבר התחיל — לא ניתן למחוק' : 'Match started — cannot delete');
+      } else {
+        toast.error(lang === 'he' ? 'שגיאה במחיקה' : 'Delete failed');
+      }
+      haptic('error');
+    }
+  };
 
   useEffect(() => { if (!loading && !user) nav({ to: '/login' }); }, [user, loading, nav]);
 
@@ -81,10 +104,6 @@ function BetsPage() {
         <Trophy className="h-12 w-12 text-primary-foreground/60 wobble" />
       </div>
 
-      <div className="mb-3">
-        <TierBadge points={total} lang={lang as 'he' | 'en'} />
-      </div>
-
       {groups && groups.length > 1 && (
         <div className="mb-3 flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">
           {groups.map((g) => (
@@ -142,6 +161,10 @@ function BetsPage() {
               </div>
             );
 
+            const matchStarted = m
+              ? (m.status !== 'SCHEDULED' && m.status !== 'TIMED') || new Date(m.utcDate).getTime() <= Date.now()
+              : true;
+
             const back = (
               <div className="reveal flex h-full flex-col justify-center gap-1 rounded-2xl border border-primary/40 bg-gradient-card p-3 text-xs">
                 <div className="flex items-center justify-between">
@@ -151,6 +174,39 @@ function BetsPage() {
                 <div className="flex justify-between"><span>{lang === 'he' ? 'הניחוש שלך' : 'Your pick'}</span><span className="num font-bold">{b.home_score}:{b.away_score}</span></div>
                 {m?.homeScore != null && <div className="flex justify-between"><span>{lang === 'he' ? 'תוצאה סופית' : 'Final score'}</span><span className="num font-bold">{m.homeScore}:{m.awayScore}</span></div>}
                 <div className="flex justify-between"><span>{lang === 'he' ? 'נקודות' : 'Points'}</span><span className={`num font-black ${pts > 0 ? 'text-success' : 'text-muted-foreground'}`}>+{pts}</span></div>
+
+                {!matchStarted && gid && (
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); haptic('light'); }}
+                        className="press ripple mt-1 inline-flex items-center justify-center gap-1.5 self-end rounded-full bg-destructive/15 px-3 py-1 text-[10px] font-bold text-destructive"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                        {lang === 'he' ? 'מחק הימור' : 'Delete bet'}
+                      </button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>{lang === 'he' ? 'מחיקת הימור' : 'Delete bet'}</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          {lang === 'he'
+                            ? `${homeName} ${b.home_score}:${b.away_score} ${awayName} — לא ניתן לבטל את המחיקה.`
+                            : `${homeName} ${b.home_score}:${b.away_score} ${awayName} — this cannot be undone.`}
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>{lang === 'he' ? 'ביטול' : 'Cancel'}</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => handleDeleteBet(gid, b.match_id)}
+                          className="bg-destructive text-destructive-foreground"
+                        >
+                          {lang === 'he' ? 'מחק' : 'Delete'}
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                )}
               </div>
             );
 

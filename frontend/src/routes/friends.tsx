@@ -304,11 +304,19 @@ function AppInviteCard() {
       setBurst((n) => n + 1);
       setEmail('');
     } catch (err: unknown) {
-      const x = err as { message?: string };
+      const x = err as { message?: string; data?: { detail?: string } };
       const m = x?.message ?? '';
-      if (m.includes('too_many')) toast.error(lang === 'he' ? 'יותר מדי הזמנות. נסה שוב מאוחר יותר.' : 'Too many invites. Try later.');
-      else if (m.includes('invalid_email')) toast.error(lang === 'he' ? 'אימייל לא תקין' : 'Invalid email');
-      else toast.error(lang === 'he' ? 'שליחת הזמנה נכשלה' : 'Invite failed');
+      const detail = x?.data?.detail ?? '';
+      if (m.includes('too_many')) {
+        toast.error(lang === 'he' ? 'יותר מדי הזמנות. נסה שוב מאוחר יותר.' : 'Too many invites. Try later.');
+      } else if (m.includes('invalid_email')) {
+        toast.error(lang === 'he' ? 'אימייל לא תקין' : 'Invalid email');
+      } else if (m === 'email_failed') {
+        // Surface real Brevo error so we can diagnose
+        toast.error(`${lang === 'he' ? 'שליחה נכשלה' : 'Send failed'}: ${detail.slice(0, 200) || m}`);
+      } else {
+        toast.error(`${lang === 'he' ? 'שגיאה' : 'Error'}: ${m || 'unknown'}`);
+      }
       haptic('error');
     } finally {
       setSending(false);

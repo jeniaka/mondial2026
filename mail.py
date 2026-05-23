@@ -46,14 +46,18 @@ def send_email(to_email: str, to_name: str, subject: str, html_body: str):
             timeout=10,
         )
         if r.status_code >= 300:
-            err = f"brevo_error_{r.status_code}: {r.text[:300]}"
-            log.error("send_email failed: %s", err)
+            err = f"brevo_{r.status_code}: {r.text[:500]}"
+            # Log payload (with masked api key) so we can diagnose in Render logs
+            log.error(
+                "send_email failed: %s | to=%s name=%s sender=%s",
+                err, to_email, name, payload["sender"],
+            )
             return False, err
         log.info("Email sent to %s (subject: %s)", to_email, subject)
         return True, None
     except Exception as exc:
-        log.error("send_email exception: %s", exc)
-        return False, str(exc)
+        log.error("send_email exception: %s | to=%s", exc, to_email)
+        return False, f"exception: {exc!r}"[:500]
 
 
 def build_digest_email(user: dict, matches: list, lang: str, base_url: str) -> tuple:
