@@ -10,6 +10,7 @@ import { Flag } from '@/components/Flag';
 import { EmptyState, CardSkeleton } from '@/components/States';
 import { Trophy } from 'lucide-react';
 import { useCountUp } from '@/hooks/useCountUp';
+import { haptic } from '@/hooks/useHaptic';
 
 export const Route = createFileRoute('/bets')({ component: BetsPage });
 
@@ -57,7 +58,7 @@ function BetsPage() {
           <div className="text-xs font-bold uppercase tracking-wider text-primary-foreground/80">{t('points')}</div>
           <div className="num count-up font-display text-5xl font-black text-primary-foreground">{totalAnim}</div>
         </div>
-        <Trophy className="h-12 w-12 text-primary-foreground/60 tab-icon-bounce" />
+        <Trophy className="h-12 w-12 text-primary-foreground/60 wobble" />
       </div>
 
       {groups && groups.length > 1 && (
@@ -65,8 +66,8 @@ function BetsPage() {
           {groups.map((g) => (
             <button
               key={g.id}
-              onClick={() => setSelectedGroup(g.id)}
-              className={`press shrink-0 rounded-full px-3 py-1.5 text-xs font-bold ${(selectedGroup ?? groups[0].id) === g.id ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground'}`}
+              onClick={() => { haptic('light'); setSelectedGroup(g.id); }}
+              className={`press ripple shrink-0 rounded-full px-3 py-1.5 text-xs font-bold transition-all duration-300 ${(selectedGroup ?? groups[0].id) === g.id ? 'bg-primary text-primary-foreground scale-105 shadow-warm' : 'bg-secondary text-secondary-foreground'}`}
             >
               {g.name}
             </button>
@@ -92,7 +93,7 @@ function BetsPage() {
             const awayName = m ? (lang === 'he' ? m.awayTeamHe : m.awayTeam) : '';
             const pts = b.points_awarded ?? 0;
             return (
-              <div key={b.id} className="reveal card-lift flex items-center gap-2 rounded-2xl border border-border bg-card p-3" style={{ animationDelay: `${i * 55}ms` }}>
+              <div key={b.id} className={`reveal card-lift flex items-center gap-2 rounded-2xl border border-border bg-card p-3 ${pts > 0 ? 'success-halo' : ''}`} style={{ animationDelay: `${i * 55}ms` }}>
                 <div className="flex flex-1 items-center justify-end gap-1.5 truncate text-sm font-semibold">
                   <span className="truncate">{homeName}</span>
                   {m && <Flag country={m.homeTeam} size="sm" />}

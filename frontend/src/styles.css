@@ -744,23 +744,187 @@ html[data-palette="crimson"].dark {
     to   { transform: translateY(0); opacity: 1; }
   }
 
-  /* === Confetti for win moments (used by FloatingScore) === */
-  .confetti-piece {
-    position: absolute;
-    width: 8px; height: 8px;
-    animation: confetti-fall 1.8s ease-out forwards;
-  }
-  @keyframes confetti-fall {
-    0%   { transform: translate3d(0,   0,    0) rotate(0deg); opacity: 1; }
-    100% { transform: translate3d(var(--cx, 60px), 240px, 0) rotate(720deg); opacity: 0; }
-  }
-
   /* === Scrollbar hidden helper === */
   .scrollbar-none::-webkit-scrollbar { display: none; }
   .scrollbar-none { scrollbar-width: none; }
 
   /* === Smooth scroll for in-page anchors === */
   html { scroll-behavior: smooth; }
+
+  /* === Slow rotation (trophies, stars) === */
+  .rotate-slow { animation: rotate-slow 18s linear infinite; }
+  @keyframes rotate-slow { to { transform: rotate(360deg); } }
+  .wobble { animation: wobble 5s ease-in-out infinite; }
+  @keyframes wobble {
+    0%, 100% { transform: rotate(-6deg); }
+    50%      { transform: rotate(6deg); }
+  }
+
+  /* === Breathing live border === */
+  .breathing-live { animation: breathe-live 2.2s ease-in-out infinite; }
+  @keyframes breathe-live {
+    0%, 100% {
+      box-shadow: 0 0 0 0 color-mix(in oklab, var(--live) 0%, transparent), var(--shadow-soft);
+    }
+    50% {
+      box-shadow:
+        0 0 0 3px color-mix(in oklab, var(--live) 28%, transparent),
+        0 8px 24px -4px color-mix(in oklab, var(--live) 30%, transparent);
+    }
+  }
+
+  /* === Flag wave on hover === */
+  .flag-wave { transition: transform 220ms ease; }
+  .flag-wave:hover { animation: flag-wave 0.9s ease-in-out; }
+  @keyframes flag-wave {
+    0%, 100% { transform: scale(1) rotate(0); }
+    25%      { transform: scale(1.18) rotate(-8deg); }
+    50%      { transform: scale(1.22) rotate(0); }
+    75%      { transform: scale(1.18) rotate(8deg); }
+  }
+
+  /* === Swatch shimmer === */
+  .swatch-shimmer { position: relative; overflow: hidden; }
+  .swatch-shimmer::after {
+    content: ""; position: absolute; inset: 0;
+    background: linear-gradient(120deg, transparent 40%, rgba(255,255,255,0.6) 50%, transparent 60%);
+    transform: translateX(-100%);
+    transition: transform 600ms ease;
+  }
+  .swatch-shimmer:hover::after { transform: translateX(100%); }
+
+  /* === Ripple on press === */
+  .ripple { position: relative; overflow: hidden; }
+  .ripple::after {
+    content: ""; position: absolute; inset: 50%;
+    width: 0; height: 0; border-radius: 9999px;
+    background: color-mix(in oklab, currentColor 22%, transparent);
+    transform: translate(-50%, -50%);
+    pointer-events: none; opacity: 0;
+  }
+  .ripple:active::after { animation: ripple-expand 520ms ease-out; }
+  @keyframes ripple-expand {
+    0%   { width: 0; height: 0; opacity: 0.5; }
+    100% { width: 300%; height: 300%; opacity: 0; }
+  }
+
+  /* === Shake (errors, lock) === */
+  .shake { animation: shake 480ms cubic-bezier(0.36, 0.07, 0.19, 0.97); }
+  @keyframes shake {
+    10%, 90% { transform: translateX(-1px); }
+    20%, 80% { transform: translateX(2px); }
+    30%, 50%, 70% { transform: translateX(-4px); }
+    40%, 60% { transform: translateX(4px); }
+  }
+
+  /* === Crown floating === */
+  .crown-float { animation: crown-float 3.6s ease-in-out infinite; }
+  @keyframes crown-float {
+    0%, 100% { transform: translateY(0) rotate(-3deg); }
+    50%      { transform: translateY(-8px) rotate(3deg); }
+  }
+
+  /* === Bell shake (notifications) === */
+  .bell-shake { animation: bell-shake 1.8s ease-in-out infinite; transform-origin: 50% 0%; }
+  @keyframes bell-shake {
+    0%, 65%, 100% { transform: rotate(0deg); }
+    10%   { transform: rotate(-14deg); }
+    20%   { transform: rotate(12deg); }
+    30%   { transform: rotate(-8deg); }
+    40%   { transform: rotate(6deg); }
+    50%   { transform: rotate(-3deg); }
+  }
+
+  /* === Success halo === */
+  .success-halo { animation: success-halo 3s ease-in-out infinite; }
+  @keyframes success-halo {
+    0%, 100% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--success) 0%, transparent); }
+    50%      { box-shadow: 0 0 0 6px color-mix(in oklab, var(--success) 22%, transparent); }
+  }
+
+  /* === Number flip === */
+  .num-flip { display: inline-block; animation: num-flip 320ms cubic-bezier(0.4, 0, 0.2, 1); }
+  @keyframes num-flip {
+    0%   { transform: rotateX(-90deg); opacity: 0; }
+    100% { transform: rotateX(0deg);   opacity: 1; }
+  }
+
+  /* === Direction-aware page transitions === */
+  .page-slide-left  { animation: page-slide-left  380ms cubic-bezier(0.2, 0.7, 0.2, 1) forwards; }
+  .page-slide-right { animation: page-slide-right 380ms cubic-bezier(0.2, 0.7, 0.2, 1) forwards; }
+  @keyframes page-slide-left {
+    from { opacity: 0; transform: translate3d(40px, 0, 0); }
+    to   { opacity: 1; transform: translate3d(0, 0, 0); }
+  }
+  @keyframes page-slide-right {
+    from { opacity: 0; transform: translate3d(-40px, 0, 0); }
+    to   { opacity: 1; transform: translate3d(0, 0, 0); }
+  }
+
+  /* === Copy success check === */
+  .copy-check { animation: copy-check 1.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
+  @keyframes copy-check {
+    0%   { transform: scale(0) rotate(-90deg); opacity: 0; }
+    20%, 80% { transform: scale(1.2) rotate(0deg); opacity: 1; }
+    100% { transform: scale(0) rotate(90deg); opacity: 0; }
+  }
+
+  /* === Goal particle burst === */
+  .goal-particle {
+    position: absolute;
+    width: 8px; height: 8px;
+    border-radius: 9999px;
+    top: 50%; left: 50%;
+    pointer-events: none;
+    animation: goal-burst 900ms cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
+    opacity: 0;
+  }
+  @keyframes goal-burst {
+    0%   { transform: translate(-50%, -50%) scale(0.4); opacity: 1; }
+    100% { transform: translate(calc(-50% + var(--gx, 0px)), calc(-50% + var(--gy, 0px))) scale(0.2); opacity: 0; }
+  }
+
+  /* === Flag clash === */
+  .flag-clash-l { animation: flag-clash-l 1.6s ease-in-out infinite; }
+  .flag-clash-r { animation: flag-clash-r 1.6s ease-in-out infinite; }
+  @keyframes flag-clash-l {
+    0%, 100% { transform: translateX(0); }
+    50%      { transform: translateX(8px) scale(1.05); }
+  }
+  @keyframes flag-clash-r {
+    0%, 100% { transform: translateX(0); }
+    50%      { transform: translateX(-8px) scale(1.05); }
+  }
+
+  /* === Avatar conic ring === */
+  .avatar-ring { position: relative; isolation: isolate; }
+  .avatar-ring::before {
+    content: ""; position: absolute; inset: -3px;
+    border-radius: 9999px;
+    background: conic-gradient(from 0deg, var(--primary), var(--accent), var(--primary-glow), var(--primary));
+    z-index: -1;
+    animation: avatar-spin 6s linear infinite;
+  }
+  @keyframes avatar-spin { to { transform: rotate(360deg); } }
+
+  /* === One-shot confetti burst piece === */
+  .burst-piece {
+    position: absolute;
+    width: 8px; height: 12px;
+    top: 50%; left: 50%;
+    pointer-events: none;
+    border-radius: 1px;
+    animation: burst-piece 1.4s cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
+    opacity: 0;
+  }
+  @keyframes burst-piece {
+    0%   { transform: translate(-50%, -50%) scale(0.4) rotate(0deg); opacity: 1; }
+    20%  { opacity: 1; }
+    100% { transform: translate(calc(-50% + var(--bx, 0px)), calc(-50% + var(--by, 0px))) scale(0.6) rotate(540deg); opacity: 0; }
+  }
+
+  /* === Touch-action helpers for swipe nav === */
+  .pan-y { touch-action: pan-y; }
 }
 
 /* === Reduced motion: kill all decorative animations === */

@@ -1,6 +1,7 @@
 import { Link, useLocation } from "@tanstack/react-router";
 import { Calendar, Trophy, Star, Crown, User } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
+import { haptic } from "@/hooks/useHaptic";
 
 type TabPath = "/" | "/bets" | "/bonus" | "/leagues" | "/friends";
 
@@ -31,7 +32,8 @@ export function BottomTabs() {
               <Link
                 to={to}
                 activeOptions={{ exact: !!exact }}
-                className={`group relative flex min-h-[56px] flex-col items-center justify-center gap-0.5 rounded-xl px-1 py-1.5 text-[10px] font-medium transition-colors duration-200 active:scale-[0.94] ${active ? "text-primary tab-active-ring" : "text-muted-foreground"}`}
+                onClick={() => !active && haptic("light")}
+                className={`group ripple relative flex min-h-[56px] flex-col items-center justify-center gap-0.5 rounded-xl px-1 py-1.5 text-[10px] font-medium transition-colors duration-200 active:scale-[0.94] ${active ? "text-primary tab-active-ring" : "text-muted-foreground"}`}
               >
                 <Icon
                   key={active ? `${to}-on` : `${to}-off`}

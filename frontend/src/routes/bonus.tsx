@@ -12,6 +12,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
+import { BurstConfetti } from '@/components/BurstConfetti';
+import { haptic } from '@/hooks/useHaptic';
 
 export const Route = createFileRoute('/bonus')({ component: BonusPage });
 
@@ -38,6 +40,7 @@ function BonusPage() {
   const [finalAwayScore, setFinalAwayScore] = useState(0);
   const [bonusPts, setBonusPts] = useState<number>(0);
   const [saving, setSaving] = useState(false);
+  const [saveBurst, setSaveBurst] = useState(0);
 
   useEffect(() => { if (!loading && !user) nav({ to: '/login' }); }, [user, loading, nav]);
 
@@ -87,6 +90,8 @@ function BonusPage() {
         final_score_2: finalAwayScore,
       });
       toast.success(t('saved'));
+      setSaveBurst((n) => n + 1);
+      haptic('success');
     } catch (e: unknown) {
       const err = e as { message?: string };
       toast.error(err?.message ?? 'Error');
@@ -102,7 +107,7 @@ function BonusPage() {
       <div className="shine-sweep card-lift mb-4 overflow-hidden rounded-3xl bg-gradient-warm p-5 shadow-warm">
         <div className="flex items-center gap-3">
           <span className="grid h-10 w-10 place-items-center rounded-2xl bg-primary-foreground/15 backdrop-blur">
-            <Star className="h-5 w-5 text-primary-foreground" />
+            <Star className="h-5 w-5 text-primary-foreground rotate-slow" />
           </span>
           <div>
             <h1 className="font-display text-xl font-black text-primary-foreground">{t('bonusBets')}</h1>
@@ -129,7 +134,7 @@ function BonusPage() {
       )}
 
       {locked && (
-        <div className="mb-4 rounded-2xl border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+        <div className="shake mb-4 rounded-2xl border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
           {t('bonusLocked')} {lockTs && `(${new Date(lockTs).toLocaleDateString(lang === 'he' ? 'he-IL' : 'en-GB')})`}
         </div>
       )}
@@ -160,25 +165,32 @@ function BonusPage() {
           </div>
         </div>
         <div className="mt-3 flex gap-2">
-          <ScoreStepper
-            value={finalHomeScore}
-            onChange={(n) => { if (!locked) setFinalHomeScore(n); }}
-            label={finalHome ? <Flag country={finalHome} size="sm" /> : <span className="text-xs text-muted-foreground">{t('finalsTeam')} 1</span>}
-          />
-          <ScoreStepper
-            value={finalAwayScore}
-            onChange={(n) => { if (!locked) setFinalAwayScore(n); }}
-            label={finalAway ? <Flag country={finalAway} size="sm" /> : <span className="text-xs text-muted-foreground">{t('finalsTeam')} 2</span>}
-          />
+          <div className={finalHome && finalAway ? 'flag-clash-l flex-1' : 'flex-1'}>
+            <ScoreStepper
+              value={finalHomeScore}
+              onChange={(n) => { if (!locked) { setFinalHomeScore(n); haptic('light'); } }}
+              label={finalHome ? <Flag country={finalHome} size="sm" /> : <span className="text-xs text-muted-foreground">{t('finalsTeam')} 1</span>}
+            />
+          </div>
+          <div className={finalHome && finalAway ? 'flag-clash-r flex-1' : 'flex-1'}>
+            <ScoreStepper
+              value={finalAwayScore}
+              onChange={(n) => { if (!locked) { setFinalAwayScore(n); haptic('light'); } }}
+              label={finalAway ? <Flag country={finalAway} size="sm" /> : <span className="text-xs text-muted-foreground">{t('finalsTeam')} 2</span>}
+            />
+          </div>
         </div>
       </BonusSection>
 
       <div className="sticky bottom-24 mt-4">
-        <Button onClick={save} disabled={locked || saving || !gid} size="lg" className="press w-full bg-gradient-warm shadow-warm">
-          {saving ? t('loading') : t('saveBonus')}
-        </Button>
+        <div className="relative">
+          {saveBurst > 0 && <BurstConfetti trigger={saveBurst} count={32} />}
+          <Button onClick={save} disabled={locked || saving || !gid} size="lg" className="press btn-glow ripple w-full bg-gradient-warm shadow-warm">
+            {saving ? t('loading') : t('saveBonus')}
+          </Button>
+        </div>
         {bonusPts > 0 && (
-          <div className="mt-2 text-center text-xs text-success">+{bonusPts} {t('points')}</div>
+          <div className="success-halo mt-2 inline-block w-full rounded-full text-center text-xs font-bold text-success">+{bonusPts} {t('points')}</div>
         )}
       </div>
     </AppShell>

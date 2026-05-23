@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate, Link } from '@tanstack/react-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Pin } from 'lucide-react';
 import { getMatches } from '@/server/matches.functions';
@@ -13,6 +13,10 @@ import { Sheet, ScoreStepper } from '@/components/Sheet';
 import { Button } from '@/components/ui/button';
 import { CardSkeleton } from '@/components/States';
 import { toast } from 'sonner';
+import { StadiumBg } from '@/components/StadiumBg';
+import { BurstConfetti } from '@/components/BurstConfetti';
+import { ParticleBurst } from '@/components/ParticleBurst';
+import { haptic } from '@/hooks/useHaptic';
 
 export const Route = createFileRoute('/match/$id')({ component: MatchDetail });
 
@@ -29,6 +33,9 @@ function MatchDetail() {
   const [existing, setExisting] = useState<{ home_score: number; away_score: number } | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
+  const [goalBurst, setGoalBurst] = useState(0);
+  const [saveBurst, setSaveBurst] = useState(0);
+  const prevScoreRef = useRef<string>("");
 
   useEffect(() => { if (!loading && !user) nav({ to: '/login' }); }, [user, loading, nav]);
   useEffect(() => {
@@ -66,10 +73,22 @@ function MatchDetail() {
       .catch(() => {});
   }, [user, match, gid]);
 
+  const scoreKey = match ? `${match.homeScore}-${match.awayScore}` : '';
+  const liveFlag = match ? (match.status === 'LIVE' || match.status === 'IN_PLAY' || match.status === 'PAUSED') : false;
+
+  useEffect(() => {
+    if (!liveFlag || !scoreKey) return;
+    if (prevScoreRef.current && prevScoreRef.current !== scoreKey) {
+      setGoalBurst((n) => n + 1);
+      haptic('success');
+    }
+    prevScoreRef.current = scoreKey;
+  }, [scoreKey, liveFlag]);
+
   if (!user) return null;
   if (isLoading || !match) return <AppShell><CardSkeleton count={3} /></AppShell>;
 
-  const live = match.status === 'LIVE' || match.status === 'IN_PLAY' || match.status === 'PAUSED';
+  const live = liveFlag;
   const kickoff = new Date(match.utcDate);
   const locked = kickoff.getTime() <= Date.now();
   const homeName = lang === 'he' ? match.homeTeamHe : match.homeTeam;
@@ -91,6 +110,8 @@ function MatchDetail() {
       setExisting({ home_score: home, away_score: away });
       setSheetOpen(false);
       toast.success(t('saved'));
+      setSaveBurst((n) => n + 1);
+      haptic('success');
       queryClient.invalidateQueries({ queryKey: ['my-predictions'] });
     } catch (e: unknown) {
       const err = e as { message?: string };
@@ -106,8 +127,10 @@ function MatchDetail() {
         <ArrowLeft className="h-5 w-5" />
       </Link>
     }>
-      <div className="shine-sweep card-lift overflow-hidden rounded-3xl bg-gradient-warm p-5 shadow-warm">
-        <div className="flex items-center justify-between">
+      <div className={`shine-sweep card-lift relative overflow-hidden rounded-3xl bg-gradient-warm p-5 shadow-warm ${live ? 'breathing-live' : ''}`}>
+        <StadiumBg className="absolute inset-x-0 bottom-0 h-32 w-full text-primary-foreground opacity-50" />
+        {goalBurst > 0 && <ParticleBurst trigger={goalBurst} count={20} />}
+        <div className="relative flex items-center justify-between">
           <span className="text-[10px] font-bold uppercase tracking-wider text-primary-foreground/80">{match.competition}</span>
           {live && (
             <span className="flex items-center gap-1.5 rounded-full bg-live px-2.5 py-0.5 text-[10px] font-bold text-live-foreground">
@@ -117,14 +140,14 @@ function MatchDetail() {
           )}
         </div>
 
-        <div className="mt-4 grid grid-cols-3 items-center gap-2 text-primary-foreground">
+        <div className="relative mt-4 grid grid-cols-3 items-center gap-2 text-primary-foreground">
           <div className="text-center">
-            <Flag country={match.homeTeam} size="lg" />
+            <span className={`flag-wave inline-block ${live ? 'flag-clash-l' : ''}`}><Flag country={match.homeTeam} size="lg" /></span>
             <div className="mt-2 truncate text-sm font-bold">{homeName}</div>
           </div>
           <div className="text-center">
             {match.homeScore != null ? (
-              <div className="num font-display text-5xl font-black">
+              <div key={scoreKey} className={`num font-display text-5xl font-black ${live ? 'score-pop' : ''}`}>
                 {match.homeScore} <span className="text-primary-foreground/60">:</span> {match.awayScore}
               </div>
             ) : (
@@ -134,7 +157,7 @@ function MatchDetail() {
             )}
           </div>
           <div className="text-center">
-            <Flag country={match.awayTeam} size="lg" />
+            <span className={`flag-wave inline-block ${live ? 'flag-clash-r' : ''}`}><Flag country={match.awayTeam} size="lg" /></span>
             <div className="mt-2 truncate text-sm font-bold">{awayName}</div>
           </div>
         </div>
@@ -182,9 +205,12 @@ function MatchDetail() {
             {lang === 'he' ? 'הצטרף לקבוצה כדי לנחש' : 'Join a group to place a prediction'}
           </div>
         ) : (
-          <Button onClick={() => setSheetOpen(true)} size="lg" className="press mt-3 w-full bg-gradient-warm shadow-warm">
-            {existing ? (lang === 'he' ? 'ערוך ניחוש' : 'Edit prediction') : t('placeBet')}
-          </Button>
+          <div className="relative mt-3">
+            {saveBurst > 0 && <BurstConfetti trigger={saveBurst} count={28} />}
+            <Button onClick={() => { haptic('light'); setSheetOpen(true); }} size="lg" className="press btn-glow ripple w-full bg-gradient-warm shadow-warm">
+              {existing ? (lang === 'he' ? 'ערוך ניחוש' : 'Edit prediction') : t('placeBet')}
+            </Button>
+          </div>
         )}
         <p className="mt-3 text-[11px] text-muted-foreground">{t('score365rules')}</p>
       </div>
@@ -194,7 +220,7 @@ function MatchDetail() {
           <ScoreStepper value={home} onChange={setHome} label={<><Flag country={match.homeTeam} size="sm" /><span className="ms-1 truncate">{homeName}</span></>} />
           <ScoreStepper value={away} onChange={setAway} label={<><Flag country={match.awayTeam} size="sm" /><span className="ms-1 truncate">{awayName}</span></>} />
         </div>
-        <Button onClick={saveBet} disabled={saving} size="lg" className="press mt-5 w-full bg-gradient-warm shadow-warm">
+        <Button onClick={() => { haptic('medium'); saveBet(); }} disabled={saving} size="lg" className="press btn-glow ripple mt-5 w-full bg-gradient-warm shadow-warm">
           {saving ? t('loading') : t('save')}
         </Button>
       </Sheet>

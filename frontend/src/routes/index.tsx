@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Pin, Calendar as CalIcon, Sparkles } from "lucide-react";
 import { getMatches, type Match } from "@/server/matches.functions";
@@ -7,6 +7,8 @@ import { useAuth } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { AppShell } from "@/components/AppShell";
 import { EmptyState, CardSkeleton } from "@/components/States";
+import { ParticleBurst } from "@/components/ParticleBurst";
+import { haptic } from "@/hooks/useHaptic";
 
 export const Route = createFileRoute("/")({ component: HomePage });
 
@@ -93,7 +95,7 @@ function HomePage() {
               </h2>
               {Object.entries(byDate).map(([date, ms]) => (
                 <div key={date} className="mb-4">
-                  <div className="sticky top-14 z-10 -mx-4 mb-2 bg-background/85 px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-muted-foreground backdrop-blur">
+                  <div className="sticky-slide sticky top-14 z-10 -mx-4 mb-2 bg-background/85 px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-muted-foreground backdrop-blur">
                     {date}
                   </div>
                   <div className="grid gap-2">
@@ -163,16 +165,27 @@ function MatchCard({ match, pinned, index = 0, onTogglePin }: { match: Match; pi
   const homeName = lang === "he" ? match.homeTeamHe : match.homeTeam;
   const awayName = lang === "he" ? match.awayTeamHe : match.awayTeam;
   const scoreKey = `${match.homeScore}-${match.awayScore}`;
+  const prevScoreRef = useRef(scoreKey);
+  const [goalBurst, setGoalBurst] = useState(0);
+
+  useEffect(() => {
+    if (prevScoreRef.current !== scoreKey && live && match.homeScore != null) {
+      setGoalBurst((n) => n + 1);
+      haptic("success");
+    }
+    prevScoreRef.current = scoreKey;
+  }, [scoreKey, live, match.homeScore]);
 
   return (
     <div
-      onClick={() => nav({ to: "/match/$id", params: { id: match.id } })}
-      className="reveal press card-lift flex cursor-pointer items-center gap-2 rounded-2xl border border-border bg-gradient-card p-3 shadow-soft"
+      onClick={() => { haptic("light"); nav({ to: "/match/$id", params: { id: match.id } }); }}
+      className={`reveal press card-lift relative flex cursor-pointer items-center gap-2 rounded-2xl border border-border bg-gradient-card p-3 shadow-soft ${live ? "breathing-live" : ""}`}
       style={{ animationDelay: `${index * 55}ms` }}
     >
+      {goalBurst > 0 && <ParticleBurst trigger={goalBurst} count={14} />}
       <div className="flex flex-1 items-center justify-end gap-1.5 overflow-hidden">
         <span className="truncate text-sm font-semibold">{homeName}</span>
-        <span className="shrink-0 text-xl leading-none">{toFlag(match.homeIso2)}</span>
+        <span className="flag-wave shrink-0 text-xl leading-none">{toFlag(match.homeIso2)}</span>
       </div>
       <div className="grid min-w-[60px] shrink-0 place-items-center">
         {match.homeScore != null ? (
@@ -190,12 +203,12 @@ function MatchCard({ match, pinned, index = 0, onTogglePin }: { match: Match; pi
         )}
       </div>
       <div className="flex flex-1 items-center gap-1.5 overflow-hidden">
-        <span className="shrink-0 text-xl leading-none">{toFlag(match.awayIso2)}</span>
+        <span className="flag-wave shrink-0 text-xl leading-none">{toFlag(match.awayIso2)}</span>
         <span className="truncate text-sm font-semibold">{awayName}</span>
       </div>
       {live && (
         <button
-          onClick={(e) => { e.stopPropagation(); onTogglePin(match.id); }}
+          onClick={(e) => { e.stopPropagation(); haptic("medium"); onTogglePin(match.id); }}
           className={`press grid h-9 w-9 shrink-0 place-items-center rounded-full ${pinned ? "bg-primary/15 text-primary glow-pulse" : "text-muted-foreground"}`}
           aria-label="pin"
         >

@@ -13,6 +13,8 @@ import { Sheet } from '@/components/Sheet';
 import { Medal } from '@/components/Medal';
 import { Confetti } from '@/components/Confetti';
 import { useCountUp } from '@/hooks/useCountUp';
+import { haptic } from '@/hooks/useHaptic';
+import { Check } from 'lucide-react';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
@@ -70,17 +72,17 @@ function LeaguesPage() {
   return (
     <AppShell title={t('leagues')}>
       <div className="mb-3 grid grid-cols-2 gap-2">
-        <Button onClick={() => setCreateOpen(true)} className="press btn-glow shine-sweep h-12 bg-gradient-warm shadow-warm">
+        <Button onClick={() => { haptic('light'); setCreateOpen(true); }} className="press btn-glow ripple shine-sweep h-12 bg-gradient-warm shadow-warm">
           <Plus className="me-1.5 h-4 w-4" /> {t('createLeague')}
         </Button>
-        <Button onClick={() => setJoinOpen(true)} variant="secondary" className="press card-lift glass h-12">
+        <Button onClick={() => { haptic('light'); setJoinOpen(true); }} variant="secondary" className="press ripple card-lift glass h-12">
           <LogIn className="me-1.5 h-4 w-4" /> {t('joinLeague')}
         </Button>
       </div>
 
       {isLoading ? <CardSkeleton count={2} /> : !groups?.length ? (
         <EmptyState
-          icon={<Crown className="h-6 w-6" />}
+          icon={<Crown className="h-6 w-6 crown-float" />}
           title={lang === 'he' ? 'אין עדיין קבוצות' : 'No groups yet'}
           hint={lang === 'he' ? 'צור קבוצה ושתף את הקוד עם החברים' : 'Create a group and share the code'}
         />
@@ -112,6 +114,7 @@ function GroupCard({ group, userId, onChanged }: { group: Group; userId: string;
   const { t, lang } = useI18n();
   const [inviteOpen, setInviteOpen] = useState(false);
   const [leaderOpen, setLeaderOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const { data: leaderboard } = useQuery<LeaderboardRow[]>({
     queryKey: ['leaderboard', group.id],
@@ -141,8 +144,8 @@ function GroupCard({ group, userId, onChanged }: { group: Group; userId: string;
     <div className="reveal card-lift glass relative overflow-hidden rounded-3xl p-4">
       <div className="mb-3 flex items-center justify-between gap-2">
         <div className="flex min-w-0 items-center gap-2">
-          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-gradient-warm shadow-warm tab-icon-bounce">
-            <Crown className="h-4 w-4 text-primary-foreground" />
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-gradient-warm shadow-warm">
+            <Crown className="h-4 w-4 text-primary-foreground crown-float" />
           </span>
           <div className="min-w-0">
             <h3 className="flex items-center gap-1.5 truncate font-display text-base font-bold">
@@ -154,19 +157,29 @@ function GroupCard({ group, userId, onChanged }: { group: Group; userId: string;
               )}
             </h3>
             <button
-              onClick={() => { navigator.clipboard.writeText(group.join_code); toast.success(lang === 'he' ? 'הועתק' : 'Copied'); }}
-              className="press flex items-center gap-1 text-[10px] text-muted-foreground"
+              onClick={() => {
+                navigator.clipboard.writeText(group.join_code);
+                haptic('light');
+                toast.success(lang === 'he' ? 'הועתק' : 'Copied');
+                setCopied(true);
+                setTimeout(() => setCopied(false), 1400);
+              }}
+              className="press ripple relative flex items-center gap-1 rounded text-[10px] text-muted-foreground"
             >
               <span className="num font-mono font-bold text-primary">{group.join_code}</span>
-              <Copy className="h-3 w-3" />
+              {copied ? (
+                <Check className="copy-check h-3.5 w-3.5 text-success" />
+              ) : (
+                <Copy className="h-3 w-3" />
+              )}
             </button>
           </div>
         </div>
         <div className="flex items-center gap-1">
-          <Button size="sm" variant="secondary" onClick={() => setInviteOpen(true)} className="press h-9">
+          <Button size="sm" variant="secondary" onClick={() => { haptic('light'); setInviteOpen(true); }} className="press ripple h-9">
             <UserPlus className="me-1 h-3.5 w-3.5" /> {t('inviteFriend')}
           </Button>
-          <Button size="sm" variant="secondary" onClick={() => setLeaderOpen((v) => !v)} className="press h-9 w-9 p-0">
+          <Button size="sm" variant="secondary" onClick={() => { haptic('light'); setLeaderOpen((v) => !v); }} className="press ripple h-9 w-9 p-0">
             <BarChart2 className="h-4 w-4" />
           </Button>
           {group.is_owner ? (

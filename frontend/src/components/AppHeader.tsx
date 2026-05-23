@@ -7,6 +7,7 @@ import { useAuth } from '@/lib/auth';
 import { useTheme } from '@/lib/theme';
 import { api, type Notification } from '@/lib/api';
 import { Button } from '@/components/ui/button';
+import { haptic } from '@/hooks/useHaptic';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
   DropdownMenuLabel, DropdownMenuSeparator,
@@ -43,29 +44,29 @@ export function AppHeader({ title, action }: { title?: string; action?: ReactNod
       style={{ paddingTop: 'env(safe-area-inset-top)' }}
     >
       <div className="flex h-14 items-center justify-between gap-2 px-3">
-        <Link to="/" className="flex items-center gap-2 font-display text-base font-bold">
-          <span className="grid h-8 w-8 place-items-center rounded-xl bg-gradient-warm shadow-warm">
-            <Trophy className="h-4 w-4 text-primary-foreground" />
+        <Link to="/" className="flex items-center gap-2 font-display text-base font-bold" onClick={() => haptic('light')}>
+          <span className="grid h-8 w-8 place-items-center rounded-xl bg-gradient-warm shadow-warm shine-sweep">
+            <Trophy className="h-4 w-4 text-primary-foreground wobble" />
           </span>
           <span className="text-gradient-warm">{title ?? t('appName')}</span>
         </Link>
 
         <div className="flex items-center gap-0.5">
           {action}
-          <Button variant="ghost" size="icon" onClick={toggle} aria-label={theme === 'dark' ? t('lightMode') : t('darkMode')} className="h-10 w-10 active:scale-95">
-            {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+          <Button variant="ghost" size="icon" onClick={() => { haptic('light'); toggle(); }} aria-label={theme === 'dark' ? t('lightMode') : t('darkMode')} className="ripple h-10 w-10 active:scale-95">
+            {theme === 'dark' ? <Sun key="sun" className="num-flip h-5 w-5" /> : <Moon key="moon" className="num-flip h-5 w-5" />}
           </Button>
-          <Button variant="ghost" size="icon" onClick={() => setLang(lang === 'en' ? 'he' : 'en')} aria-label={t('language')} className="h-10 w-10 active:scale-95">
+          <Button variant="ghost" size="icon" onClick={() => { haptic('light'); setLang(lang === 'en' ? 'he' : 'en'); }} aria-label={t('language')} className="ripple h-10 w-10 active:scale-95">
             <Globe className="h-5 w-5" />
           </Button>
 
           {user && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="relative h-10 w-10 active:scale-95" onClick={markAllRead}>
-                  <Bell className="h-5 w-5" />
+                <Button variant="ghost" size="icon" className="ripple relative h-10 w-10 active:scale-95" onClick={() => { haptic('light'); markAllRead(); }}>
+                  <Bell className={`h-5 w-5 ${unread > 0 ? 'bell-shake' : ''}`} />
                   {unread > 0 && (
-                    <span className="absolute right-1.5 top-1.5 grid h-4 w-4 place-items-center rounded-full bg-live text-[10px] font-bold text-live-foreground">
+                    <span className="absolute right-1.5 top-1.5 grid h-4 w-4 place-items-center rounded-full bg-live text-[10px] font-bold text-live-foreground glow-pulse">
                       {unread}
                     </span>
                   )}
