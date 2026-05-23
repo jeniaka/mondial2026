@@ -9,6 +9,7 @@ import { AppShell } from '@/components/AppShell';
 import { Flag } from '@/components/Flag';
 import { EmptyState, CardSkeleton } from '@/components/States';
 import { Trophy } from 'lucide-react';
+import { useCountUp } from '@/hooks/useCountUp';
 
 export const Route = createFileRoute('/bets')({ component: BetsPage });
 
@@ -47,13 +48,14 @@ function BetsPage() {
 
   const bets = (preds ?? []).filter((p) => p.home_score != null);
   const total = bets.reduce((s, b) => s + (b.points_awarded ?? 0), 0);
+  const totalAnim = useCountUp(total, 900);
 
   return (
     <AppShell title={t('bets')}>
       <div className="shine-sweep card-lift mb-4 flex items-center justify-between overflow-hidden rounded-3xl bg-gradient-warm p-5 shadow-warm">
         <div>
           <div className="text-xs font-bold uppercase tracking-wider text-primary-foreground/80">{t('points')}</div>
-          <div key={total} className="num font-display text-5xl font-black text-primary-foreground score-pop">{total}</div>
+          <div className="num count-up font-display text-5xl font-black text-primary-foreground">{totalAnim}</div>
         </div>
         <Trophy className="h-12 w-12 text-primary-foreground/60 tab-icon-bounce" />
       </div>

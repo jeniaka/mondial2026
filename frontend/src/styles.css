@@ -412,53 +412,237 @@ html[data-palette="crimson"].dark {
     );
   }
 
-  /* === Flying ball ambient background === */
+  /* === Flying World Cup balls — 6 iconic designs, varied sizes/paths === */
   .flying-ball {
     position: absolute;
     pointer-events: none;
     z-index: 0;
-    opacity: 0.12;
+    opacity: 0.22;
     will-change: transform;
-    filter: blur(0.5px);
+    filter: drop-shadow(0 4px 12px rgba(0,0,0,0.18));
   }
-  .dark .flying-ball { opacity: 0.09; }
-  .flying-ball-1 {
-    top: 12%; left: 8%;
-    width: 64px; height: 64px;
-    animation: ball-orbit-1 32s linear infinite, ball-spin 8s linear infinite;
-  }
-  .flying-ball-2 {
-    top: 55%; right: 6%;
-    width: 48px; height: 48px;
-    animation: ball-orbit-2 26s linear infinite, ball-spin 6s linear infinite reverse;
-  }
-  .flying-ball-3 {
-    bottom: 18%; left: 12%;
-    width: 36px; height: 36px;
-    animation: ball-orbit-3 38s linear infinite, ball-spin 10s linear infinite;
-  }
+  .dark .flying-ball { opacity: 0.16; }
+
+  .flying-ball-1 { top: 8%;  left: 6%;   width: 84px; height: 84px;
+    animation: ball-orbit-1 28s ease-in-out infinite, ball-spin 9s linear infinite; }
+  .flying-ball-2 { top: 22%; right: 4%;  width: 54px; height: 54px;
+    animation: ball-orbit-2 34s ease-in-out infinite, ball-spin 7s linear infinite reverse; }
+  .flying-ball-3 { top: 48%; left: 14%;  width: 38px; height: 38px;
+    animation: ball-orbit-3 40s ease-in-out infinite, ball-spin 11s linear infinite; }
+  .flying-ball-4 { top: 65%; right: 10%; width: 68px; height: 68px;
+    animation: ball-orbit-4 30s ease-in-out infinite, ball-spin 8s linear infinite reverse; }
+  .flying-ball-5 { bottom: 12%; left: 8%; width: 48px; height: 48px;
+    animation: ball-orbit-5 36s ease-in-out infinite, ball-spin 10s linear infinite; }
+  .flying-ball-6 { bottom: 28%; right: 14%; width: 32px; height: 32px;
+    animation: ball-orbit-6 26s ease-in-out infinite, ball-spin 6s linear infinite reverse; }
+
   @keyframes ball-orbit-1 {
-    0%   { transform: translate3d(0,   0,   0); }
-    25%  { transform: translate3d(120px, 180px, 0); }
-    50%  { transform: translate3d(40px, 320px, 0); }
-    75%  { transform: translate3d(-60px, 160px, 0); }
-    100% { transform: translate3d(0,   0,   0); }
+    0%   { transform: translate3d(0, 0, 0); }
+    25%  { transform: translate3d(140px, 240px, 0); }
+    50%  { transform: translate3d(60px, 460px, 0); }
+    75%  { transform: translate3d(-40px, 220px, 0); }
+    100% { transform: translate3d(0, 0, 0); }
   }
   @keyframes ball-orbit-2 {
-    0%   { transform: translate3d(0,   0,   0); }
-    33%  { transform: translate3d(-90px, -140px, 0); }
-    66%  { transform: translate3d(-160px, 80px, 0); }
-    100% { transform: translate3d(0,   0,   0); }
+    0%   { transform: translate3d(0, 0, 0); }
+    33%  { transform: translate3d(-110px, 180px, 0); }
+    66%  { transform: translate3d(-180px, -60px, 0); }
+    100% { transform: translate3d(0, 0, 0); }
   }
   @keyframes ball-orbit-3 {
-    0%   { transform: translate3d(0,   0,   0); }
-    50%  { transform: translate3d(200px, -260px, 0); }
-    100% { transform: translate3d(0,   0,   0); }
+    0%   { transform: translate3d(0, 0, 0); }
+    50%  { transform: translate3d(220px, -180px, 0); }
+    100% { transform: translate3d(0, 0, 0); }
+  }
+  @keyframes ball-orbit-4 {
+    0%   { transform: translate3d(0, 0, 0); }
+    25%  { transform: translate3d(-160px, -80px, 0); }
+    50%  { transform: translate3d(-220px, 100px, 0); }
+    75%  { transform: translate3d(-90px, 220px, 0); }
+    100% { transform: translate3d(0, 0, 0); }
+  }
+  @keyframes ball-orbit-5 {
+    0%   { transform: translate3d(0, 0, 0); }
+    33%  { transform: translate3d(180px, -120px, 0); }
+    66%  { transform: translate3d(80px, -240px, 0); }
+    100% { transform: translate3d(0, 0, 0); }
+  }
+  @keyframes ball-orbit-6 {
+    0%   { transform: translate3d(0, 0, 0); }
+    50%  { transform: translate3d(-180px, 80px, 0); }
+    100% { transform: translate3d(0, 0, 0); }
   }
   @keyframes ball-spin {
     from { rotate: 0deg; }
     to   { rotate: 360deg; }
   }
+
+  /* === Liquid blob ambient backgrounds === */
+  .blob {
+    position: absolute;
+    border-radius: 9999px;
+    filter: blur(60px);
+    opacity: 0.35;
+    pointer-events: none;
+    z-index: 0;
+    will-change: transform;
+  }
+  .dark .blob { opacity: 0.28; }
+  .blob-1 {
+    width: 320px; height: 320px;
+    background: radial-gradient(circle, var(--primary-glow), transparent 70%);
+    top: -120px; left: -80px;
+    animation: blob-drift-1 24s ease-in-out infinite;
+  }
+  .blob-2 {
+    width: 280px; height: 280px;
+    background: radial-gradient(circle, var(--accent), transparent 70%);
+    bottom: -100px; right: -60px;
+    animation: blob-drift-2 28s ease-in-out infinite;
+  }
+  @keyframes blob-drift-1 {
+    0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+    50%      { transform: translate3d(60px, 120px, 0) scale(1.18); }
+  }
+  @keyframes blob-drift-2 {
+    0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+    50%      { transform: translate3d(-80px, -90px, 0) scale(1.22); }
+  }
+
+  /* === Glassmorphism cards === */
+  .glass {
+    background: color-mix(in oklab, var(--card) 65%, transparent);
+    backdrop-filter: blur(14px) saturate(140%);
+    -webkit-backdrop-filter: blur(14px) saturate(140%);
+    border: 1px solid color-mix(in oklab, var(--foreground) 8%, transparent);
+    box-shadow:
+      0 1px 0 0 color-mix(in oklab, white 18%, transparent) inset,
+      0 12px 32px -16px color-mix(in oklab, var(--primary) 32%, transparent);
+  }
+  .dark .glass {
+    background: color-mix(in oklab, var(--card) 55%, transparent);
+    border-color: color-mix(in oklab, white 8%, transparent);
+    box-shadow:
+      0 1px 0 0 color-mix(in oklab, white 6%, transparent) inset,
+      0 12px 32px -16px rgba(0,0,0,0.5);
+  }
+  .glass-strong {
+    background: color-mix(in oklab, var(--card) 78%, transparent);
+    backdrop-filter: blur(20px) saturate(160%);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
+    border: 1px solid color-mix(in oklab, var(--foreground) 10%, transparent);
+  }
+
+  /* === Gradient border (animated rainbow shine) === */
+  .gradient-border {
+    position: relative;
+    isolation: isolate;
+  }
+  .gradient-border::before {
+    content: "";
+    position: absolute;
+    inset: -1.5px;
+    border-radius: inherit;
+    padding: 1.5px;
+    background: conic-gradient(from var(--shine-angle, 0deg),
+      var(--primary), var(--accent), var(--primary-glow), var(--primary));
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+            mask-composite: exclude;
+    animation: shine-rotate 6s linear infinite;
+    z-index: -1;
+  }
+  @property --shine-angle {
+    syntax: "<angle>";
+    initial-value: 0deg;
+    inherits: false;
+  }
+  @keyframes shine-rotate {
+    to { --shine-angle: 360deg; }
+  }
+
+  /* === Confetti for podium #1 === */
+  .confetti-host {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    overflow: visible;
+  }
+  .confetti-piece {
+    position: absolute;
+    top: -10px;
+    width: 6px; height: 10px;
+    border-radius: 1px;
+    animation: confetti-fall var(--dur, 2.4s) ease-out var(--delay, 0s) infinite;
+    opacity: 0;
+  }
+  @keyframes confetti-fall {
+    0%   { transform: translate3d(0, -10px, 0) rotate(0deg); opacity: 0; }
+    10%  { opacity: 1; }
+    100% { transform: translate3d(var(--cx, 40px), 200px, 0) rotate(720deg); opacity: 0; }
+  }
+
+  /* === Podium glow ring (rank 1) === */
+  .podium-glow-1 {
+    position: relative;
+  }
+  .podium-glow-1::after {
+    content: "";
+    position: absolute;
+    inset: -6px;
+    border-radius: 16px;
+    background: radial-gradient(circle at 50% 100%, oklch(0.78 0.16 80 / 0.55), transparent 70%);
+    z-index: -1;
+    animation: glow-breathe 2.6s ease-in-out infinite;
+  }
+  @keyframes glow-breathe {
+    0%, 100% { opacity: 0.6; transform: scale(1); }
+    50%      { opacity: 1;   transform: scale(1.12); }
+  }
+
+  /* === Medal ribbon sway === */
+  .medal-sway { transform-origin: 50% 0; animation: medal-sway 3.2s ease-in-out infinite; }
+  @keyframes medal-sway {
+    0%, 100% { transform: rotate(-3deg); }
+    50%      { transform: rotate(3deg); }
+  }
+  .medal-shine {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(120deg, transparent 35%, rgba(255,255,255,0.55) 50%, transparent 65%);
+    background-size: 250% 100%;
+    animation: medal-shine 3.8s ease-in-out infinite;
+    pointer-events: none;
+    mix-blend-mode: overlay;
+  }
+  @keyframes medal-shine {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -100% 0; }
+  }
+
+  /* === Animated count-up (placeholder via CSS only, JS handles updates) === */
+  .count-up { font-variant-numeric: tabular-nums; }
+
+  /* === Premium button glow === */
+  .btn-glow {
+    position: relative;
+    isolation: isolate;
+  }
+  .btn-glow::after {
+    content: "";
+    position: absolute;
+    inset: -4px;
+    border-radius: inherit;
+    background: var(--gradient-warm);
+    filter: blur(14px);
+    opacity: 0.4;
+    z-index: -1;
+    transition: opacity 280ms ease, filter 280ms ease;
+  }
+  .btn-glow:hover::after { opacity: 0.7; filter: blur(20px); }
+  .btn-glow:active::after { opacity: 0.5; }
 
   /* === Stagger reveal on mount === */
   .reveal {

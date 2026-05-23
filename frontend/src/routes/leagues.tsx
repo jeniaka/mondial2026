@@ -10,6 +10,9 @@ import { EmptyState, CardSkeleton } from '@/components/States';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Sheet } from '@/components/Sheet';
+import { Medal } from '@/components/Medal';
+import { Confetti } from '@/components/Confetti';
+import { useCountUp } from '@/hooks/useCountUp';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
@@ -67,10 +70,10 @@ function LeaguesPage() {
   return (
     <AppShell title={t('leagues')}>
       <div className="mb-3 grid grid-cols-2 gap-2">
-        <Button onClick={() => setCreateOpen(true)} className="press h-12 bg-gradient-warm shadow-warm">
+        <Button onClick={() => setCreateOpen(true)} className="press btn-glow shine-sweep h-12 bg-gradient-warm shadow-warm">
           <Plus className="me-1.5 h-4 w-4" /> {t('createLeague')}
         </Button>
-        <Button onClick={() => setJoinOpen(true)} variant="secondary" className="press h-12">
+        <Button onClick={() => setJoinOpen(true)} variant="secondary" className="press card-lift glass h-12">
           <LogIn className="me-1.5 h-4 w-4" /> {t('joinLeague')}
         </Button>
       </div>
@@ -135,10 +138,10 @@ function GroupCard({ group, userId, onChanged }: { group: Group; userId: string;
   };
 
   return (
-    <div className="rounded-3xl border border-border bg-card p-4 shadow-soft">
+    <div className="reveal card-lift glass relative overflow-hidden rounded-3xl p-4">
       <div className="mb-3 flex items-center justify-between gap-2">
         <div className="flex min-w-0 items-center gap-2">
-          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-gradient-warm shadow-warm">
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-gradient-warm shadow-warm tab-icon-bounce">
             <Crown className="h-4 w-4 text-primary-foreground" />
           </span>
           <div className="min-w-0">
@@ -215,14 +218,14 @@ function GroupCard({ group, userId, onChanged }: { group: Group; userId: string;
           ) : (
             <>
               {top3.length >= 3 && (
-                <div className="mb-2 grid grid-cols-3 items-end gap-2">
-                  <Podium rank={2} row={top3[1]} isMe={top3[1]?.is_me} height="h-16" />
-                  <Podium rank={1} row={top3[0]} isMe={top3[0]?.is_me} height="h-20" />
-                  <Podium rank={3} row={top3[2]} isMe={top3[2]?.is_me} height="h-14" />
+                <div className="relative mb-4 mt-2 grid grid-cols-3 items-end gap-3 px-1">
+                  <Podium rank={2} row={top3[1]} isMe={top3[1]?.is_me} height="h-20" />
+                  <Podium rank={1} row={top3[0]} isMe={top3[0]?.is_me} height="h-28" />
+                  <Podium rank={3} row={top3[2]} isMe={top3[2]?.is_me} height="h-16" />
                 </div>
               )}
               {(top3.length < 3 || rest.length > 0) && (
-                <div className="rounded-xl bg-muted/40 p-1.5">
+                <div className="glass mt-2 rounded-2xl p-2">
                   {(top3.length < 3 ? leaderboard : rest).map((row, i) => {
                     const idx = top3.length < 3 ? i : i + 3;
                     return (
@@ -270,14 +273,24 @@ function GroupCard({ group, userId, onChanged }: { group: Group; userId: string;
 }
 
 function Podium({ rank, row, isMe, height }: { rank: 1 | 2 | 3; row: LeaderboardRow; isMe: boolean; height: string }) {
-  const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : '🥉';
-  const bg = rank === 1 ? 'bg-gradient-warm text-primary-foreground' : rank === 2 ? 'bg-secondary' : 'bg-accent/30';
+  const total = useCountUp(row?.total ?? 0);
+  const bg =
+    rank === 1
+      ? 'bg-gradient-to-b from-[oklch(0.82_0.18_80)] to-[oklch(0.62_0.2_60)] text-[oklch(0.18_0.04_40)]'
+      : rank === 2
+      ? 'bg-gradient-to-b from-[oklch(0.92_0.01_240)] to-[oklch(0.72_0.02_240)] text-[oklch(0.2_0.03_240)]'
+      : 'bg-gradient-to-b from-[oklch(0.74_0.13_50)] to-[oklch(0.5_0.13_40)] text-[oklch(0.18_0.04_40)]';
   return (
-    <div className="flex flex-col items-center">
-      <div className="text-2xl">{medal}</div>
-      <div className="mt-1 truncate text-center text-xs font-semibold">{row?.name ?? '?'}{isMe ? ' ★' : ''}</div>
-      <div className={`mt-1 flex w-full items-center justify-center rounded-t-xl ${bg} ${height}`}>
-        <span className="num font-display text-lg font-black">{row?.total ?? 0}</span>
+    <div className={`reveal relative flex flex-col items-center ${rank === 1 ? 'podium-glow-1' : ''}`}
+         style={{ animationDelay: `${(rank === 1 ? 0 : rank === 2 ? 80 : 160)}ms` }}>
+      {rank === 1 && <Confetti count={16} />}
+      <Medal rank={rank} size={rank === 1 ? 56 : 44} />
+      <div className="mt-1 max-w-full truncate text-center text-xs font-semibold">
+        {row?.name ?? '?'}{isMe ? ' ★' : ''}
+      </div>
+      <div className={`relative mt-1 flex w-full items-center justify-center overflow-hidden rounded-t-2xl border border-border/40 shadow-soft ${bg} ${height}`}>
+        <span className="num count-up font-display text-2xl font-black drop-shadow">{total}</span>
+        <span className="pointer-events-none absolute inset-x-0 top-0 h-1/3 bg-gradient-to-b from-white/40 to-transparent" />
       </div>
     </div>
   );
