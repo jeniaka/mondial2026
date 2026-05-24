@@ -9,7 +9,7 @@ import { PinnedTray } from "@/components/PinnedTray";
 import { useSwipe } from "@/hooks/useSwipe";
 import { haptic } from "@/hooks/useHaptic";
 
-const TAB_ORDER = ["/", "/bets", "/bonus", "/leagues", "/friends"] as const;
+const TAB_ORDER = ["/", "/bets", "/leagues", "/news", "/friends"] as const;
 type TabPath = (typeof TAB_ORDER)[number];
 
 function topLevelIndex(pathname: string): number {

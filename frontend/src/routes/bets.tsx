@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Trophy, Trash2 } from 'lucide-react';
+import { Trophy, Trash2, Star, ChevronDown } from 'lucide-react';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
@@ -18,6 +18,7 @@ import { useCountUp } from '@/hooks/useCountUp';
 import { haptic } from '@/hooks/useHaptic';
 import { FireStreak } from '@/components/FireStreak';
 import { FlipCard } from '@/components/FlipCard';
+import { BonusPicksSection } from '@/components/BonusPicksSection';
 
 export const Route = createFileRoute('/bets')({ component: BetsPage });
 
@@ -27,6 +28,7 @@ function BetsPage() {
   const { t, lang } = useI18n();
   const qc = useQueryClient();
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
+  const [bonusOpen, setBonusOpen] = useState(false);
 
   const handleDeleteBet = async (groupId: string, matchId: string) => {
     try {
@@ -117,6 +119,33 @@ function BetsPage() {
           ))}
         </div>
       )}
+
+      {/* Bonus picks — collapsible (was a separate tab) */}
+      <div className="mb-4 overflow-hidden rounded-3xl border border-border bg-card">
+        <button
+          onClick={() => { haptic('light'); setBonusOpen((v) => !v); }}
+          aria-expanded={bonusOpen}
+          className="press ripple flex w-full items-center justify-between gap-2 px-4 py-3.5"
+        >
+          <span className="flex items-center gap-2.5">
+            <span className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-warm shadow-warm">
+              <Star className="h-4 w-4 text-primary-foreground rotate-slow" />
+            </span>
+            <span className="text-start">
+              <span className="block font-display text-base font-bold">{t('bonusBets')}</span>
+              <span className="block text-[11px] text-muted-foreground">
+                {lang === 'he' ? 'הקש לפתיחה' : 'Tap to open'}
+              </span>
+            </span>
+          </span>
+          <ChevronDown className={`h-5 w-5 text-muted-foreground transition-transform duration-300 ${bonusOpen ? 'rotate-180' : ''}`} />
+        </button>
+        {bonusOpen && (
+          <div className="border-t border-border/60 px-3 pb-4">
+            <BonusPicksSection gid={gid} />
+          </div>
+        )}
+      </div>
 
       {!gid ? (
         <EmptyState

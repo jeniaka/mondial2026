@@ -17,6 +17,7 @@ import { Route as BetsRouteImport } from './routes/bets'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as MatchIdRouteImport } from './routes/match.$id'
 import { Route as InviteTokenRouteImport } from './routes/invite.$token'
+import { Route as NewsRouteImport } from './routes/news'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -58,6 +59,11 @@ const InviteTokenRoute = InviteTokenRouteImport.update({
   path: '/invite/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
+const NewsRoute = NewsRouteImport.update({
+  id: '/news',
+  path: '/news',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -68,6 +74,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/match/$id': typeof MatchIdRoute
   '/invite/$token': typeof InviteTokenRoute
+  '/news': typeof NewsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -78,6 +85,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/match/$id': typeof MatchIdRoute
   '/invite/$token': typeof InviteTokenRoute
+  '/news': typeof NewsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -89,6 +97,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/match/$id': typeof MatchIdRoute
   '/invite/$token': typeof InviteTokenRoute
+  '/news': typeof NewsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -101,6 +110,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/match/$id'
     | '/invite/$token'
+    | '/news'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -111,6 +121,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/match/$id'
     | '/invite/$token'
+    | '/news'
   id:
     | '__root__'
     | '/'
@@ -121,6 +132,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/match/$id'
     | '/invite/$token'
+    | '/news'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -132,6 +144,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   MatchIdRoute: typeof MatchIdRoute
   InviteTokenRoute: typeof InviteTokenRoute
+  NewsRoute: typeof NewsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -192,6 +205,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof InviteTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/news': {
+      id: '/news'
+      path: '/news'
+      fullPath: '/news'
+      preLoaderRoute: typeof NewsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -204,6 +224,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   MatchIdRoute: MatchIdRoute,
   InviteTokenRoute: InviteTokenRoute,
+  NewsRoute: NewsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

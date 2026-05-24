@@ -1302,7 +1302,10 @@ def handle_leaderboard_get(handler: BaseHTTPRequestHandler, group_id: str, **_):
     bonus_map = {b["user_id"]: b.get("bonus_pts", 0) for b in bonus_cursor}
 
     # Admin-applied adjustments (per-group, stored on member)
-    adjust_map = {str(m["user_id"]): int(m.get("admin_adjust", 0)) for m in grp.get("members", [])}
+    adjust_map = {
+        str(m["user_id"]): int(m.get("admin_adjust") or 0)
+        for m in grp.get("members", []) if m.get("user_id")
+    }
 
     if bonus_map or any(adjust_map.values()):
         for row in result:
@@ -1339,14 +1342,16 @@ def handle_group_adjust_points(handler: BaseHTTPRequestHandler, group_id: str, *
     if grp.get("owner_id") != user["_id"]:
         send_json(handler, 403, {"error": "owner_only"})
         return
-    body = parse_json_body(handler)
+    body = parse_json_body(handler) or {}
+    raw_uid = (body.get("user_id") or "").strip()
     try:
-        target_uid = ObjectId(body.get("user_id", ""))
+        target_uid = ObjectId(raw_uid)
     except Exception:
+        log.warning("adjust-points: bad user_id %r", raw_uid)
         send_json(handler, 400, {"error": "bad_user_id"})
         return
     try:
-        delta = int(body.get("delta", 0))
+        delta = int(body.get("delta") or 0)
     except (TypeError, ValueError):
         send_json(handler, 400, {"error": "bad_delta"})
         return
@@ -1354,15 +1359,22 @@ def handle_group_adjust_points(handler: BaseHTTPRequestHandler, group_id: str, *
         send_json(handler, 400, {"error": "delta_out_of_range"})
         return
     # Ensure target is a member
-    member_ids = [m["user_id"] for m in grp.get("members", [])]
+    member_ids = [m.get("user_id") for m in grp.get("members", [])]
     if target_uid not in member_ids:
+        log.warning("adjust-points: target %s not a member of %s", target_uid, gid)
         send_json(handler, 404, {"error": "not_a_member"})
         return
-    db.groups().update_one(
-        {"_id": gid, "members.user_id": target_uid},
-        {"$inc": {"members.$.admin_adjust": delta},
-         "$set": {"updated_at": datetime.now(timezone.utc)}}
-    )
+    try:
+        db.groups().update_one(
+            {"_id": gid, "members.user_id": target_uid},
+            {"$inc": {"members.$.admin_adjust": delta},
+             "$set": {"updated_at": datetime.now(timezone.utc)}}
+        )
+    except Exception as e:
+        log.exception("adjust-points update failed: %s", e)
+        send_json(handler, 500, {"error": "db_error", "detail": str(e)[:200]})
+        return
+    log.info("adjust-points: gid=%s target=%s delta=%+d by=%s", gid, target_uid, delta, user["_id"])
     send_json(handler, 200, {"ok": True, "delta": delta})
 
 

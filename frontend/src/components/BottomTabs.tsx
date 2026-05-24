@@ -1,19 +1,19 @@
 import { Link, useLocation } from "@tanstack/react-router";
-import { Calendar, Trophy, Star, Crown, User } from "lucide-react";
+import { Calendar, Trophy, Crown, User, Newspaper } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { haptic } from "@/hooks/useHaptic";
 
-type TabPath = "/" | "/bets" | "/bonus" | "/leagues" | "/friends";
+type TabPath = "/" | "/bets" | "/leagues" | "/news" | "/friends";
 
 export function BottomTabs() {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const loc = useLocation();
   const tabs: Array<{ to: TabPath; icon: typeof Calendar; label: string; exact?: boolean }> = [
-    { to: "/", icon: Calendar, label: t("matches"), exact: true },
-    { to: "/bets", icon: Trophy, label: t("bets") },
-    { to: "/bonus", icon: Star, label: t("bonusBets") },
-    { to: "/leagues", icon: Crown, label: t("leagues") },
-    { to: "/friends", icon: User, label: t("profile") },
+    { to: "/",        icon: Calendar,  label: t("matches"), exact: true },
+    { to: "/bets",    icon: Trophy,    label: t("bets") },
+    { to: "/leagues", icon: Crown,     label: t("leagues") },
+    { to: "/news",    icon: Newspaper, label: lang === "he" ? "חדשות" : "News" },
+    { to: "/friends", icon: User,      label: t("profile") },
   ];
 
   const isActive = (to: TabPath, exact?: boolean) =>
