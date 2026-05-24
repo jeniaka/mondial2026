@@ -2098,6 +2098,7 @@ _PARAM_NAMES = {
     r"^/api/groups/([^/]+)/tournament-bet$":        ("group_id",),
     r"^/api/groups/([^/]+)/regenerate-code$":       ("group_id",),
     r"^/api/groups/([^/]+)/reset$":                 ("group_id",),
+    r"^/api/groups/([^/]+)/adjust-points$":         ("group_id",),
     r"^/api/groups/([^/]+)/transfer$":              ("group_id",),
     r"^/api/groups/([^/]+)/mute$":                  ("group_id",),
     r"^/api/groups/([^/]+)/stats$":                 ("group_id",),
