@@ -195,7 +195,7 @@ export const api = {
     req<{ ok: true; email: string }>('/api/invite-app', { method: 'POST', body: json({ email, lang }) }),
 
   // News
-  news: (source: 'sport5' | 'maariv' | 'one') =>
+  news: (source: 'sport5' | 'ynet') =>
     req<{ ok: boolean; articles: NewsArticle[]; cached?: boolean; stale?: boolean; fetched_at?: number; error?: string }>(`/api/news?source=${source}`),
 
   // User

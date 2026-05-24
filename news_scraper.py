@@ -106,9 +106,9 @@ def scrape_sport5() -> list:
     return articles
 
 
-def scrape_maariv_sport() -> list:
-    """Maariv Sport (sport1.maariv.co.il). Article URLs match /<section>/article/<id>/."""
-    base = "https://www.maariv.co.il/sport"
+def scrape_ynet_sport() -> list:
+    """Ynet Sport home page. Article URLs follow /sport/.../article/<id>."""
+    base = "https://www.ynet.co.il/sport"
     soup = BeautifulSoup(_fetch_html(base), "html.parser")
     seen: set = set()
     articles: list = []
@@ -117,18 +117,16 @@ def scrape_maariv_sport() -> list:
         href = (a.get("href") or "").strip()
         full_url = urljoin(base, href)
         low = full_url.lower()
-        # Maariv sport articles live on the sport1 subdomain
-        if "maariv.co.il" not in low:
+        if "ynet.co.il" not in low:
             continue
         if "/article/" not in low:
             continue
         if full_url in seen:
             continue
 
-        text = " ".join((a.get_text(" ", strip=True) or "").split())
-        alt = a.get("aria-label") or a.get("title") or ""
-        alt = " ".join(alt.split())
-        title = text if len(text) > len(alt) else alt
+        alt  = a.get("aria-label") or a.get("title") or ""
+        text = a.get_text(" ", strip=True) or ""
+        title = " ".join((alt if len(alt) > len(text) else text).split())
         if len(title) < 8:
             continue
 
@@ -136,9 +134,9 @@ def scrape_maariv_sport() -> list:
         articles.append({
             "title":   title,
             "url":     full_url,
-            "image":   "",          # text-only UI: skip image entirely
+            "image":   "",          # text-only UI
             "snippet": "",
-            "source":  "Maariv",
+            "source":  "Ynet",
         })
         if len(articles) >= 30:
             break
@@ -147,17 +145,12 @@ def scrape_maariv_sport() -> list:
 
 SCRAPERS = {
     "sport5": scrape_sport5,
-    "maariv": scrape_maariv_sport,
-    # Backwards-compat alias: the original spec asked for "one" but ONE is
-    # fully JS-rendered (no scrapable HTML). We use Maariv Sport for that
-    # slot, with an honest "Maariv" label in the frontend.
-    "one":    scrape_maariv_sport,
+    "ynet":   scrape_ynet_sport,
 }
 
 SOURCE_LABELS = {
     "sport5": "Sport5",
-    "maariv": "Maariv",
-    "one":    "Maariv",
+    "ynet":   "Ynet",
 }
 
 

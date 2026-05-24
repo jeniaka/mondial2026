@@ -10,10 +10,10 @@ import { haptic } from '@/hooks/useHaptic';
 
 export const Route = createFileRoute('/news')({ component: NewsPage });
 
-type SourceKey = 'sport5' | 'maariv';
+type SourceKey = 'sport5' | 'ynet';
 const SOURCES: Array<{ key: SourceKey; label: string }> = [
   { key: 'sport5', label: 'Sport5' },
-  { key: 'maariv', label: 'Maariv' },
+  { key: 'ynet',   label: 'Ynet' },
 ];
 
 function NewsPage() {
