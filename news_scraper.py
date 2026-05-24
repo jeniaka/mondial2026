@@ -98,15 +98,17 @@ def scrape_sport5() -> list:
         if img_url and not entry["image"]:
             entry["image"] = img_url
 
-    # Keep only entries that have both image + reasonable title
-    articles = [e for e in grouped.values()
-                if e["image"] and len(e["title"]) >= 8][:24]
+    # Text-only UI: image not required, just a real title
+    articles = [e for e in grouped.values() if len(e["title"]) >= 8][:30]
+    # Drop image field to shrink the payload for the text-only list
+    for e in articles:
+        e["image"] = ""
     return articles
 
 
-def scrape_ynet_sport() -> list:
-    """Ynet Sport home page. Article URLs follow /sport/.../article/<id>."""
-    base = "https://www.ynet.co.il/sport"
+def scrape_maariv_sport() -> list:
+    """Maariv Sport (sport1.maariv.co.il). Article URLs match /<section>/article/<id>/."""
+    base = "https://www.maariv.co.il/sport"
     soup = BeautifulSoup(_fetch_html(base), "html.parser")
     seen: set = set()
     articles: list = []
@@ -115,28 +117,18 @@ def scrape_ynet_sport() -> list:
         href = (a.get("href") or "").strip()
         full_url = urljoin(base, href)
         low = full_url.lower()
-        if "ynet.co.il" not in low:
+        # Maariv sport articles live on the sport1 subdomain
+        if "maariv.co.il" not in low:
             continue
         if "/article/" not in low:
             continue
         if full_url in seen:
             continue
 
-        img = a.find("img")
-        if not img:
-            p = a.parent
-            for _ in range(3):
-                if not p: break
-                img = p.find("img")
-                if img: break
-                p = p.parent
-        img_url = _img_src(img) if img else ""
-        if not _good_image(img_url):
-            continue
-
-        alt = (img.get("alt") if img else "") or a.get("aria-label") or a.get("title") or ""
-        text = a.get_text(" ", strip=True) or ""
-        title = " ".join((alt if len(alt) > len(text) else text).split())
+        text = " ".join((a.get_text(" ", strip=True) or "").split())
+        alt = a.get("aria-label") or a.get("title") or ""
+        alt = " ".join(alt.split())
+        title = text if len(text) > len(alt) else alt
         if len(title) < 8:
             continue
 
@@ -144,27 +136,28 @@ def scrape_ynet_sport() -> list:
         articles.append({
             "title":   title,
             "url":     full_url,
-            "image":   img_url,
+            "image":   "",          # text-only UI: skip image entirely
             "snippet": "",
-            "source":  "Ynet",
+            "source":  "Maariv",
         })
-        if len(articles) >= 24:
+        if len(articles) >= 30:
             break
     return articles
 
 
 SCRAPERS = {
     "sport5": scrape_sport5,
-    "ynet":   scrape_ynet_sport,
-    # spec asked for "one" — ONE is fully JS-rendered (no scrapable HTML)
-    # so we alias it to Ynet Sport. Frontend label still says "ONE".
-    "one":    scrape_ynet_sport,
+    "maariv": scrape_maariv_sport,
+    # Backwards-compat alias: the original spec asked for "one" but ONE is
+    # fully JS-rendered (no scrapable HTML). We use Maariv Sport for that
+    # slot, with an honest "Maariv" label in the frontend.
+    "one":    scrape_maariv_sport,
 }
 
 SOURCE_LABELS = {
     "sport5": "Sport5",
-    "ynet":   "Ynet",
-    "one":    "ONE",
+    "maariv": "Maariv",
+    "one":    "Maariv",
 }
 
 

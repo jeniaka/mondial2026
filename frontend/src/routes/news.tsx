@@ -10,17 +10,17 @@ import { haptic } from '@/hooks/useHaptic';
 
 export const Route = createFileRoute('/news')({ component: NewsPage });
 
-type SourceKey = 'one' | 'sport5';
+type SourceKey = 'sport5' | 'maariv';
 const SOURCES: Array<{ key: SourceKey; label: string }> = [
-  { key: 'one',    label: 'ONE' },
   { key: 'sport5', label: 'Sport5' },
+  { key: 'maariv', label: 'Maariv' },
 ];
 
 function NewsPage() {
   const { user, loading } = useAuth();
   const nav = useNavigate();
   const { lang } = useI18n();
-  const [source, setSource] = useState<SourceKey>('one');
+  const [source, setSource] = useState<SourceKey>('sport5');
 
   useEffect(() => { if (!loading && !user) nav({ to: '/login' }); }, [user, loading, nav]);
 
@@ -28,7 +28,7 @@ function NewsPage() {
     queryKey: ['news', source],
     queryFn: () => api.news(source),
     enabled: !!user,
-    staleTime: 5 * 60_000,        // 5 min — cards don't change that fast
+    staleTime: 5 * 60_000,
     refetchOnWindowFocus: false,
   });
 
@@ -50,7 +50,7 @@ function NewsPage() {
                 {lang === 'he' ? 'חדשות ספורט' : 'Sports News'}
               </h1>
               <p className="truncate text-xs text-primary-foreground/85">
-                {lang === 'he' ? 'מהאתרים המובילים בישראל' : 'From the top Israeli sports sites'}
+                {lang === 'he' ? 'כותרות מהאתרים הישראליים — תוכן מלא באתר המקור' : 'Israeli headlines — full story on source site'}
               </p>
             </div>
           </div>
@@ -86,78 +86,71 @@ function NewsPage() {
         </div>
       )}
 
-      {/* Status / Grid */}
       {isLoading ? (
-        <NewsGridSkeleton />
-      ) : isError || (!data?.ok && articles.length === 0) ? (
-        <NewsError lang={lang as 'he' | 'en'} onRetry={() => refetch()} />
-      ) : articles.length === 0 ? (
+        <NewsListSkeleton />
+      ) : isError || (!data?.ok && articles.length === 0) || articles.length === 0 ? (
         <NewsError lang={lang as 'he' | 'en'} onRetry={() => refetch()} />
       ) : (
-        <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {articles.map((a, i) => <NewsCard key={a.url} article={a} index={i} />)}
+        <ul className="glass overflow-hidden rounded-2xl">
+          {articles.map((a, i) => (
+            <NewsRow key={a.url + i} article={a} index={i} isLast={i === articles.length - 1} />
+          ))}
         </ul>
       )}
     </AppShell>
   );
 }
 
-function NewsCard({ article, index }: { article: NewsArticle; index: number }) {
+function NewsRow({ article, index, isLast }: { article: NewsArticle; index: number; isLast: boolean }) {
   return (
     <li
-      className="reveal card-lift overflow-hidden rounded-2xl border border-border bg-card"
-      style={{ animationDelay: `${index * 40}ms` }}
+      className={`reveal ${isLast ? '' : 'border-b border-border/40'}`}
+      style={{ animationDelay: `${Math.min(index, 12) * 25}ms` }}
     >
       <a
         href={article.url}
         target="_blank"
         rel="noopener noreferrer"
         onClick={() => haptic('light')}
-        className="press flex h-full flex-col"
+        className="press ripple flex items-start gap-3 px-3 py-3 active:bg-muted/40"
       >
-        <div className="relative aspect-[16/10] w-full overflow-hidden bg-muted">
-          <img
-            src={article.image}
-            alt={article.title}
-            loading="lazy"
-            className="h-full w-full object-cover transition-transform duration-500 hover:scale-105"
-            onError={(e) => {
-              const t = e.currentTarget;
-              t.style.display = 'none';
-            }}
-          />
-          <span className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-full bg-black/55 px-2 py-0.5 text-[10px] font-bold text-white backdrop-blur">
-            {article.source}
-          </span>
-        </div>
-        <div className="flex flex-1 flex-col gap-1.5 p-3">
-          <h3 className="line-clamp-3 font-display text-sm font-bold leading-snug">
+        <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-primary/15 text-[10px] font-black text-primary">
+          {index + 1}
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="line-clamp-2 text-sm font-semibold leading-snug">
             {article.title}
-          </h3>
-          {article.snippet && (
-            <p className="line-clamp-2 text-xs text-muted-foreground">
-              {article.snippet}
-            </p>
-          )}
-          <div className="mt-auto flex items-center justify-between pt-1 text-[10px] text-muted-foreground">
-            <span className="font-semibold">{article.source}</span>
-            <ExternalLink className="h-3 w-3" />
+          </p>
+          <div className="mt-1 flex items-center gap-1.5 text-[10px] text-muted-foreground">
+            <span className="font-bold">{article.source}</span>
+            <span>·</span>
+            <span className="truncate" dir="ltr">{cleanHost(article.url)}</span>
           </div>
         </div>
+        <ExternalLink className="mt-1 h-4 w-4 shrink-0 text-muted-foreground" />
       </a>
     </li>
   );
 }
 
-function NewsGridSkeleton() {
+function cleanHost(url: string): string {
+  try {
+    const u = new URL(url);
+    return u.hostname.replace(/^www\./, '');
+  } catch {
+    return '';
+  }
+}
+
+function NewsListSkeleton() {
   return (
-    <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-      {Array.from({ length: 6 }).map((_, i) => (
-        <li key={i} className="overflow-hidden rounded-2xl border border-border bg-card">
-          <div className="skeleton aspect-[16/10] w-full rounded-none" />
-          <div className="space-y-2 p-3">
-            <div className="skeleton h-4 w-4/5 rounded" />
-            <div className="skeleton h-4 w-3/5 rounded" />
+    <ul className="glass overflow-hidden rounded-2xl">
+      {Array.from({ length: 8 }).map((_, i) => (
+        <li key={i} className={`flex items-start gap-3 px-3 py-3 ${i < 7 ? 'border-b border-border/40' : ''}`}>
+          <div className="skeleton h-6 w-6 rounded-full" />
+          <div className="flex-1 space-y-2">
+            <div className="skeleton h-3.5 w-11/12 rounded" />
+            <div className="skeleton h-3.5 w-7/12 rounded" />
           </div>
         </li>
       ))}
