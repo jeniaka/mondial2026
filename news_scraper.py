@@ -29,6 +29,23 @@ REQUEST_TIMEOUT = 12
 _BLOCKED_IMG_HINTS = ("blank.gif", "1x1.gif", "spacer.gif", "data:image",
                        "/logo", "/icon", "placeholder")
 
+# Title substrings that mark a non-article (legal, footer, nav). Matches
+# whole-word-ish — case-insensitive substring on the title.
+_TITLE_BLACKLIST = (
+    # Hebrew
+    "מדיניות פרטיות", "תנאי שימוש", "תנאי שירות", "צור קשר", "אודות",
+    "הצהרת נגישות", "עוגיות", "מפת האתר", "הרשמה לעיתון", "ניוזלטר",
+    "הצטרפות לאתר", "RSS", "פרסם אצלנו", "תקנון", "מועדון חברים",
+    # English
+    "privacy policy", "terms of use", "terms of service", "contact us",
+    "about us", "cookie", "sitemap", "newsletter", "accessibility",
+)
+
+
+def _is_blacklisted_title(title: str) -> bool:
+    low = title.lower()
+    return any(b.lower() in low for b in _TITLE_BLACKLIST)
+
 
 def _fetch_html(url: str) -> str:
     headers = {
@@ -71,7 +88,10 @@ def scrape_sport5() -> list:
         href = (a.get("href") or "").strip()
         if not href:
             continue
-        full_url = urljoin(base, href)
+        full_url = urljoin(base, href).split("#", 1)[0]
+        # Real articles always have both FolderID and docID
+        if "folderid=" not in full_url.lower() or "docid=" not in full_url.lower():
+            continue
 
         # image: prefer inside anchor; fallback walk up parents
         img = a.find("img")
@@ -98,16 +118,21 @@ def scrape_sport5() -> list:
         if img_url and not entry["image"]:
             entry["image"] = img_url
 
-    # Text-only UI: image not required, just a real title
-    articles = [e for e in grouped.values() if len(e["title"]) >= 8][:30]
-    # Drop image field to shrink the payload for the text-only list
+    # Text-only UI: image not required, just a real title; reject footer/legal
+    articles = [
+        e for e in grouped.values()
+        if len(e["title"]) >= 8 and not _is_blacklisted_title(e["title"])
+    ][:30]
     for e in articles:
         e["image"] = ""
     return articles
 
 
 def scrape_ynet_sport() -> list:
-    """Ynet Sport home page. Article URLs follow /sport/.../article/<id>."""
+    """Ynet Sport home page. Real article URLs look like
+    https://www.ynet.co.il/sport/<section>/article/<id>. Legal/footer
+    links (privacy, terms, etc.) live at /article/<id> without /sport/
+    — those are filtered out here."""
     base = "https://www.ynet.co.il/sport"
     soup = BeautifulSoup(_fetch_html(base), "html.parser")
     seen: set = set()
@@ -115,26 +140,31 @@ def scrape_ynet_sport() -> list:
 
     for a in soup.find_all("a", href=True):
         href = (a.get("href") or "").strip()
-        full_url = urljoin(base, href)
+        full_url = urljoin(base, href).split("#", 1)[0]  # drop #fragment
         low = full_url.lower()
         if "ynet.co.il" not in low:
             continue
-        if "/article/" not in low:
+        # Tight: must be /sport/.../article/<id> — this rejects legal pages
+        if "/sport/" not in low or "/article/" not in low:
             continue
+        # Path after /sport/ must include another segment before /article/
+        if low.endswith("/article/") or "/sport/article/" in low and low.count("/") < 6:
+            # /sport/article/<id> is OK (general sport section), allow
+            pass
         if full_url in seen:
             continue
 
         alt  = a.get("aria-label") or a.get("title") or ""
         text = a.get_text(" ", strip=True) or ""
         title = " ".join((alt if len(alt) > len(text) else text).split())
-        if len(title) < 8:
+        if len(title) < 8 or _is_blacklisted_title(title):
             continue
 
         seen.add(full_url)
         articles.append({
             "title":   title,
             "url":     full_url,
-            "image":   "",          # text-only UI
+            "image":   "",
             "snippet": "",
             "source":  "Ynet",
         })
