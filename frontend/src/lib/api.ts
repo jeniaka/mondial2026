@@ -101,6 +101,14 @@ export type Notification = {
   created_at: string;
 };
 
+export type NewsArticle = {
+  title: string;
+  url: string;
+  image: string;
+  snippet: string;
+  source: string;
+};
+
 export type EmailDigest = "off" | "daily" | "matchdays_only";
 
 export type NotifPrefs = {
@@ -185,6 +193,10 @@ export const api = {
   // App-level invite (not tied to a league)
   appInvite: (email: string, lang: 'he' | 'en') =>
     req<{ ok: true; email: string }>('/api/invite-app', { method: 'POST', body: json({ email, lang }) }),
+
+  // News
+  news: (source: 'sport5' | 'ynet' | 'one') =>
+    req<{ ok: boolean; articles: NewsArticle[]; cached?: boolean; stale?: boolean; fetched_at?: number; error?: string }>(`/api/news?source=${source}`),
 
   // User
   userStats: () => req<{ total_predictions: number; exact_predictions: number; best_rank: number | null }>('/api/users/me/stats'),

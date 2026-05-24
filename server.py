@@ -18,6 +18,7 @@ import config  # validates all env vars at import time
 import db
 import auth
 import mail
+import news_scraper
 
 log = logging.getLogger(__name__)
 
@@ -338,6 +339,20 @@ def handle_auth_google_callback(handler: BaseHTTPRequestHandler, **_):
 
     dest = f"/invite/{invite_token}" if invite_token else "/"
     send_redirect(handler, dest, extra_headers=session_headers)
+
+
+def handle_news_get(handler: BaseHTTPRequestHandler, **_):
+    """GET /api/news?source=one|sport5 — returns cached/live article list."""
+    qs = parse_qs(handler.path)
+    source = (qs.get("source") or "one").strip().lower()
+    # Rate-limit per IP — generous since cache absorbs most calls
+    ip = handler.client_address[0]
+    if not _check_rate(f"news:{ip}", 60, 60):
+        send_json(handler, 429, {"error": "too_many_attempts", "ok": False, "articles": []})
+        return
+    result = news_scraper.get_news(source)
+    status = 200 if result.get("ok") else 502
+    send_json(handler, status, result)
 
 
 def handle_debug_email(handler: BaseHTTPRequestHandler, **_):
@@ -1979,6 +1994,7 @@ ROUTES_GET = [
     (r"^/auth/google/callback$",                handle_auth_google_callback),
     (r"^/auth/me$",                             handle_auth_me),
     (r"^/api/_debug/email$",                    handle_debug_email),
+    (r"^/api/news$",                            handle_news_get),
     # Match data
     (r"^/api/matches/live$",                    handle_matches_live),
     (r"^/api/matches/pinned$",                  handle_matches_pinned),
