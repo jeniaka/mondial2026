@@ -214,4 +214,4 @@ def get_news(source_key: str) -> dict:
         if cached:
             return {"ok": True, "source": source_key, "articles": cached["articles"],
                     "cached": True, "fetched_at": cached["fetched_at"], "stale": True}
-        return {"ok": False, "error": str(e)[:200], "source": source_key, "articles": []}
+        return {"ok": False, "error": "scrape_failed", "source": source_key, "articles": []}
