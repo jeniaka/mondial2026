@@ -331,7 +331,8 @@ def handle_auth_google_callback(handler: BaseHTTPRequestHandler, **_):
         if part.startswith("mn_state="):
             stored_state = part[len("mn_state="):]
     if not stored_state or not secrets.compare_digest(stored_state, state):
-        send_redirect(handler, "/login?error=state_mismatch")
+        send_redirect(handler, "/login?error=state_mismatch",
+                      extra_headers=[("Set-Cookie", "mn_state=; Max-Age=0; Path=/")])
         return
 
     try:
@@ -1106,7 +1107,10 @@ def handle_invite_accept(handler: BaseHTTPRequestHandler, **_):
 def handle_invite_page(handler: BaseHTTPRequestHandler, token: str, **_):
     user = auth.current_user(handler)
     if not user:
-        # Stash token in cookie, redirect to login
+        # Stash token in cookie only if it matches the expected format
+        if not _INVITE_TOKEN_RE.match(token):
+            send_redirect(handler, "/login")
+            return
         is_prod = config.APP_BASE_URL.startswith("https")
         secure = "; Secure" if is_prod else ""
         cookie = f"mn_invite={token}; HttpOnly{secure}; SameSite=Lax; Max-Age=600; Path=/"
