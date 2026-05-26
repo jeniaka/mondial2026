@@ -2,6 +2,33 @@ import json
 from unittest.mock import patch, MagicMock
 
 
+# ---------------------------------------------------------------------------
+# ELO source
+# ---------------------------------------------------------------------------
+
+def test_elo_returns_source_result_for_known_teams():
+    from predictions_sources.elo import fetch
+    result = fetch("Brazil", "Argentina")
+    assert result is not None
+    assert result["source"] == "elo"
+    total = result["home_win_pct"] + result["draw_pct"] + result["away_win_pct"]
+    assert abs(total - 1.0) < 0.001
+
+
+def test_elo_away_stronger_means_lower_home_win_pct():
+    from predictions_sources.elo import fetch
+    result = fetch("Bolivia", "France")
+    assert result is not None
+    assert result["away_win_pct"] > result["home_win_pct"]
+
+
+def test_elo_handles_unknown_team_gracefully():
+    from predictions_sources.elo import fetch
+    result = fetch("Atlantis FC", "Brazil")
+    assert result is not None
+    assert result["source"] == "elo"
+
+
 def _mock_resp(data):
     m = MagicMock()
     m.raise_for_status.return_value = None

@@ -3,7 +3,7 @@ predictions_builder.py — Daily cron orchestrator for building match prediction
 
 Connects directly to MongoDB using MONGO_URI + MONGO_DB env vars only.
 Does NOT import config.py (avoids requiring the full set of server env vars).
-Fetches matches scheduled in the next 48 hours, runs all scrapers, aggregates,
+Fetches all upcoming SCHEDULED/TIMED matches, runs all scrapers, aggregates,
 and upserts to the match_predictions collection.
 
 Usage: python predictions_builder.py
@@ -13,7 +13,7 @@ from __future__ import annotations
 import logging
 import os
 import sys
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 
 from dotenv import load_dotenv
 import pymongo
@@ -36,17 +36,18 @@ else:
     _db = {}  # type: ignore[assignment]  — replaced by mocks in tests
 
 import predictions_aggregator
-from predictions_sources import polymarket, forebet, betexplorer, footystats, superbru
+from predictions_sources import polymarket, forebet, betexplorer, footystats, superbru, elo
 
+# ELO is listed first — always produces a result.
+# Scraping sources return None gracefully when unavailable; aggregator averages valid ones.
 _SCRAPERS = [
+    elo.fetch,
     polymarket.fetch,
     forebet.fetch,
     betexplorer.fetch,
     footystats.fetch,
     superbru.fetch,
 ]
-
-_LOOKAHEAD_HOURS = 48
 
 
 def _build(match: dict) -> dict | None:
@@ -81,14 +82,16 @@ def _build(match: dict) -> dict | None:
 
 
 def run() -> None:
-    now   = datetime.now(timezone.utc)
-    until = now + timedelta(hours=_LOOKAHEAD_HOURS)
+    now = datetime.now(timezone.utc)
 
+    # Fetch ALL upcoming matches — no time-window filter.
+    # The daily cron rebuilds predictions for every unstarted match so that
+    # the feature works from the moment the tournament schedule is known.
     matches = list(_db["matches"].find({  # type: ignore[index]
         "status": {"$in": ["SCHEDULED", "TIMED"]},
-        "kickoff_utc": {"$gte": now, "$lte": until},
+        "kickoff_utc": {"$gt": now},
     }))
-    log.info("Upcoming matches in next %dh: %d", _LOOKAHEAD_HOURS, len(matches))
+    log.info("Upcoming SCHEDULED/TIMED matches: %d", len(matches))
 
     ok = 0
     for match in matches:
