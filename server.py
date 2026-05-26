@@ -2234,9 +2234,6 @@ def handler_passes_csrf(handler: BaseHTTPRequestHandler) -> bool:
     path = handler.path.split("?")[0]
     if path.startswith("/internal/"):
         return True
-    # Auth callbacks from Google don't come with our headers
-    if path.startswith("/auth/"):
-        return True
     xrw = handler.headers.get("X-Requested-With", "")
     if xrw != "fetch":
         send_json(handler, 403, {"error": "csrf"})
