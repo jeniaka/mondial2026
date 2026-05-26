@@ -30,11 +30,21 @@ import threading
 
 _rate_buckets: dict = {}
 _rate_lock = threading.Lock()
+_rate_last_evict: float = 0.0
+_RATE_EVICT_INTERVAL = 300  # evict stale entries every 5 minutes
 
 def _check_rate(key: str, limit: int, window: int) -> bool:
     """Returns True if request is allowed, False if rate-limited."""
+    global _rate_last_evict
     now = time.time()
     with _rate_lock:
+        # Periodic eviction: remove entries older than their window
+        if now - _rate_last_evict > _RATE_EVICT_INTERVAL:
+            stale = [k for k, (ts, _) in _rate_buckets.items() if now - ts > window * 2]
+            for k in stale:
+                del _rate_buckets[k]
+            _rate_last_evict = now
+
         entry = _rate_buckets.get(key)
         if entry is None or now - entry[0] > window:
             _rate_buckets[key] = (now, 1)
@@ -161,6 +171,8 @@ _CACHE_CONTROL = {
     ".svg":  "public, max-age=86400",
     ".ico":  "public, max-age=86400",
 }
+
+_INVITE_TOKEN_RE = re.compile(r'^[A-Za-z0-9_-]{32,64}$')
 
 _BUILDING_PAGE = (
     "<!doctype html>"
@@ -340,7 +352,10 @@ def handle_auth_google_callback(handler: BaseHTTPRequestHandler, **_):
     for part in raw_cookies.split(";"):
         part = part.strip()
         if part.startswith("mn_invite="):
-            invite_token = part[len("mn_invite="):]
+            raw_token = part[len("mn_invite="):]
+            if _INVITE_TOKEN_RE.match(raw_token):
+                invite_token = raw_token
+            break
 
     dest = f"/invite/{invite_token}" if invite_token else "/"
     send_redirect(handler, dest, extra_headers=session_headers)
@@ -361,10 +376,12 @@ def handle_news_get(handler: BaseHTTPRequestHandler, **_):
 
 
 def handle_debug_email(handler: BaseHTTPRequestHandler, **_):
-    """GET/POST /api/_debug/email — any authenticated user; only ever sends
-    a test email to the caller's own address, so it can't be abused."""
+    """GET/POST /api/_debug/email — admin only; sends test email to caller."""
     user = auth.require_user(handler)
     if not user:
+        return
+    if not user.get("is_admin"):
+        send_json(handler, 403, {"error": "forbidden"})
         return
     ip = get_client_ip(handler)
     if not _check_rate(f"debug_email:{user['_id']}", 10, 600):
