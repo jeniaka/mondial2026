@@ -351,7 +351,7 @@ def handle_news_get(handler: BaseHTTPRequestHandler, **_):
     qs = parse_qs(handler.path)
     source = (qs.get("source") or "one").strip().lower()
     # Rate-limit per IP — generous since cache absorbs most calls
-    ip = handler.client_address[0]
+    ip = get_client_ip(handler)
     if not _check_rate(f"news:{ip}", 60, 60):
         send_json(handler, 429, {"error": "too_many_attempts", "ok": False, "articles": []})
         return
@@ -435,7 +435,7 @@ def handle_app_invite(handler: BaseHTTPRequestHandler, **_):
 
 
 def handle_auth_register(handler: BaseHTTPRequestHandler, **_):
-    ip = handler.client_address[0]
+    ip = get_client_ip(handler)
     if not _check_rate(f"auth_register:{ip}", 5, 3600):
         send_json(handler, 429, {"error": "too_many_attempts"})
         return
@@ -456,7 +456,7 @@ def handle_auth_register(handler: BaseHTTPRequestHandler, **_):
 
 
 def handle_auth_login(handler: BaseHTTPRequestHandler, **_):
-    ip = handler.client_address[0]
+    ip = get_client_ip(handler)
     if not _check_rate(f"auth_login:{ip}", 10, 600):
         send_json(handler, 429, {"error": "too_many_attempts"})
         return
