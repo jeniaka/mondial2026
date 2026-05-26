@@ -103,9 +103,14 @@ def _set_security_headers(handler: BaseHTTPRequestHandler):
         handler.send_header("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
 
 
+_MAX_BODY = 1_048_576  # 1 MB
+
 def read_body(handler: BaseHTTPRequestHandler) -> bytes:
     length = int(handler.headers.get("Content-Length", "0"))
     if length <= 0:
+        return b""
+    if length > _MAX_BODY:
+        send_json(handler, 413, {"error": "request_too_large"})
         return b""
     return handler.rfile.read(length)
 
