@@ -1839,10 +1839,9 @@ def _serialize_notification(n: dict) -> dict:
 
 
 def _generate_join_code() -> str:
-    import random
     alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
     while True:
-        code = "".join(random.choices(alphabet, k=6))
+        code = "".join(secrets.choice(alphabet) for _ in range(6))
         if not db.groups().find_one({"join_code": code}):
             return code
 
