@@ -50,6 +50,10 @@ def tournament_bets() -> Collection:
     return get_db()["tournament_bets"]
 
 
+def match_predictions() -> Collection:
+    return get_db()["match_predictions"]
+
+
 def ensure_indexes():
     """Create all required indexes. Safe to run multiple times (idempotent)."""
     db = get_db()
@@ -88,4 +92,6 @@ def ensure_indexes():
     db["tournament_bets"].create_index(
         [("group_id", 1), ("user_id", 1)], unique=True
     )
+    db["match_predictions"].create_index("match_id", unique=True)
+    db["match_predictions"].create_index("built_at")
     log.info("MongoDB indexes ensured")
