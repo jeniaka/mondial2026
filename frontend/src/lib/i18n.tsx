@@ -85,7 +85,14 @@ const dict = {
     leaveLeague: "Leave league",
     leaveLeagueConfirm: "Leave this league?",
     manageLeague: "Manage",
-    
+    guessForMe: "AI Prediction",
+    guessForMeSub: "Let the data pick for you",
+    guessBtn: "Predict this match",
+    safeLabel: "Safe",
+    wildLabel: "Wild",
+    useThisBet: "Use this prediction",
+    lowConfidence: "Low confidence — limited data",
+    noData: "No prediction available yet",
   },
   he: {
     appName: "מונדיאל 26",
@@ -169,6 +176,14 @@ const dict = {
     leaveLeague: "עזוב ליגה",
     leaveLeagueConfirm: "לעזוב את הליגה?",
     manageLeague: "ניהול",
+    guessForMe: "נחש בשבילי",
+    guessForMeSub: "תן לנתונים לבחור בשבילך",
+    guessBtn: "נחש את המשחק",
+    safeLabel: "בטוח",
+    wildLabel: "פרוע",
+    useThisBet: "השתמש בניחוש",
+    lowConfidence: "ביטחון נמוך — נתונים מוגבלים",
+    noData: "אין ניחוש זמין עדיין",
   },
 } as const;
 

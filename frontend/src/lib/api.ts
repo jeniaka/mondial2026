@@ -109,6 +109,29 @@ export type NewsArticle = {
   source: string;
 };
 
+export type PredictionVariant = {
+  risk: number;
+  home_score: number;
+  away_score: number;
+  label_he: string;
+  label_en: string;
+  reason_he: string;
+  reason_en: string;
+};
+
+export type MatchPrediction = {
+  ok: boolean;
+  match_id?: string;
+  built_at?: string;
+  home_win_pct?: number;
+  draw_pct?: number;
+  away_win_pct?: number;
+  confidence?: number;
+  sources_used?: string[];
+  variants?: PredictionVariant[];
+  error?: string;
+};
+
 export type EmailDigest = "off" | "daily" | "matchdays_only";
 
 export type NotifPrefs = {
@@ -197,6 +220,10 @@ export const api = {
   // News
   news: (source: 'sport5' | 'ynet') =>
     req<{ ok: boolean; articles: NewsArticle[]; cached?: boolean; stale?: boolean; fetched_at?: number; error?: string }>(`/api/news?source=${source}`),
+
+  // Predictions
+  prediction: (matchId: string) =>
+    req<MatchPrediction>(`/api/prediction?match_id=${encodeURIComponent(matchId)}`),
 
   // User
   userStats: () => req<{ total_predictions: number; exact_predictions: number; best_rank: number | null }>('/api/users/me/stats'),
