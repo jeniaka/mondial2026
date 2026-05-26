@@ -1882,6 +1882,20 @@ def handle_tournament_bet_get(handler: BaseHTTPRequestHandler, group_id=None, **
     user = auth.require_user(handler)
     if not user:
         return
+    from bson import ObjectId
+    try:
+        gid = ObjectId(group_id)
+    except Exception:
+        send_json(handler, 404, {"error": "not found"})
+        return
+    grp = db.groups().find_one({"_id": gid})
+    if not grp:
+        send_json(handler, 404, {"error": "not found"})
+        return
+    member_ids = [m["user_id"] for m in grp.get("members", [])]
+    if user["_id"] not in member_ids:
+        send_json(handler, 403, {"error": "forbidden"})
+        return
     bet = db.tournament_bets().find_one(
         {"group_id": group_id, "user_id": str(user["_id"])}
     )
@@ -1899,6 +1913,20 @@ def handle_tournament_bet_get(handler: BaseHTTPRequestHandler, group_id=None, **
 def handle_tournament_bet_post(handler: BaseHTTPRequestHandler, group_id=None, **_):
     user = auth.require_user(handler)
     if not user:
+        return
+    from bson import ObjectId
+    try:
+        gid = ObjectId(group_id)
+    except Exception:
+        send_json(handler, 404, {"error": "not found"})
+        return
+    grp = db.groups().find_one({"_id": gid})
+    if not grp:
+        send_json(handler, 404, {"error": "not found"})
+        return
+    member_ids = [m["user_id"] for m in grp.get("members", [])]
+    if user["_id"] not in member_ids:
+        send_json(handler, 403, {"error": "forbidden"})
         return
     now = datetime.now(timezone.utc)
     if now >= BONUS_LOCK_DT:
