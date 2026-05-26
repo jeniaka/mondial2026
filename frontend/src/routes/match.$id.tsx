@@ -19,6 +19,7 @@ import { ParticleBurst } from '@/components/ParticleBurst';
 import { haptic } from '@/hooks/useHaptic';
 import { PinLiveButton } from '@/components/PinLiveButton';
 import { CountdownTimer } from '@/components/CountdownTimer';
+import { GuessForMe } from '@/components/GuessForMe';
 
 export const Route = createFileRoute('/match/$id')({ component: MatchDetail });
 
@@ -124,6 +125,12 @@ function MatchDetail() {
     }
   };
 
+  const handleUseBet = (h: number, a: number) => {
+    setHome(h);
+    setAway(a);
+    setSheetOpen(true);
+  };
+
   return (
     <AppShell title={lang === 'he' ? 'משחק' : 'Match'} action={
       <Link to="/" className="press grid h-10 w-10 place-items-center rounded-full text-muted-foreground" aria-label="back">
@@ -227,6 +234,17 @@ function MatchDetail() {
         )}
         <p className="mt-3 text-[11px] text-muted-foreground">{t('score365rules')}</p>
       </div>
+
+      {!locked && !!gid && (
+        <GuessForMe
+          matchId={match.id}
+          homeNameEn={match.homeTeam}
+          homeNameHe={match.homeTeamHe}
+          awayNameEn={match.awayTeam}
+          awayNameHe={match.awayTeamHe}
+          onUseBet={handleUseBet}
+        />
+      )}
 
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen} title={t('yourPrediction')}>
         <div className="flex gap-3">
