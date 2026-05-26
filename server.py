@@ -576,6 +576,24 @@ def handle_match_get(handler: BaseHTTPRequestHandler, match_id: str, **_):
     send_json(handler, 200, _serialize_match(match))
 
 
+def handle_prediction_get(handler: BaseHTTPRequestHandler, **_):
+    """GET /api/prediction?match_id=fd-12345 — returns pre-built prediction or no_data."""
+    user = auth.require_user(handler)
+    if not user:
+        return
+    qs = parse_qs(handler.path)
+    match_id = qs.get("match_id", "").strip()
+    if not match_id:
+        send_json(handler, 400, {"ok": False, "error": "match_id required"})
+        return
+    doc = db.match_predictions().find_one({"match_id": match_id})
+    if not doc:
+        send_json(handler, 200, {"ok": False, "error": "no_data"})
+        return
+    doc.pop("_id", None)
+    send_json(handler, 200, {"ok": True, **doc})
+
+
 def handle_standings_get(handler: BaseHTTPRequestHandler, group: str, **_):
     user = auth.require_user(handler)
     if not user:
@@ -2048,6 +2066,7 @@ ROUTES_GET = [
     (r"^/auth/me$",                             handle_auth_me),
     (r"^/api/_debug/email$",                    handle_debug_email),
     (r"^/api/news$",                            handle_news_get),
+    (r"^/api/prediction$",                      handle_prediction_get),
     # Match data
     (r"^/api/matches/live$",                    handle_matches_live),
     (r"^/api/matches/pinned$",                  handle_matches_pinned),
