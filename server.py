@@ -366,7 +366,7 @@ def handle_debug_email(handler: BaseHTTPRequestHandler, **_):
     user = auth.require_user(handler)
     if not user:
         return
-    ip = handler.client_address[0]
+    ip = get_client_ip(handler)
     if not _check_rate(f"debug_email:{user['_id']}", 10, 600):
         send_json(handler, 429, {"error": "too_many_attempts"})
         return
@@ -408,7 +408,7 @@ def handle_app_invite(handler: BaseHTTPRequestHandler, **_):
     user = auth.require_user(handler)
     if not user:
         return
-    ip = handler.client_address[0]
+    ip = get_client_ip(handler)
     if not _check_rate(f"app_invite:{user['_id']}", 20, 3600):
         send_json(handler, 429, {"error": "too_many_attempts"})
         return
