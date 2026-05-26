@@ -74,3 +74,20 @@ def test_run_calls_update_one_with_upsert():
     mock_predictions.update_one.assert_called_once()
     _, kwargs = mock_predictions.update_one.call_args
     assert kwargs.get("upsert") is True
+
+
+def test_run_accepts_explicit_collections():
+    """run(matches_col, predictions_col) path — used by server internal endpoint."""
+    from predictions_builder import run
+
+    mock_predictions = MagicMock()
+    mock_matches     = MagicMock()
+    mock_matches.find.return_value = [_match()]
+
+    with patch("predictions_builder._SCRAPERS", [lambda h, a: _src()]):
+        count = run(mock_matches, mock_predictions)
+
+    assert count == 1
+    mock_predictions.update_one.assert_called_once()
+    _, kwargs = mock_predictions.update_one.call_args
+    assert kwargs.get("upsert") is True

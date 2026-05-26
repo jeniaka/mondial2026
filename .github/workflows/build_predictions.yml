@@ -8,19 +8,10 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    env:
-      MONGO_URI: ${{ secrets.MONGO_URI }}
-      MONGO_DB:  ${{ secrets.MONGO_DB }}
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-          cache: pip
-
-      - name: Install dependencies
-        run: pip install -r requirements.txt
-
-      - name: Build predictions
-        run: python predictions_builder.py
+      - name: Build match predictions
+        run: |
+          curl -fsS --max-time 120 \
+            -X POST \
+            -H "X-Internal-Token: ${{ secrets.INTERNAL_TOKEN }}" \
+            "${{ secrets.RENDER_BASE_URL }}/internal/build-predictions"

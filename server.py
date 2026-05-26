@@ -1666,6 +1666,19 @@ def handle_internal_score(handler: BaseHTTPRequestHandler, **_):
         send_json(handler, 200, {"ok": True, "total_scored": total})
 
 
+def handle_internal_build_predictions(handler: BaseHTTPRequestHandler, **_):
+    """POST /internal/build-predictions — rebuild AI match predictions for all upcoming matches."""
+    if not require_internal_token(handler):
+        return
+    try:
+        import predictions_builder
+        built = predictions_builder.run(db.matches(), db.match_predictions())
+        send_json(handler, 200, {"ok": True, "built": built})
+    except Exception as exc:
+        log.exception("build_predictions failed: %s", exc)
+        send_json(handler, 500, {"ok": False, "error": str(exc)})
+
+
 def handle_internal_digest(handler: BaseHTTPRequestHandler, **_):
     if not require_internal_token(handler):
         return
@@ -2124,6 +2137,7 @@ ROUTES_POST = [
     (r"^/internal/score-predictions$",          handle_internal_score),
     (r"^/internal/score-bonus$",                handle_internal_score_bonus),
     (r"^/internal/email-digest$",               handle_internal_digest),
+    (r"^/internal/build-predictions$",          handle_internal_build_predictions),
 ]
 
 

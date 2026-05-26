@@ -81,13 +81,23 @@ def _build(match: dict) -> dict | None:
     }
 
 
-def run() -> None:
+def run(matches_col=None, predictions_col=None) -> int:
+    """Build predictions for all upcoming SCHEDULED/TIMED matches.
+
+    When called with explicit collection objects the function uses those
+    (server-internal call path); otherwise falls back to the module-level
+    _db dict (standalone / __main__ call path).
+
+    Returns the count of predictions successfully built.
+    """
+    if matches_col is None:
+        matches_col = _db["matches"]  # type: ignore[index]
+    if predictions_col is None:
+        predictions_col = _db["match_predictions"]  # type: ignore[index]
+
     now = datetime.now(timezone.utc)
 
-    # Fetch ALL upcoming matches — no time-window filter.
-    # The daily cron rebuilds predictions for every unstarted match so that
-    # the feature works from the moment the tournament schedule is known.
-    matches = list(_db["matches"].find({  # type: ignore[index]
+    matches = list(matches_col.find({
         "status": {"$in": ["SCHEDULED", "TIMED"]},
         "kickoff_utc": {"$gt": now},
     }))
@@ -98,7 +108,7 @@ def run() -> None:
         doc = _build(match)
         if not doc:
             continue
-        _db["match_predictions"].update_one(  # type: ignore[index]
+        predictions_col.update_one(
             {"match_id": doc["match_id"]},
             {"$set": doc},
             upsert=True,
@@ -109,6 +119,7 @@ def run() -> None:
         log.info("Built: %s vs %s → %s", h, a, doc["match_id"])
 
     log.info("Done: %d/%d predictions built", ok, len(matches))
+    return ok
 
 
 if __name__ == "__main__":
