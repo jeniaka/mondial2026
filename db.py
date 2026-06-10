@@ -54,6 +54,10 @@ def match_predictions() -> Collection:
     return get_db()["match_predictions"]
 
 
+def ai_consensus() -> Collection:
+    return get_db()["ai_consensus"]
+
+
 def ensure_indexes():
     """Create all required indexes. Safe to run multiple times (idempotent)."""
     db = get_db()

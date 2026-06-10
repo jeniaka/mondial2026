@@ -1,0 +1,1034 @@
+{
+  "meta": {
+    "method": "Weighted consensus: bookmaker/market odds first, then models/projections (RotoWire, Opta-style supercomputer), then expert previews.",
+    "confidence_key": {
+      "High": "strong consensus favorite",
+      "Med": "favorite but not automatic",
+      "Low": "close match / draw / disagreement"
+    },
+    "tournament_format": "12 groups of four, then Round of 32"
+  },
+  "groups": {
+    "A": {
+      "standings": [
+        {
+          "pos": 1,
+          "team": "Mexico",
+          "pts": 7,
+          "result": "Qualifies"
+        },
+        {
+          "pos": 2,
+          "team": "South Korea",
+          "pts": 5,
+          "result": "Qualifies"
+        },
+        {
+          "pos": 3,
+          "team": "Czechia",
+          "pts": 4,
+          "result": "Best third-place qualifier"
+        },
+        {
+          "pos": 4,
+          "team": "South Africa",
+          "pts": 0,
+          "result": "Out"
+        }
+      ],
+      "matches": [
+        {
+          "match": "Mexico vs South Africa",
+          "pick": "Mexico",
+          "score": "2-0",
+          "confidence": "High"
+        },
+        {
+          "match": "South Korea vs Czechia",
+          "pick": "Draw",
+          "score": "1-1",
+          "confidence": "Low"
+        },
+        {
+          "match": "Czechia vs South Africa",
+          "pick": "Czechia",
+          "score": "2-0",
+          "confidence": "Med"
+        },
+        {
+          "match": "Mexico vs South Korea",
+          "pick": "Draw",
+          "score": "1-1",
+          "confidence": "Low"
+        },
+        {
+          "match": "South Africa vs South Korea",
+          "pick": "South Korea",
+          "score": "0-2",
+          "confidence": "Med"
+        },
+        {
+          "match": "Czechia vs Mexico",
+          "pick": "Mexico",
+          "score": "0-1",
+          "confidence": "Med"
+        }
+      ]
+    },
+    "B": {
+      "standings": [
+        {
+          "pos": 1,
+          "team": "Switzerland",
+          "pts": 7,
+          "result": "Qualifies"
+        },
+        {
+          "pos": 2,
+          "team": "Canada",
+          "pts": 7,
+          "result": "Qualifies"
+        },
+        {
+          "pos": 3,
+          "team": "Bosnia & Herzegovina",
+          "pts": 3,
+          "result": "Out"
+        },
+        {
+          "pos": 4,
+          "team": "Qatar",
+          "pts": 0,
+          "result": "Out"
+        }
+      ],
+      "matches": [
+        {
+          "match": "Canada vs Bosnia",
+          "pick": "Canada",
+          "score": "1-0",
+          "confidence": "Med"
+        },
+        {
+          "match": "Qatar vs Switzerland",
+          "pick": "Switzerland",
+          "score": "0-3",
+          "confidence": "High"
+        },
+        {
+          "match": "Switzerland vs Bosnia",
+          "pick": "Switzerland",
+          "score": "1-0",
+          "confidence": "Med"
+        },
+        {
+          "match": "Canada vs Qatar",
+          "pick": "Canada",
+          "score": "2-0",
+          "confidence": "High"
+        },
+        {
+          "match": "Switzerland vs Canada",
+          "pick": "Draw",
+          "score": "1-1",
+          "confidence": "Low"
+        },
+        {
+          "match": "Bosnia vs Qatar",
+          "pick": "Bosnia",
+          "score": "2-0",
+          "confidence": "Med"
+        }
+      ]
+    },
+    "C": {
+      "standings": [
+        {
+          "pos": 1,
+          "team": "Brazil",
+          "pts": 9,
+          "result": "Qualifies"
+        },
+        {
+          "pos": 2,
+          "team": "Morocco",
+          "pts": 4,
+          "result": "Qualifies"
+        },
+        {
+          "pos": 3,
+          "team": "Scotland",
+          "pts": 4,
+          "result": "Best third-place qualifier"
+        },
+        {
+          "pos": 4,
+          "team": "Haiti",
+          "pts": 0,
+          "result": "Out"
+        }
+      ],
+      "matches": [
+        {
+          "match": "Brazil vs Morocco",
+          "pick": "Brazil",
+          "score": "2-1",
+          "confidence": "High"
+        },
+        {
+          "match": "Haiti vs Scotland",
+          "pick": "Scotland",
+          "score": "0-2",
+          "confidence": "Med"
+        },
+        {
+          "match": "Scotland vs Morocco",
+          "pick": "Draw",
+          "score": "1-1",
+          "confidence": "Low"
+        },
+        {
+          "match": "Brazil vs Haiti",
+          "pick": "Brazil",
+          "score": "3-0",
+          "confidence": "High"
+        },
+        {
+          "match": "Morocco vs Haiti",
+          "pick": "Morocco",
+          "score": "2-0",
+          "confidence": "High"
+        },
+        {
+          "match": "Scotland vs Brazil",
+          "pick": "Brazil",
+          "score": "0-2",
+          "confidence": "High"
+        }
+      ]
+    },
+    "D": {
+      "standings": [
+        {
+          "pos": 1,
+          "team": "USA",
+          "pts": 7,
+          "result": "Qualifies"
+        },
+        {
+          "pos": 2,
+          "team": "Turkey",
+          "pts": 5,
+          "result": "Qualifies"
+        },
+        {
+          "pos": 3,
+          "team": "Paraguay",
+          "pts": 2,
+          "result": "Out"
+        },
+        {
+          "pos": 4,
+          "team": "Australia",
+          "pts": 1,
+          "result": "Out"
+        }
+      ],
+      "matches": [
+        {
+          "match": "USA vs Paraguay",
+          "pick": "USA",
+          "score": "1-0",
+          "confidence": "Med"
+        },
+        {
+          "match": "Australia vs Turkey",
+          "pick": "Turkey",
+          "score": "1-2",
+          "confidence": "Med"
+        },
+        {
+          "match": "USA vs Australia",
+          "pick": "USA",
+          "score": "2-1",
+          "confidence": "Med"
+        },
+        {
+          "match": "Turkey vs Paraguay",
+          "pick": "Draw",
+          "score": "1-1",
+          "confidence": "Low"
+        },
+        {
+          "match": "Turkey vs USA",
+          "pick": "Draw",
+          "score": "1-1",
+          "confidence": "Low"
+        },
+        {
+          "match": "Paraguay vs Australia",
+          "pick": "Draw",
+          "score": "1-1",
+          "confidence": "Low"
+        }
+      ]
+    },
+    "E": {
+      "standings": [
+        {
+          "pos": 1,
+          "team": "Germany",
+          "pts": 9,
+          "result": "Qualifies"
+        },
+        {
+          "pos": 2,
+          "team": "Ecuador",
+          "pts": 4,
+          "result": "Qualifies"
+        },
+        {
+          "pos": 3,
+          "team": "Ivory Coast",
+          "pts": 4,
+          "result": "Best third-place qualifier"
+        },
+        {
+          "pos": 4,
+          "team": "Curacao",
+          "pts": 0,
+          "result": "Out"
+        }
+      ],
+      "matches": [
+        {
+          "match": "Germany vs Curacao",
+          "pick": "Germany",
+          "score": "3-0",
+          "confidence": "High"
+        },
+        {
+          "match": "Ivory Coast vs Ecuador",
+          "pick": "Draw",
+          "score": "1-1",
+          "confidence": "Low"
+        },
+        {
+          "match": "Germany vs Ivory Coast",
+          "pick": "Germany",
+          "score": "2-0",
+          "confidence": "High"
+        },
+        {
+          "match": "Ecuador vs Curacao",
+          "pick": "Ecuador",
+          "score": "2-0",
+          "confidence": "High"
+        },
+        {
+          "match": "Curacao vs Ivory Coast",
+          "pick": "Ivory Coast",
+          "score": "0-2",
+          "confidence": "Med"
+        },
+        {
+          "match": "Ecuador vs Germany",
+          "pick": "Germany",
+          "score": "1-2",
+          "confidence": "Med"
+        }
+      ]
+    },
+    "F": {
+      "standings": [
+        {
+          "pos": 1,
+          "team": "Netherlands",
+          "pts": 7,
+          "result": "Qualifies"
+        },
+        {
+          "pos": 2,
+          "team": "Japan",
+          "pts": 6,
+          "result": "Qualifies"
+        },
+        {
+          "pos": 3,
+          "team": "Sweden",
+          "pts": 4,
+          "result": "Best third-place qualifier"
+        },
+        {
+          "pos": 4,
+          "team": "Tunisia",
+          "pts": 0,
+          "result": "Out"
+        }
+      ],
+      "matches": [
+        {
+          "match": "Netherlands vs Japan",
+          "pick": "Netherlands",
+          "score": "2-1",
+          "confidence": "Med"
+        },
+        {
+          "match": "Sweden vs Tunisia",
+          "pick": "Sweden",
+          "score": "2-0",
+          "confidence": "Med"
+        },
+        {
+          "match": "Netherlands vs Sweden",
+          "pick": "Draw",
+          "score": "1-1",
+          "confidence": "Low"
+        },
+        {
+          "match": "Tunisia vs Japan",
+          "pick": "Japan",
+          "score": "0-1",
+          "confidence": "Med"
+        },
+        {
+          "match": "Tunisia vs Netherlands",
+          "pick": "Netherlands",
+          "score": "0-3",
+          "confidence": "High"
+        },
+        {
+          "match": "Japan vs Sweden",
+          "pick": "Japan",
+          "score": "2-1",
+          "confidence": "Low"
+        }
+      ]
+    },
+    "G": {
+      "standings": [
+        {
+          "pos": 1,
+          "team": "Belgium",
+          "pts": 9,
+          "result": "Qualifies"
+        },
+        {
+          "pos": 2,
+          "team": "Egypt",
+          "pts": 4,
+          "result": "Qualifies"
+        },
+        {
+          "pos": 3,
+          "team": "Iran",
+          "pts": 4,
+          "result": "Best third-place qualifier"
+        },
+        {
+          "pos": 4,
+          "team": "New Zealand",
+          "pts": 0,
+          "result": "Out"
+        }
+      ],
+      "matches": [
+        {
+          "match": "Belgium vs Egypt",
+          "pick": "Belgium",
+          "score": "2-1",
+          "confidence": "High"
+        },
+        {
+          "match": "Iran vs New Zealand",
+          "pick": "Iran",
+          "score": "1-0",
+          "confidence": "Med"
+        },
+        {
+          "match": "Belgium vs Iran",
+          "pick": "Belgium",
+          "score": "2-0",
+          "confidence": "High"
+        },
+        {
+          "match": "New Zealand vs Egypt",
+          "pick": "Egypt",
+          "score": "0-2",
+          "confidence": "Med"
+        },
+        {
+          "match": "New Zealand vs Belgium",
+          "pick": "Belgium",
+          "score": "0-3",
+          "confidence": "High"
+        },
+        {
+          "match": "Egypt vs Iran",
+          "pick": "Draw",
+          "score": "1-1",
+          "confidence": "Low"
+        }
+      ]
+    },
+    "H": {
+      "standings": [
+        {
+          "pos": 1,
+          "team": "Spain",
+          "pts": 9,
+          "result": "Qualifies"
+        },
+        {
+          "pos": 2,
+          "team": "Uruguay",
+          "pts": 6,
+          "result": "Qualifies"
+        },
+        {
+          "pos": 3,
+          "team": "Saudi Arabia",
+          "pts": 3,
+          "result": "Out"
+        },
+        {
+          "pos": 4,
+          "team": "Cape Verde",
+          "pts": 0,
+          "result": "Out"
+        }
+      ],
+      "matches": [
+        {
+          "match": "Spain vs Cape Verde",
+          "pick": "Spain",
+          "score": "3-0",
+          "confidence": "High"
+        },
+        {
+          "match": "Saudi Arabia vs Uruguay",
+          "pick": "Uruguay",
+          "score": "0-2",
+          "confidence": "High"
+        },
+        {
+          "match": "Spain vs Saudi Arabia",
+          "pick": "Spain",
+          "score": "3-0",
+          "confidence": "High"
+        },
+        {
+          "match": "Uruguay vs Cape Verde",
+          "pick": "Uruguay",
+          "score": "2-0",
+          "confidence": "High"
+        },
+        {
+          "match": "Cape Verde vs Saudi Arabia",
+          "pick": "Saudi Arabia",
+          "score": "0-1",
+          "confidence": "Low"
+        },
+        {
+          "match": "Uruguay vs Spain",
+          "pick": "Spain",
+          "score": "1-2",
+          "confidence": "Med"
+        }
+      ]
+    },
+    "I": {
+      "standings": [
+        {
+          "pos": 1,
+          "team": "France",
+          "pts": 9,
+          "result": "Qualifies"
+        },
+        {
+          "pos": 2,
+          "team": "Norway",
+          "pts": 6,
+          "result": "Qualifies"
+        },
+        {
+          "pos": 3,
+          "team": "Senegal",
+          "pts": 3,
+          "result": "Best third-place qualifier"
+        },
+        {
+          "pos": 4,
+          "team": "Iraq",
+          "pts": 0,
+          "result": "Out"
+        }
+      ],
+      "matches": [
+        {
+          "match": "France vs Senegal",
+          "pick": "France",
+          "score": "2-1",
+          "confidence": "High"
+        },
+        {
+          "match": "Iraq vs Norway",
+          "pick": "Norway",
+          "score": "0-2",
+          "confidence": "High"
+        },
+        {
+          "match": "France vs Iraq",
+          "pick": "France",
+          "score": "3-0",
+          "confidence": "High"
+        },
+        {
+          "match": "Norway vs Senegal",
+          "pick": "Norway",
+          "score": "2-1",
+          "confidence": "Med"
+        },
+        {
+          "match": "Norway vs France",
+          "pick": "France",
+          "score": "1-2",
+          "confidence": "Med"
+        },
+        {
+          "match": "Senegal vs Iraq",
+          "pick": "Senegal",
+          "score": "2-0",
+          "confidence": "Med"
+        }
+      ]
+    },
+    "J": {
+      "standings": [
+        {
+          "pos": 1,
+          "team": "Argentina",
+          "pts": 9,
+          "result": "Qualifies"
+        },
+        {
+          "pos": 2,
+          "team": "Austria",
+          "pts": 4,
+          "result": "Qualifies"
+        },
+        {
+          "pos": 3,
+          "team": "Algeria",
+          "pts": 4,
+          "result": "Best third-place qualifier"
+        },
+        {
+          "pos": 4,
+          "team": "Jordan",
+          "pts": 0,
+          "result": "Out"
+        }
+      ],
+      "matches": [
+        {
+          "match": "Argentina vs Algeria",
+          "pick": "Argentina",
+          "score": "2-0",
+          "confidence": "High"
+        },
+        {
+          "match": "Austria vs Jordan",
+          "pick": "Austria",
+          "score": "2-0",
+          "confidence": "High"
+        },
+        {
+          "match": "Argentina vs Austria",
+          "pick": "Argentina",
+          "score": "2-1",
+          "confidence": "Med"
+        },
+        {
+          "match": "Jordan vs Algeria",
+          "pick": "Algeria",
+          "score": "0-2",
+          "confidence": "Med"
+        },
+        {
+          "match": "Algeria vs Austria",
+          "pick": "Draw",
+          "score": "1-1",
+          "confidence": "Low"
+        },
+        {
+          "match": "Jordan vs Argentina",
+          "pick": "Argentina",
+          "score": "0-3",
+          "confidence": "High"
+        }
+      ]
+    },
+    "K": {
+      "standings": [
+        {
+          "pos": 1,
+          "team": "Portugal",
+          "pts": 9,
+          "result": "Qualifies"
+        },
+        {
+          "pos": 2,
+          "team": "Colombia",
+          "pts": 6,
+          "result": "Qualifies"
+        },
+        {
+          "pos": 3,
+          "team": "DR Congo",
+          "pts": 3,
+          "result": "Out"
+        },
+        {
+          "pos": 4,
+          "team": "Uzbekistan",
+          "pts": 0,
+          "result": "Out"
+        }
+      ],
+      "matches": [
+        {
+          "match": "Portugal vs DR Congo",
+          "pick": "Portugal",
+          "score": "3-0",
+          "confidence": "High"
+        },
+        {
+          "match": "Uzbekistan vs Colombia",
+          "pick": "Colombia",
+          "score": "0-2",
+          "confidence": "High"
+        },
+        {
+          "match": "Portugal vs Uzbekistan",
+          "pick": "Portugal",
+          "score": "3-0",
+          "confidence": "High"
+        },
+        {
+          "match": "Colombia vs DR Congo",
+          "pick": "Colombia",
+          "score": "2-1",
+          "confidence": "Med"
+        },
+        {
+          "match": "Colombia vs Portugal",
+          "pick": "Portugal",
+          "score": "1-2",
+          "confidence": "Med"
+        },
+        {
+          "match": "DR Congo vs Uzbekistan",
+          "pick": "DR Congo",
+          "score": "1-0",
+          "confidence": "Low"
+        }
+      ]
+    },
+    "L": {
+      "standings": [
+        {
+          "pos": 1,
+          "team": "England",
+          "pts": 9,
+          "result": "Qualifies"
+        },
+        {
+          "pos": 2,
+          "team": "Croatia",
+          "pts": 4,
+          "result": "Qualifies"
+        },
+        {
+          "pos": 3,
+          "team": "Ghana",
+          "pts": 4,
+          "result": "Best third-place qualifier"
+        },
+        {
+          "pos": 4,
+          "team": "Panama",
+          "pts": 0,
+          "result": "Out"
+        }
+      ],
+      "matches": [
+        {
+          "match": "England vs Croatia",
+          "pick": "England",
+          "score": "2-1",
+          "confidence": "Med"
+        },
+        {
+          "match": "Ghana vs Panama",
+          "pick": "Ghana",
+          "score": "1-0",
+          "confidence": "Med"
+        },
+        {
+          "match": "England vs Ghana",
+          "pick": "England",
+          "score": "2-0",
+          "confidence": "High"
+        },
+        {
+          "match": "Panama vs Croatia",
+          "pick": "Croatia",
+          "score": "0-2",
+          "confidence": "High"
+        },
+        {
+          "match": "Panama vs England",
+          "pick": "England",
+          "score": "0-3",
+          "confidence": "High"
+        },
+        {
+          "match": "Croatia vs Ghana",
+          "pick": "Draw",
+          "score": "1-1",
+          "confidence": "Low"
+        }
+      ]
+    }
+  },
+  "best_third_place": [
+    "Czechia",
+    "Scotland",
+    "Ivory Coast",
+    "Sweden",
+    "Iran",
+    "Senegal",
+    "Algeria",
+    "Ghana"
+  ],
+  "knockouts": {
+    "R32": [
+      {
+        "match": "South Korea vs Canada",
+        "pick": "Canada",
+        "score": "1-2",
+        "confidence": "Low"
+      },
+      {
+        "match": "Germany vs Scotland",
+        "pick": "Germany",
+        "score": "2-0",
+        "confidence": "High"
+      },
+      {
+        "match": "Netherlands vs Morocco",
+        "pick": "Netherlands",
+        "score": "2-1",
+        "confidence": "Low"
+      },
+      {
+        "match": "Brazil vs Japan",
+        "pick": "Brazil",
+        "score": "2-1",
+        "confidence": "Med"
+      },
+      {
+        "match": "France vs Sweden",
+        "pick": "France",
+        "score": "2-0",
+        "confidence": "High"
+      },
+      {
+        "match": "Ecuador vs Norway",
+        "pick": "Norway",
+        "score": "1-2",
+        "confidence": "Med"
+      },
+      {
+        "match": "Mexico vs Ivory Coast",
+        "pick": "Mexico",
+        "score": "1-0",
+        "confidence": "Med"
+      },
+      {
+        "match": "England vs Senegal",
+        "pick": "England",
+        "score": "2-1",
+        "confidence": "Med"
+      },
+      {
+        "match": "USA vs Algeria",
+        "pick": "USA",
+        "score": "2-1",
+        "confidence": "Med"
+      },
+      {
+        "match": "Belgium vs Czechia",
+        "pick": "Belgium",
+        "score": "2-0",
+        "confidence": "High"
+      },
+      {
+        "match": "Colombia vs Croatia",
+        "pick": "Colombia",
+        "score": "2-1",
+        "confidence": "Low"
+      },
+      {
+        "match": "Spain vs Austria",
+        "pick": "Spain",
+        "score": "2-0",
+        "confidence": "High"
+      },
+      {
+        "match": "Switzerland vs Iran",
+        "pick": "Switzerland",
+        "score": "1-0",
+        "confidence": "Med"
+      },
+      {
+        "match": "Argentina vs Uruguay",
+        "pick": "Argentina",
+        "score": "2-1",
+        "confidence": "Low"
+      },
+      {
+        "match": "Portugal vs Ghana",
+        "pick": "Portugal",
+        "score": "2-0",
+        "confidence": "High"
+      },
+      {
+        "match": "Turkey vs Egypt",
+        "pick": "Turkey",
+        "score": "2-1",
+        "confidence": "Low"
+      }
+    ],
+    "R16": [
+      {
+        "match": "Germany vs France",
+        "pick": "France",
+        "score": "1-2",
+        "confidence": "Low"
+      },
+      {
+        "match": "Canada vs Netherlands",
+        "pick": "Netherlands",
+        "score": "0-2",
+        "confidence": "Med"
+      },
+      {
+        "match": "Brazil vs Norway",
+        "pick": "Brazil",
+        "score": "2-1",
+        "confidence": "Med"
+      },
+      {
+        "match": "Mexico vs England",
+        "pick": "England",
+        "score": "1-2",
+        "confidence": "Med"
+      },
+      {
+        "match": "Colombia vs Spain",
+        "pick": "Spain",
+        "score": "0-2",
+        "confidence": "High"
+      },
+      {
+        "match": "USA vs Belgium",
+        "pick": "Belgium",
+        "score": "1-2",
+        "confidence": "Low"
+      },
+      {
+        "match": "Argentina vs Turkey",
+        "pick": "Argentina",
+        "score": "2-0",
+        "confidence": "Med"
+      },
+      {
+        "match": "Switzerland vs Portugal",
+        "pick": "Portugal",
+        "score": "1-2",
+        "confidence": "Med"
+      }
+    ],
+    "QF": [
+      {
+        "match": "France vs Netherlands",
+        "pick": "France",
+        "score": "2-1",
+        "confidence": "Med"
+      },
+      {
+        "match": "Spain vs Belgium",
+        "pick": "Spain",
+        "score": "2-1",
+        "confidence": "Med"
+      },
+      {
+        "match": "Brazil vs England",
+        "pick": "England",
+        "score": "1-2",
+        "confidence": "Low"
+      },
+      {
+        "match": "Argentina vs Portugal",
+        "pick": "Argentina",
+        "score": "2-1",
+        "confidence": "Low"
+      }
+    ],
+    "SF": [
+      {
+        "match": "France vs Spain",
+        "pick": "Spain",
+        "score": "1-2",
+        "confidence": "Low"
+      },
+      {
+        "match": "England vs Argentina",
+        "pick": "England",
+        "score": "2-1",
+        "confidence": "Low"
+      }
+    ],
+    "third_place": {
+      "match": "France vs Argentina",
+      "pick": "France",
+      "score": "2-1",
+      "confidence": "Low"
+    },
+    "final": {
+      "match": "Spain vs England",
+      "pick": "Spain",
+      "score": "2-1",
+      "confidence": "Med"
+    }
+  },
+  "final_answers": {
+    "champion": "Spain",
+    "runner_up": "England",
+    "semifinalists": [
+      "Spain",
+      "England",
+      "France",
+      "Argentina"
+    ],
+    "third_place": "France",
+    "fourth_place": "Argentina",
+    "golden_boot": "Kylian Mbappe",
+    "golden_boot_alternatives": [
+      "Erling Haaland",
+      "Harry Kane"
+    ]
+  }
+}

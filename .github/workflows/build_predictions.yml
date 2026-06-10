@@ -9,9 +9,21 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Build match predictions
+      # Fill any match that has no prediction yet from the bundled consensus
+      # seed (fast, network-free on the server side).
+      - name: Seed missing predictions
         run: |
-          curl -fsS --max-time 120 \
+          curl -fsS --max-time 90 \
+            -X POST \
+            -H "X-Internal-Token: ${{ secrets.INTERNAL_TOKEN }}" \
+            "${{ secrets.RENDER_BASE_URL }}/internal/seed-predictions"
+
+      # Kick off the full scraping rebuild. The endpoint returns 202
+      # immediately and the server builds in a background thread (the old
+      # synchronous call always outlived curl's timeout and failed the run).
+      - name: Start prediction rebuild
+        run: |
+          curl -fsS --max-time 90 \
             -X POST \
             -H "X-Internal-Token: ${{ secrets.INTERNAL_TOKEN }}" \
             "${{ secrets.RENDER_BASE_URL }}/internal/build-predictions"

@@ -588,6 +588,21 @@ def handle_prediction_get(handler: BaseHTTPRequestHandler, **_):
         return
     doc = db.match_predictions().find_one({"match_id": match_id})
     if not doc:
+        # Fallback: derive from the bundled consensus seed (or pure ELO math)
+        # and persist, so the next click is a plain DB read. No network calls.
+        match = db.matches().find_one({"_id": match_id})
+        if match:
+            try:
+                import predictions_seed
+                doc = predictions_seed.derive_for_match(match)
+            except Exception as exc:
+                log.exception("prediction seed fallback failed for %s: %s", match_id, exc)
+                doc = None
+            if doc:
+                db.match_predictions().update_one(
+                    {"match_id": match_id}, {"$set": doc}, upsert=True
+                )
+    if not doc:
         send_json(handler, 200, {"ok": False, "error": "no_data"})
         return
     doc.pop("_id", None)
@@ -1667,15 +1682,42 @@ def handle_internal_score(handler: BaseHTTPRequestHandler, **_):
 
 
 def handle_internal_build_predictions(handler: BaseHTTPRequestHandler, **_):
-    """POST /internal/build-predictions — rebuild AI match predictions for all upcoming matches."""
+    """POST /internal/build-predictions — rebuild AI match predictions for all upcoming matches.
+
+    The scraping run takes far longer than any sane HTTP timeout (≈100 matches
+    × several network sources), which made the daily cron's curl time out and
+    fail every run. The build now happens in a background thread and the
+    endpoint acknowledges immediately. Each match is upserted as it completes,
+    so a partial run still leaves the last good document for every match.
+    """
+    if not require_internal_token(handler):
+        return
+
+    def _job():
+        try:
+            import predictions_builder
+            built = predictions_builder.run(db.matches(), db.match_predictions())
+            log.info("build_predictions background run done: %d built", built)
+        except Exception as exc:
+            log.exception("build_predictions background run failed: %s", exc)
+
+    threading.Thread(target=_job, name="build-predictions", daemon=True).start()
+    send_json(handler, 202, {"ok": True, "started": True})
+
+
+def handle_internal_seed_predictions(handler: BaseHTTPRequestHandler, **_):
+    """POST /internal/seed-predictions — fill prediction docs for any upcoming
+    match that has none, from data/ai_guesser_seed.json (ELO math fallback).
+    Fast and network-free; also stores the raw tournament-wide seed document."""
     if not require_internal_token(handler):
         return
     try:
-        import predictions_builder
-        built = predictions_builder.run(db.matches(), db.match_predictions())
-        send_json(handler, 200, {"ok": True, "built": built})
+        import predictions_seed
+        stats = predictions_seed.seed_missing(db.matches(), db.match_predictions())
+        stored = predictions_seed.store_raw_seed(db.ai_consensus())
+        send_json(handler, 200, {"ok": True, "raw_seed_stored": stored, **stats})
     except Exception as exc:
-        log.exception("build_predictions failed: %s", exc)
+        log.exception("seed_predictions failed: %s", exc)
         send_json(handler, 500, {"ok": False, "error": str(exc)})
 
 
@@ -2138,6 +2180,7 @@ ROUTES_POST = [
     (r"^/internal/score-bonus$",                handle_internal_score_bonus),
     (r"^/internal/email-digest$",               handle_internal_digest),
     (r"^/internal/build-predictions$",          handle_internal_build_predictions),
+    (r"^/internal/seed-predictions$",           handle_internal_seed_predictions),
 ]
 
 
@@ -2393,11 +2436,27 @@ def _startup_seed_matches():
         log.error("STARTUP: _startup_seed_matches failed: %s", exc)
 
 
+def _startup_seed_predictions():
+    """Guarantee 'Guess For Me' has data: when the match_predictions collection
+    is empty (e.g. fresh DB or the scraping cron has never succeeded), seed it
+    from data/ai_guesser_seed.json + ELO math. Pure local computation."""
+    try:
+        if db.match_predictions().count_documents({}) > 0:
+            return
+        import predictions_seed
+        stats = predictions_seed.seed_missing(db.matches(), db.match_predictions())
+        predictions_seed.store_raw_seed(db.ai_consensus())
+        log.info("STARTUP: seeded match predictions: %s", stats)
+    except Exception as exc:
+        log.error("STARTUP: _startup_seed_predictions failed: %s", exc)
+
+
 def main():
     _startup_validate_build()
     _startup_validate_countries()
     db.ensure_indexes()
     _startup_seed_matches()
+    _startup_seed_predictions()
     host = "0.0.0.0"
     port = config.PORT
     server = ThreadingHTTPServer((host, port), MondialHandler)
