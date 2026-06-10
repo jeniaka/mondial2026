@@ -587,21 +587,25 @@ def handle_prediction_get(handler: BaseHTTPRequestHandler, **_):
         send_json(handler, 400, {"ok": False, "error": "match_id required"})
         return
     doc = db.match_predictions().find_one({"match_id": match_id})
-    if not doc:
+    # Our own ELO-fallback docs get upgraded if the consensus seed now matches
+    # the pairing (e.g. a team-name alias was added after the doc was stored).
+    elo_fallback = bool(doc) and doc.get("seeded") and doc.get("sources_used") == ["elo"]
+    if not doc or elo_fallback:
         # Fallback: derive from the bundled consensus seed (or pure ELO math)
         # and persist, so the next click is a plain DB read. No network calls.
         match = db.matches().find_one({"_id": match_id})
         if match:
             try:
                 import predictions_seed
-                doc = predictions_seed.derive_for_match(match)
+                new_doc = predictions_seed.derive_for_match(match)
             except Exception as exc:
                 log.exception("prediction seed fallback failed for %s: %s", match_id, exc)
-                doc = None
-            if doc:
+                new_doc = None
+            if new_doc and (not doc or new_doc.get("sources_used") == ["consensus"]):
                 db.match_predictions().update_one(
-                    {"match_id": match_id}, {"$set": doc}, upsert=True
+                    {"match_id": match_id}, {"$set": new_doc}, upsert=True
                 )
+                doc = new_doc
     if not doc:
         send_json(handler, 200, {"ok": False, "error": "no_data"})
         return

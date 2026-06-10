@@ -49,6 +49,35 @@ def test_seed_alias_names():
     assert (doc["variants"][2]["home_score"], doc["variants"][2]["away_score"]) == (1, 1)
 
 
+def test_seed_fd_name_variants():
+    # Live FD.org names observed in production
+    doc = predictions_seed.derive("Spain", "Cape Verde Islands")
+    assert doc["sources_used"] == ["consensus"]
+    assert (doc["variants"][2]["home_score"], doc["variants"][2]["away_score"]) == (3, 0)
+
+    doc = predictions_seed.derive("Bosnia-Herzegovina", "Qatar")
+    assert doc["sources_used"] == ["consensus"]
+    assert (doc["variants"][2]["home_score"], doc["variants"][2]["away_score"]) == (2, 0)
+
+
+def test_seed_missing_upgrades_own_elo_docs():
+    matches = [
+        {"_id": "m1", "status": "TIMED",
+         "home": {"name_en": "Spain"}, "away": {"name_en": "Cape Verde Islands"}},
+    ]
+    # existing doc is our own ELO fallback → must be upgraded to consensus
+    preds = _FakeCol([{"match_id": "m1", "seeded": True, "sources_used": ["elo"]}])
+    stats = predictions_seed.seed_missing(_FakeMatches(matches), preds)
+    assert stats["seeded"] == 1
+    assert preds.docs["m1"]["sources_used"] == ["consensus"]
+
+    # cron-built doc (no "seeded" flag) must never be overwritten
+    preds2 = _FakeCol([{"match_id": "m1", "sources_used": ["elo", "forebet"]}])
+    stats2 = predictions_seed.seed_missing(_FakeMatches(matches), preds2)
+    assert stats2["skipped"] == 1
+    assert preds2.upserts == []
+
+
 def test_seed_diacritics():
     # countries.json name "Curaçao" must match seed's "Curacao"
     doc = predictions_seed.derive("Germany", "Curaçao")
@@ -91,7 +120,8 @@ class _FakeCol:
 
     def find(self, query=None, projection=None):
         if projection:
-            return [{"match_id": d["match_id"]} for d in self.docs.values()]
+            keys = [k for k, v in projection.items() if v]
+            return [{k: d[k] for k in keys if k in d} for d in self.docs.values()]
         return list(self.docs.values())
 
     def update_one(self, flt, update, upsert=False):

@@ -31,12 +31,14 @@ _ALIASES = {
     "usa": "united states",
     "bosnia": "bosnia and herzegovina",
     "bosnia & herzegovina": "bosnia and herzegovina",
+    "bosnia herzegovina": "bosnia and herzegovina",   # FD.org: "Bosnia-Herzegovina"
     "curacao": "curacao",        # canonical form is normalized without diacritics
     "czech republic": "czechia",
     "turkiye": "turkey",
     "korea republic": "south korea",
     "cote d'ivoire": "ivory coast",
     "cabo verde": "cape verde",
+    "cape verde islands": "cape verde",               # FD.org variant
     "ir iran": "iran",
     "congo dr": "dr congo",
 }
@@ -62,7 +64,7 @@ def _norm(name: str) -> str:
     """Normalize a team name: strip diacritics, lowercase, collapse spaces, alias."""
     s = unicodedata.normalize("NFKD", name or "")
     s = "".join(c for c in s if not unicodedata.combining(c))
-    s = " ".join(s.lower().replace(".", "").split())
+    s = " ".join(s.lower().replace(".", "").replace("-", " ").split())
     return _ALIASES.get(s, s)
 
 
@@ -207,15 +209,21 @@ def derive_for_match(match: dict) -> dict | None:
 def seed_missing(matches_col, predictions_col) -> dict:
     """Upsert a prediction doc for every upcoming match that lacks one.
 
-    Never overwrites existing docs (the scraping cron's fresher consensus wins);
-    returns {"matches": n, "seeded": n, "skipped": n}.
+    Never overwrites docs the scraping cron produced. Our own ELO-fallback docs
+    (seeded + sources_used == ["elo"]) are upgraded when the consensus seed now
+    matches the pairing. Returns {"matches": n, "seeded": n, "skipped": n}.
     """
-    have = {d["match_id"] for d in predictions_col.find({}, {"match_id": 1})}
+    have = {
+        d["match_id"]: d
+        for d in predictions_col.find({}, {"match_id": 1, "seeded": 1, "sources_used": 1})
+    }
     matches = list(matches_col.find({"status": {"$in": ["SCHEDULED", "TIMED"]}}))
     seeded = skipped = 0
     for match in matches:
         mid = str(match["_id"])
-        if mid in have:
+        existing = have.get(mid)
+        upgradable = bool(existing) and existing.get("seeded") and existing.get("sources_used") == ["elo"]
+        if existing and not upgradable:
             skipped += 1
             continue
         doc = derive_for_match(match)
