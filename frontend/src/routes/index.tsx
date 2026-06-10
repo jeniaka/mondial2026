@@ -71,26 +71,32 @@ function HomePage() {
       <GoalCelebration trigger={goalTrigger} />
 
       {/* Hero */}
-      <div className="shine-sweep card-lift mb-4 overflow-hidden rounded-3xl bg-gradient-warm p-5 shadow-warm">
-        <div className="flex items-center gap-2 text-primary-foreground/85">
-          <Sparkles className="h-4 w-4 tab-icon-bounce" /> <span className="text-xs font-bold uppercase tracking-wider">USA · CAN · MEX 2026</span>
+      <div className="hero-banner shine-sweep mb-5 p-5">
+        <div className="flex items-center justify-between gap-2 text-primary-foreground/90">
+          <span className="hero-chip inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider">
+            <Sparkles className="h-3 w-3" /> USA · CAN · MEX 2026
+          </span>
         </div>
-        <h1 className="mt-2 font-display text-2xl font-black leading-tight text-primary-foreground">{t("tagline")}</h1>
-        <p className="mt-1.5 text-xs text-primary-foreground/85">{t("score365rules")}</p>
-        {nextMatch && (
-          <div className="mt-3 flex items-center justify-between rounded-2xl bg-primary-foreground/15 px-3 py-2 backdrop-blur">
-            <div className="min-w-0">
-              <div className="text-[9px] font-bold uppercase tracking-wider text-primary-foreground/70">
-                {lang === "he" ? "המשחק הבא" : "Next match"}
-              </div>
-              <div className="truncate text-xs font-bold text-primary-foreground">
-                {(lang === "he" ? nextMatch.homeTeamHe : nextMatch.homeTeam)} vs {(lang === "he" ? nextMatch.awayTeamHe : nextMatch.awayTeam)}
-              </div>
+        <h1 className="mt-3 font-display text-[26px] font-black italic leading-tight text-primary-foreground">{t("tagline")}</h1>
+        {nextMatch ? (
+          <div className="hero-chip mt-4 rounded-2xl px-4 py-3 text-primary-foreground">
+            <div className="text-[9px] font-bold uppercase tracking-[0.18em] text-primary-foreground/75">
+              {lang === "he" ? "המשחק הבא" : "Next match"}
             </div>
-            <div className="text-primary-foreground">
+            <div className="mt-1.5 flex items-center justify-between gap-2">
+              <div className="flex min-w-0 flex-1 items-center justify-center gap-2">
+                <span className="flag-wave text-3xl leading-none">{toFlag(nextMatch.homeIso2)}</span>
+                <span className="score-display text-lg text-primary-foreground/70">VS</span>
+                <span className="flag-wave text-3xl leading-none">{toFlag(nextMatch.awayIso2)}</span>
+              </div>
               <CountdownTimer target={nextMatch.utcDate} lang={lang as "he" | "en"} compact />
             </div>
+            <div className="mt-1 truncate text-center text-xs font-bold">
+              {(lang === "he" ? nextMatch.homeTeamHe : nextMatch.homeTeam)} — {(lang === "he" ? nextMatch.awayTeamHe : nextMatch.awayTeam)}
+            </div>
           </div>
+        ) : (
+          <p className="mt-1.5 text-xs text-primary-foreground/85">{t("score365rules")}</p>
         )}
       </div>
 
@@ -108,9 +114,7 @@ function HomePage() {
 
       {isLoading ? (
         <>
-          <h2 className="mb-2 mt-2 flex items-center gap-2 font-display text-lg font-bold">
-            <CalIcon className="h-4 w-4 text-primary" /> {t("upcoming")}
-          </h2>
+          <h2 className="section-label mb-3 mt-2">{t("upcoming")}</h2>
           <CardSkeleton count={4} />
         </>
       ) : isError ? (
@@ -125,15 +129,15 @@ function HomePage() {
         <>
           {upcoming.length > 0 && (
             <>
-              <h2 className="mb-2 mt-2 flex items-center gap-2 font-display text-lg font-bold">
-                <CalIcon className="h-4 w-4 text-primary" /> {t("upcoming")}
-              </h2>
+              <h2 className="section-label mb-3 mt-2">{t("upcoming")}</h2>
               {Object.entries(byDate).map(([date, ms]) => (
-                <div key={date} className="mb-4">
-                  <div className="sticky-slide sticky top-14 z-10 -mx-4 mb-2 bg-background/85 px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-muted-foreground backdrop-blur">
-                    {date}
+                <div key={date} className="mb-5">
+                  <div className="sticky-slide sticky top-[60px] z-10 -mx-4 mb-2 bg-background/85 px-4 py-1.5 backdrop-blur">
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-3 py-1 text-[11px] font-bold text-secondary-foreground">
+                      <CalIcon className="h-3 w-3 text-primary" /> {date}
+                    </span>
                   </div>
-                  <div className="grid gap-2">
+                  <div className="grid gap-2.5">
                     {ms.map((m, i) => <MatchCard key={m.id} match={m} index={i} />)}
                   </div>
                 </div>
@@ -153,12 +157,12 @@ function HomePage() {
 
 function Section({ title, children, live }: { title: string; children: React.ReactNode; live?: boolean }) {
   return (
-    <section className="mb-4">
-      <h2 className="mb-2 flex items-center gap-2 font-display text-lg font-bold">
-        {live && <span className="h-2 w-2 rounded-full bg-live live-pulse" />}
+    <section className="mb-5">
+      <h2 className="section-label mb-3">
         {title}
+        {live && <span className="h-2 w-2 rounded-full bg-live live-pulse" />}
       </h2>
-      <div className="grid gap-2">{children}</div>
+      <div className="grid gap-2.5">{children}</div>
     </section>
   );
 }
@@ -215,21 +219,21 @@ function MatchCard({ match, index = 0 }: { match: Match; index?: number }) {
   return (
     <div
       onClick={() => { haptic("light"); nav({ to: "/match/$id", params: { id: match.id } }); }}
-      className={`reveal press card-lift relative flex cursor-pointer items-center gap-2 rounded-2xl border border-border bg-gradient-card p-3 shadow-soft ${live ? "breathing-live" : ""}`}
+      className={`reveal press card-lift card-surface relative flex cursor-pointer items-center gap-2 p-3.5 ${live ? "breathing-live" : ""}`}
       style={{ animationDelay: `${index * 55}ms` }}
     >
       {goalBurst > 0 && <ParticleBurst trigger={goalBurst} count={14} />}
-      <div className="flex flex-1 items-center justify-end gap-1.5 overflow-hidden">
-        <span className="truncate text-sm font-semibold">{homeName}</span>
-        <span className="flag-wave shrink-0 text-xl leading-none">{toFlag(match.homeIso2)}</span>
+      <div className="flex flex-1 items-center justify-end gap-2 overflow-hidden">
+        <span className="truncate text-sm font-bold">{homeName}</span>
+        <span className="flag-wave shrink-0 text-2xl leading-none">{toFlag(match.homeIso2)}</span>
       </div>
-      <div className="grid min-w-[60px] shrink-0 place-items-center">
+      <div className="grid min-w-[64px] shrink-0 place-items-center">
         {match.homeScore != null ? (
-          <div key={scoreKey} className={`num font-display text-2xl font-black ${live ? "score-pop" : ""}`}>
-            {match.homeScore}<span className="px-0.5 text-muted-foreground">:</span>{match.awayScore}
+          <div key={scoreKey} className={`num score-display text-[26px] ${live ? "score-pop" : ""}`}>
+            {match.homeScore}<span className="px-0.5 font-sans not-italic text-muted-foreground">:</span>{match.awayScore}
           </div>
         ) : (
-          <div className="num rounded-md bg-secondary px-2 py-0.5 text-sm font-semibold">{time}</div>
+          <div className="num rounded-lg bg-primary/10 px-2.5 py-1 text-sm font-bold text-primary">{time}</div>
         )}
         {live && (
           <div className="mt-0.5 flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider text-live">
@@ -238,9 +242,9 @@ function MatchCard({ match, index = 0 }: { match: Match; index?: number }) {
           </div>
         )}
       </div>
-      <div className="flex flex-1 items-center gap-1.5 overflow-hidden">
-        <span className="flag-wave shrink-0 text-xl leading-none">{toFlag(match.awayIso2)}</span>
-        <span className="truncate text-sm font-semibold">{awayName}</span>
+      <div className="flex flex-1 items-center gap-2 overflow-hidden">
+        <span className="flag-wave shrink-0 text-2xl leading-none">{toFlag(match.awayIso2)}</span>
+        <span className="truncate text-sm font-bold">{awayName}</span>
       </div>
       {!finished && (
         <div onClick={(e) => e.stopPropagation()}>

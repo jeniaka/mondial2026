@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate, Link } from '@tanstack/react-router';
 import { useEffect, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Trophy } from 'lucide-react';
 import { getMatches } from '@/server/matches.functions';
 import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
@@ -137,11 +137,11 @@ function MatchDetail() {
         <ArrowLeft className="h-5 w-5" />
       </Link>
     }>
-      <div className={`shine-sweep card-lift relative overflow-hidden rounded-3xl bg-gradient-warm p-5 shadow-warm ${live ? 'breathing-live' : ''}`}>
-        <StadiumBg className="absolute inset-x-0 bottom-0 h-32 w-full text-primary-foreground opacity-50" />
+      <div className={`hero-banner shine-sweep card-lift relative p-5 ${live ? 'breathing-live' : ''}`}>
+        <StadiumBg className="absolute inset-x-0 bottom-0 h-32 w-full text-primary-foreground opacity-40" />
         {goalBurst > 0 && <ParticleBurst trigger={goalBurst} count={20} />}
         <div className="relative flex items-center justify-between">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-primary-foreground/80">{match.competition}</span>
+          <span className="hero-chip rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-primary-foreground/90">{match.competition}</span>
           {live && (
             <span className="flex items-center gap-1.5 rounded-full bg-live px-2.5 py-0.5 text-[10px] font-bold text-live-foreground">
               <span className="h-1.5 w-1.5 rounded-full bg-live-foreground live-pulse" />
@@ -150,32 +150,35 @@ function MatchDetail() {
           )}
         </div>
 
-        <div className="relative mt-4 grid grid-cols-3 items-center gap-2 text-primary-foreground">
+        <div className="relative mt-5 grid grid-cols-3 items-center gap-2 text-primary-foreground">
           <div className="text-center">
-            <span className={`flag-wave inline-block ${live ? 'flag-clash-l' : ''}`}><Flag country={match.homeTeam} size="lg" /></span>
-            <div className="mt-2 truncate text-sm font-bold">{homeName}</div>
+            <span className={`flag-wave inline-block drop-shadow-lg ${live ? 'flag-clash-l' : ''}`}><Flag country={match.homeTeam} size="lg" /></span>
+            <div className="mt-2 truncate font-display text-sm font-bold">{homeName}</div>
           </div>
           <div className="text-center">
             {match.homeScore != null ? (
-              <div key={scoreKey} className={`num font-display text-5xl font-black ${live ? 'score-pop' : ''}`}>
-                {match.homeScore} <span className="text-primary-foreground/60">:</span> {match.awayScore}
+              <div key={scoreKey} className={`num score-display text-[52px] leading-none ${live ? 'score-pop' : ''}`}>
+                {match.homeScore}<span className="px-1 font-sans not-italic text-primary-foreground/50">:</span>{match.awayScore}
               </div>
             ) : (
-              <div className="num font-display text-lg">
-                {match.utcDate.slice(8,10)}/{match.utcDate.slice(5,7)} {match.utcDate.slice(11,16)}
+              <div className="hero-chip mx-auto inline-block rounded-2xl px-3 py-1.5">
+                <div className="num font-display text-base font-bold">
+                  {match.utcDate.slice(8,10)}/{match.utcDate.slice(5,7)}
+                </div>
+                <div className="num score-display text-2xl leading-none">{match.utcDate.slice(11,16)}</div>
               </div>
             )}
           </div>
           <div className="text-center">
-            <span className={`flag-wave inline-block ${live ? 'flag-clash-r' : ''}`}><Flag country={match.awayTeam} size="lg" /></span>
-            <div className="mt-2 truncate text-sm font-bold">{awayName}</div>
+            <span className={`flag-wave inline-block drop-shadow-lg ${live ? 'flag-clash-r' : ''}`}><Flag country={match.awayTeam} size="lg" /></span>
+            <div className="mt-2 truncate font-display text-sm font-bold">{awayName}</div>
           </div>
         </div>
 
-        <div className="relative mt-4 flex items-center gap-2">
+        <div className="relative mt-5 flex items-center gap-2">
           {!locked && !live && (
-            <div className="flex-1 rounded-2xl bg-primary-foreground/15 px-3 py-2 text-primary-foreground backdrop-blur">
-              <div className="text-[9px] font-bold uppercase tracking-wider opacity-70">{lang === 'he' ? 'בעוד' : 'Starts in'}</div>
+            <div className="hero-chip flex-1 rounded-2xl px-3 py-2 text-primary-foreground">
+              <div className="text-[9px] font-bold uppercase tracking-[0.18em] opacity-75">{lang === 'he' ? 'בעוד' : 'Starts in'}</div>
               <CountdownTimer target={match.utcDate} lang={lang as 'he' | 'en'} compact />
             </div>
           )}
@@ -199,7 +202,7 @@ function MatchDetail() {
             <button
               key={g.id}
               onClick={() => setSelectedGroup(g.id)}
-              className={`press shrink-0 rounded-full px-3 py-1.5 text-xs font-bold ${(selectedGroup ?? groups[0].id) === g.id ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground'}`}
+              className={`press shrink-0 rounded-full px-3.5 py-1.5 text-xs font-bold transition-all duration-300 ${(selectedGroup ?? groups[0].id) === g.id ? 'bg-primary text-primary-foreground shadow-warm scale-105' : 'bg-secondary text-secondary-foreground'}`}
             >
               {g.name}
             </button>
@@ -207,14 +210,19 @@ function MatchDetail() {
         </div>
       )}
 
-      <div className="mt-4 rounded-3xl border border-border bg-card p-5">
+      <div className="card-surface mt-4 p-5">
         <div className="flex items-center justify-between">
-          <div>
-            <h3 className="font-display text-lg font-bold">{t('placeBet')}</h3>
-            <p className="text-xs text-muted-foreground">{t('yourPrediction')}</p>
+          <div className="flex items-center gap-3">
+            <span className="icon-tile-soft h-10 w-10">
+              <Trophy className="h-5 w-5" />
+            </span>
+            <div>
+              <h3 className="font-display text-lg font-bold">{t('placeBet')}</h3>
+              <p className="text-xs text-muted-foreground">{t('yourPrediction')}</p>
+            </div>
           </div>
           {existing && !locked && (
-            <span className="num rounded-full bg-secondary px-2.5 py-1 text-xs font-bold">{existing.home_score}:{existing.away_score}</span>
+            <span className="num rounded-full bg-primary/10 px-3 py-1.5 font-display text-sm font-black text-primary">{existing.home_score}:{existing.away_score}</span>
           )}
         </div>
 
@@ -227,7 +235,7 @@ function MatchDetail() {
         ) : (
           <div className="relative mt-3">
             {saveBurst > 0 && <BurstConfetti trigger={saveBurst} count={28} />}
-            <Button onClick={() => { haptic('light'); setSheetOpen(true); }} size="lg" className="press btn-glow ripple w-full bg-gradient-warm shadow-warm">
+            <Button onClick={() => { haptic('light'); setSheetOpen(true); }} size="lg" className="press btn-glow ripple shine-sweep h-12 w-full rounded-2xl bg-gradient-warm font-display text-base font-bold shadow-warm">
               {existing ? (lang === 'he' ? 'ערוך ניחוש' : 'Edit prediction') : t('placeBet')}
             </Button>
           </div>
@@ -251,7 +259,7 @@ function MatchDetail() {
           <ScoreStepper value={home} onChange={setHome} label={<><Flag country={match.homeTeam} size="sm" /><span className="ms-1 truncate">{homeName}</span></>} />
           <ScoreStepper value={away} onChange={setAway} label={<><Flag country={match.awayTeam} size="sm" /><span className="ms-1 truncate">{awayName}</span></>} />
         </div>
-        <Button onClick={() => { haptic('medium'); saveBet(); }} disabled={saving} size="lg" className="press btn-glow ripple mt-5 w-full bg-gradient-warm shadow-warm">
+        <Button onClick={() => { haptic('medium'); saveBet(); }} disabled={saving} size="lg" className="press btn-glow ripple shine-sweep mt-5 h-12 w-full rounded-2xl bg-gradient-warm font-display text-base font-bold shadow-warm">
           {saving ? t('loading') : t('save')}
         </Button>
       </Sheet>

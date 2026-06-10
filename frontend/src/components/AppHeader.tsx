@@ -40,15 +40,17 @@ export function AppHeader({ title, action }: { title?: string; action?: ReactNod
 
   return (
     <header
-      className="sticky top-0 z-30 border-b border-border/60 bg-card/85 backdrop-blur-xl"
+      className="sticky top-0 z-30 border-b border-border/40 bg-background/80 backdrop-blur-xl"
       style={{ paddingTop: 'env(safe-area-inset-top)' }}
     >
-      <div className="flex h-14 items-center justify-between gap-2 px-3">
-        <Link to="/" className="flex items-center gap-2 font-display text-base font-bold" onClick={() => haptic('light')}>
-          <span className="grid h-8 w-8 place-items-center rounded-xl bg-gradient-warm shadow-warm shine-sweep">
-            <Trophy className="h-4 w-4 text-primary-foreground wobble" />
+      <div className="flex h-[60px] items-center justify-between gap-2 px-4">
+        <Link to="/" className="flex items-center gap-2.5" onClick={() => haptic('light')}>
+          <span className="icon-tile shine-sweep h-9 w-9">
+            <Trophy className="h-[18px] w-[18px] wobble" />
           </span>
-          <span className="text-gradient-warm">{title ?? t('appName')}</span>
+          <span className="font-display text-lg font-black italic tracking-tight text-gradient-warm">
+            {title ?? t('appName')}
+          </span>
         </Link>
 
         <div className="flex items-center gap-0.5">

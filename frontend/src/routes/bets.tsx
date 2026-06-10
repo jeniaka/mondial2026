@@ -91,19 +91,43 @@ function BetsPage() {
 
   if (!user) return null;
 
+  const exactCount = bets.filter((b) => {
+    const m = matchMap.get(b.match_id);
+    return m?.homeScore != null && m.homeScore === b.home_score && m.awayScore === b.away_score;
+  }).length;
+  const scoredCount = bets.filter((b) => (b.points_awarded ?? 0) > 0).length;
+
   return (
     <AppShell title={t('bets')}>
-      <div className="shine-sweep card-lift mb-4 flex items-center justify-between overflow-hidden rounded-3xl bg-gradient-warm p-5 shadow-warm">
-        <div>
-          <div className="text-xs font-bold uppercase tracking-wider text-primary-foreground/80">{t('points')}</div>
-          <div className="num count-up font-display text-5xl font-black text-primary-foreground">{totalAnim}</div>
+      <div className="hero-banner shine-sweep mb-4 p-5">
+        <div className="flex items-start justify-between">
+          <div>
+            <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary-foreground/75">{t('points')}</div>
+            <div className="num count-up score-display text-[56px] leading-none text-primary-foreground">{totalAnim}</div>
+          </div>
+          <span className="hero-chip grid h-12 w-12 place-items-center rounded-2xl">
+            <Trophy className="h-6 w-6 text-primary-foreground wobble" />
+          </span>
+        </div>
+        <div className="mt-4 flex items-center gap-2">
+          <span className="hero-chip flex-1 rounded-xl px-3 py-2 text-center text-primary-foreground">
+            <span className="num block font-display text-lg font-black">{bets.length}</span>
+            <span className="block text-[9px] font-bold uppercase tracking-wider opacity-75">{lang === 'he' ? 'ניחושים' : 'Picks'}</span>
+          </span>
+          <span className="hero-chip flex-1 rounded-xl px-3 py-2 text-center text-primary-foreground">
+            <span className="num block font-display text-lg font-black">{scoredCount}</span>
+            <span className="block text-[9px] font-bold uppercase tracking-wider opacity-75">{lang === 'he' ? 'קלעו' : 'Scored'}</span>
+          </span>
+          <span className="hero-chip flex-1 rounded-xl px-3 py-2 text-center text-primary-foreground">
+            <span className="num block font-display text-lg font-black">{exactCount}</span>
+            <span className="block text-[9px] font-bold uppercase tracking-wider opacity-75">{lang === 'he' ? 'מדויקים' : 'Exact'}</span>
+          </span>
           {currentStreak > 0 && (
-            <div className="mt-2">
+            <span className="hero-chip flex-1 rounded-xl px-2 py-2 text-center">
               <FireStreak count={currentStreak} label={lang === 'he' ? 'רצף' : 'streak'} />
-            </div>
+            </span>
           )}
         </div>
-        <Trophy className="h-12 w-12 text-primary-foreground/60 wobble" />
       </div>
 
       {groups && groups.length > 1 && (
@@ -112,7 +136,7 @@ function BetsPage() {
             <button
               key={g.id}
               onClick={() => { haptic('light'); setSelectedGroup(g.id); }}
-              className={`press ripple shrink-0 rounded-full px-3 py-1.5 text-xs font-bold transition-all duration-300 ${(selectedGroup ?? groups[0].id) === g.id ? 'bg-primary text-primary-foreground scale-105 shadow-warm' : 'bg-secondary text-secondary-foreground'}`}
+              className={`press ripple shrink-0 rounded-full px-3.5 py-1.5 text-xs font-bold transition-all duration-300 ${(selectedGroup ?? groups[0].id) === g.id ? 'bg-primary text-primary-foreground scale-105 shadow-warm' : 'bg-secondary text-secondary-foreground'}`}
             >
               {g.name}
             </button>
@@ -121,20 +145,20 @@ function BetsPage() {
       )}
 
       {/* Bonus picks — collapsible (was a separate tab) */}
-      <div className="mb-4 overflow-hidden rounded-3xl border border-border bg-card">
+      <div className="card-surface mb-5 overflow-hidden">
         <button
           onClick={() => { haptic('light'); setBonusOpen((v) => !v); }}
           aria-expanded={bonusOpen}
-          className="press ripple flex w-full items-center justify-between gap-2 px-4 py-3.5"
+          className="press ripple flex w-full items-center justify-between gap-2 px-4 py-4"
         >
-          <span className="flex items-center gap-2.5">
-            <span className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-warm shadow-warm">
-              <Star className="h-4 w-4 text-primary-foreground rotate-slow" />
+          <span className="flex items-center gap-3">
+            <span className="icon-tile h-10 w-10">
+              <Star className="h-[18px] w-[18px] rotate-slow" />
             </span>
             <span className="text-start">
               <span className="block font-display text-base font-bold">{t('bonusBets')}</span>
               <span className="block text-[11px] text-muted-foreground">
-                {lang === 'he' ? 'הקש לפתיחה' : 'Tap to open'}
+                {lang === 'he' ? 'אלוף, מלך שערים וגמר' : 'Champion, top scorer & final'}
               </span>
             </span>
           </span>
@@ -168,23 +192,23 @@ function BetsPage() {
             const dateStr = m?.utcDate ? `${m.utcDate.slice(8,10)}/${m.utcDate.slice(5,7)} ${m.utcDate.slice(11,16)}` : '';
 
             const front = (
-              <div className={`reveal card-lift flex h-full items-center gap-2 rounded-2xl border border-border bg-card p-3 ${pts > 0 ? 'success-halo' : ''}`}>
-                <div className="flex flex-1 items-center justify-end gap-1.5 truncate text-sm font-semibold">
+              <div className={`reveal card-lift card-surface flex h-full items-center gap-2 p-3.5 ${pts > 0 ? 'success-halo' : ''}`}>
+                <div className="flex flex-1 items-center justify-end gap-1.5 truncate text-sm font-bold">
                   <span className="truncate">{homeName}</span>
                   {m && <Flag country={m.homeTeam} size="sm" />}
                 </div>
                 <div className="grid min-w-[80px] place-items-center">
-                  <div className="text-[9px] uppercase tracking-wider text-muted-foreground">{lang === 'he' ? 'ניחוש' : 'Pick'}</div>
-                  <div className="num font-display text-lg font-bold">{b.home_score} : {b.away_score}</div>
+                  <div className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">{lang === 'he' ? 'ניחוש' : 'Pick'}</div>
+                  <div className="num score-display text-xl">{b.home_score}<span className="px-0.5 font-sans not-italic text-muted-foreground">:</span>{b.away_score}</div>
                   {m?.homeScore != null && (
-                    <div className="num text-[10px] text-muted-foreground">{lang === 'he' ? 'סופי' : 'Final'} {m.homeScore}:{m.awayScore}</div>
+                    <div className="num text-[10px] font-semibold text-muted-foreground">{lang === 'he' ? 'סופי' : 'Final'} {m.homeScore}:{m.awayScore}</div>
                   )}
                 </div>
-                <div className="flex flex-1 items-center gap-1.5 truncate text-sm font-semibold">
+                <div className="flex flex-1 items-center gap-1.5 truncate text-sm font-bold">
                   {m && <Flag country={m.awayTeam} size="sm" />}
                   <span className="truncate">{awayName}</span>
                 </div>
-                <div className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${pts > 0 ? 'bg-success/20 text-success' : 'bg-muted text-muted-foreground'}`}>
+                <div className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-black ${exact ? 'bg-accent text-accent-foreground' : pts > 0 ? 'bg-success/20 text-success' : 'bg-muted text-muted-foreground'}`}>
                   +{pts}
                 </div>
               </div>
@@ -195,7 +219,7 @@ function BetsPage() {
               : true;
 
             const back = (
-              <div className="reveal flex h-full flex-col justify-center gap-1 rounded-2xl border border-primary/40 bg-gradient-card p-3 text-xs">
+              <div className="reveal flex h-full flex-col justify-center gap-1 rounded-3xl border border-primary/40 bg-gradient-card p-3 text-xs shadow-soft">
                 <div className="flex items-center justify-between">
                   <span className="font-display font-black text-primary">{exact ? '🎯 ' + (lang === 'he' ? 'מדויק!' : 'EXACT!') : (lang === 'he' ? 'פרטי הימור' : 'Bet Detail')}</span>
                   <span className="text-[10px] text-muted-foreground">{dateStr}</span>

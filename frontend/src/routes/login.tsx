@@ -78,41 +78,49 @@ function LoginPage() {
   };
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background px-4">
-      <div className="pointer-events-none absolute inset-0 -z-10">
-        <div className="absolute -top-32 -right-20 h-96 w-96 rounded-full bg-gradient-warm opacity-40 blur-3xl" />
-        <div className="absolute -bottom-32 -left-20 h-96 w-96 rounded-full bg-gradient-ember opacity-30 blur-3xl" />
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background px-4 py-10">
+      {/* Floodlight backdrop: glow orbs + pitch ring */}
+      <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+        <div className="absolute -top-36 -right-24 h-[26rem] w-[26rem] rounded-full bg-gradient-warm opacity-35 blur-3xl" />
+        <div className="absolute -bottom-36 -left-24 h-[26rem] w-[26rem] rounded-full bg-gradient-pitch opacity-40 blur-3xl" />
+        <div className="absolute left-1/2 top-1/2 h-[120vw] w-[120vw] -translate-x-1/2 -translate-y-1/2 rounded-full border border-primary/10" />
+        <div className="absolute left-1/2 top-1/2 h-[80vw] w-[80vw] -translate-x-1/2 -translate-y-1/2 rounded-full border border-primary/15" />
       </div>
 
-      <div className="absolute right-4 top-4">
-        <Button variant="ghost" size="sm" onClick={() => { haptic('light'); setLang(lang === 'en' ? 'he' : 'en'); }}>
+      <div className="absolute end-4 top-4">
+        <Button variant="ghost" size="sm" className="press ripple rounded-full font-bold" onClick={() => { haptic('light'); setLang(lang === 'en' ? 'he' : 'en'); }}>
           {lang === 'en' ? 'עברית' : 'English'}
         </Button>
       </div>
 
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
-          <div className="mx-auto mb-5 grid h-20 w-20 place-items-center rounded-3xl bg-gradient-warm shadow-warm shine-sweep">
-            <Trophy className="h-10 w-10 text-primary-foreground wobble" />
+          <div className="icon-tile shine-sweep float-soft mx-auto mb-5 h-20 w-20" style={{ borderRadius: '1.6rem' }}>
+            <Trophy className="h-10 w-10 wobble" />
           </div>
-          <h1 className="font-display text-5xl font-black tracking-tight">
+          <h1 className="font-display text-5xl font-black italic tracking-tight">
             <span className="text-gradient-warm">{t('appName')}</span>
           </h1>
-          <p className="mt-3 text-base text-muted-foreground">{t('tagline')}</p>
+          <p className="mt-3 text-base font-medium text-muted-foreground">{t('tagline')}</p>
+          <div className="mx-auto mt-3 inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-primary">
+            <Sparkles className="h-3 w-3" /> USA · CAN · MEX 2026
+          </div>
         </div>
 
-        <div className="glass rounded-3xl p-6 shadow-soft">
+        <div className="glass rounded-[1.75rem] p-6 shadow-soft">
           {/* Tabs */}
-          <div className="mb-5 grid grid-cols-2 gap-1 rounded-full bg-muted/40 p-1">
+          <div className="seg mb-5">
             <button
               onClick={() => { haptic('light'); setMode('signin'); }}
-              className={`ripple rounded-full px-3 py-2 text-sm font-bold transition-all duration-300 ${mode === 'signin' ? 'bg-primary text-primary-foreground shadow-warm' : 'text-muted-foreground'}`}
+              className="seg-item ripple"
+              data-active={mode === 'signin'}
             >
               {lang === 'he' ? 'התחברות' : 'Sign in'}
             </button>
             <button
               onClick={() => { haptic('light'); setMode('register'); }}
-              className={`ripple rounded-full px-3 py-2 text-sm font-bold transition-all duration-300 ${mode === 'register' ? 'bg-primary text-primary-foreground shadow-warm' : 'text-muted-foreground'}`}
+              className="seg-item ripple"
+              data-active={mode === 'register'}
             >
               {lang === 'he' ? 'הרשמה' : 'Register'}
             </button>
@@ -174,7 +182,7 @@ function LoginPage() {
               type="submit"
               disabled={busy}
               size="lg"
-              className="press btn-glow ripple shine-sweep w-full bg-gradient-warm shadow-warm"
+              className="press btn-glow ripple shine-sweep h-12 w-full rounded-2xl bg-gradient-warm font-display text-base font-bold shadow-warm"
             >
               {busy ? '…' : mode === 'register'
                 ? (lang === 'he' ? 'הירשם' : 'Create account')
@@ -197,7 +205,7 @@ function LoginPage() {
             disabled={busy}
             size="lg"
             variant="secondary"
-            className="ripple w-full gap-3"
+            className="press ripple h-12 w-full gap-3 rounded-2xl font-semibold"
           >
             <GoogleIcon />
             {lang === 'he' ? 'המשך עם Google' : t('signInGoogle')}

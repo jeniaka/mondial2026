@@ -80,11 +80,11 @@ function LeaguesPage() {
 
   return (
     <AppShell title={t('leagues')}>
-      <div className="mb-3 grid grid-cols-2 gap-2">
-        <Button onClick={() => { haptic('light'); setCreateOpen(true); }} className="press btn-glow ripple shine-sweep h-12 bg-gradient-warm shadow-warm">
+      <div className="mb-4 grid grid-cols-2 gap-2">
+        <Button onClick={() => { haptic('light'); setCreateOpen(true); }} className="press btn-glow ripple shine-sweep h-12 rounded-2xl bg-gradient-warm font-display font-bold shadow-warm">
           <Plus className="me-1.5 h-4 w-4" /> {t('createLeague')}
         </Button>
-        <Button onClick={() => { haptic('light'); setJoinOpen(true); }} variant="secondary" className="press ripple card-lift glass h-12">
+        <Button onClick={() => { haptic('light'); setJoinOpen(true); }} variant="secondary" className="press ripple card-lift glass h-12 rounded-2xl font-display font-bold">
           <LogIn className="me-1.5 h-4 w-4" /> {t('joinLeague')}
         </Button>
       </div>
@@ -103,7 +103,7 @@ function LeaguesPage() {
 
       <Sheet open={createOpen} onOpenChange={setCreateOpen} title={t('createLeague')}>
         <Input placeholder={t('leagueName')} value={name} onChange={(e) => setName(e.target.value)} className="h-12" />
-        <Button onClick={create} className="press mt-4 w-full bg-gradient-warm shadow-warm" size="lg">{t('create')}</Button>
+        <Button onClick={create} className="press btn-glow ripple mt-4 h-12 w-full rounded-2xl bg-gradient-warm font-display text-base font-bold shadow-warm" size="lg">{t('create')}</Button>
       </Sheet>
 
       <Sheet open={joinOpen} onOpenChange={setJoinOpen} title={t('joinLeague')}>
@@ -113,7 +113,7 @@ function LeaguesPage() {
           onChange={(e) => setCode(e.target.value.toUpperCase())}
           className="num h-12 text-center text-lg font-bold tracking-widest"
         />
-        <Button onClick={join} className="press mt-4 w-full bg-gradient-warm shadow-warm" size="lg">{t('join')}</Button>
+        <Button onClick={join} className="press btn-glow ripple mt-4 h-12 w-full rounded-2xl bg-gradient-warm font-display text-base font-bold shadow-warm" size="lg">{t('join')}</Button>
       </Sheet>
     </AppShell>
   );
@@ -226,11 +226,11 @@ function GroupCard({ group, userId, onChanged }: { group: Group; userId: string;
   };
 
   return (
-    <div className="reveal card-lift glass relative overflow-hidden rounded-3xl p-4">
+    <div className="reveal card-lift glass relative overflow-hidden rounded-[1.75rem] p-4">
       <div className="mb-3 flex items-center justify-between gap-2">
-        <div className="flex min-w-0 items-center gap-2">
-          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-gradient-warm shadow-warm">
-            <Crown className="h-4 w-4 text-primary-foreground crown-float" />
+        <div className="flex min-w-0 items-center gap-2.5">
+          <span className="icon-tile h-10 w-10 shrink-0">
+            <Crown className="h-[18px] w-[18px] crown-float" />
           </span>
           <div className="min-w-0">
             <h3 className="flex items-center gap-1.5 truncate font-display text-base font-bold">
@@ -381,7 +381,7 @@ function GroupCard({ group, userId, onChanged }: { group: Group; userId: string;
       {/* Rename sheet */}
       <Sheet open={renameOpen} onOpenChange={setRenameOpen} title={lang === 'he' ? 'שנה שם ליגה' : 'Rename league'}>
         <Input value={newName} onChange={(e) => setNewName(e.target.value)} className="h-12" maxLength={60} />
-        <Button onClick={renameLeague} className="press mt-4 w-full bg-gradient-warm shadow-warm" size="lg">
+        <Button onClick={renameLeague} className="press btn-glow ripple mt-4 h-12 w-full rounded-2xl bg-gradient-warm font-display text-base font-bold shadow-warm" size="lg">
           {lang === 'he' ? 'שמור' : 'Save'}
         </Button>
       </Sheet>
@@ -393,7 +393,9 @@ function GroupCard({ group, userId, onChanged }: { group: Group; userId: string;
         </div>
       )}
 
-      <div className="text-xs text-muted-foreground">{group.member_count} {lang === 'he' ? 'משתתפים' : 'members'}</div>
+      <div className="inline-flex items-center gap-1 rounded-full bg-muted/60 px-2.5 py-1 text-[11px] font-semibold text-muted-foreground">
+        {group.member_count} {lang === 'he' ? 'משתתפים' : 'members'}
+      </div>
 
       {leaderOpen && (
         <div className="mt-3">
@@ -465,17 +467,17 @@ function LeaderboardRow({
   return (
     <div
       {...handlers}
-      className={`reveal flex items-center justify-between rounded-lg px-2 py-1.5 text-sm ${row.is_me ? 'bg-primary/10' : ''} ${canAdmin ? 'cursor-pointer select-none' : ''}`}
+      className={`reveal flex items-center justify-between rounded-xl px-2.5 py-2 text-sm ${row.is_me ? 'bg-primary/10 ring-1 ring-primary/25' : ''} ${canAdmin ? 'cursor-pointer select-none' : ''}`}
       style={{ animationDelay: `${animDelay}ms` }}
     >
       <div className="flex min-w-0 items-center gap-2">
-        <span className="num w-6 text-xs font-bold text-muted-foreground">#{idx + 1}</span>
+        <span className="num grid h-6 w-6 shrink-0 place-items-center rounded-full bg-muted/70 text-[11px] font-black text-muted-foreground">{idx + 1}</span>
         <RankIndicator delta={rankDelta} />
-        <span className="truncate font-medium">{row.name}</span>
-        {row.is_me && <span className="text-[10px] text-muted-foreground">({t('you')})</span>}
+        <span className="truncate font-semibold">{row.name}</span>
+        {row.is_me && <span className="text-[10px] font-bold text-primary">({t('you')})</span>}
       </div>
       <div className="flex items-center gap-1.5">
-        <span className="num font-display text-base font-bold">{row.total}</span>
+        <span className="num score-display text-lg">{row.total}</span>
       </div>
     </div>
   );
@@ -502,7 +504,7 @@ function Podium({ rank, row, isMe, height, onLongPress }: { rank: 1 | 2 | 3; row
         {row?.name ?? '?'}{isMe ? ' ★' : ''}
       </div>
       <div className={`relative mt-1 flex w-full items-center justify-center overflow-hidden rounded-t-2xl border border-border/40 shadow-soft ${bg} ${height}`}>
-        <span className="num count-up font-display text-2xl font-black drop-shadow">{total}</span>
+        <span className="num count-up score-display text-3xl drop-shadow">{total}</span>
         <span className="pointer-events-none absolute inset-x-0 top-0 h-1/3 bg-gradient-to-b from-white/40 to-transparent" />
       </div>
     </div>
@@ -544,7 +546,7 @@ function InviteSheet({ open, onOpenChange, groupId, groupName, joinCode }: { ope
         onKeyDown={(e) => e.key === 'Enter' && send()}
         className="h-12"
       />
-      <Button onClick={send} disabled={sending || !email.trim()} className="press mt-4 w-full bg-gradient-warm shadow-warm" size="lg">
+      <Button onClick={send} disabled={sending || !email.trim()} className="press btn-glow ripple mt-4 h-12 w-full rounded-2xl bg-gradient-warm font-display text-base font-bold shadow-warm" size="lg">
         {sending ? t('loading') : t('inviteFriend')}
       </Button>
       <div className="mt-4 rounded-xl bg-muted/50 px-4 py-3 text-center text-sm">

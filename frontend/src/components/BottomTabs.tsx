@@ -20,11 +20,8 @@ export function BottomTabs() {
     exact ? loc.pathname === to : loc.pathname.startsWith(to);
 
   return (
-    <nav
-      className="fixed bottom-0 inset-x-0 z-40 mx-auto w-full max-w-[480px] border-t border-border/60 bg-card/95 backdrop-blur-xl"
-      style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
-    >
-      <ul className="flex items-stretch justify-around px-1 pt-1.5">
+    <nav className="dock" aria-label="Main navigation">
+      <ul className="flex items-stretch justify-around px-1.5 py-1">
         {tabs.map(({ to, icon: Icon, label, exact }) => {
           const active = isActive(to, exact);
           return (
@@ -33,13 +30,16 @@ export function BottomTabs() {
                 to={to}
                 activeOptions={{ exact: !!exact }}
                 onClick={() => !active && haptic("light")}
-                className={`group ripple relative flex min-h-[56px] flex-col items-center justify-center gap-0.5 rounded-xl px-1 py-1.5 text-[10px] font-medium transition-colors duration-200 active:scale-[0.94] ${active ? "text-primary tab-active-ring" : "text-muted-foreground"}`}
+                className="dock-item"
+                data-active={active}
               >
-                <Icon
-                  key={active ? `${to}-on` : `${to}-off`}
-                  className={`h-5 w-5 transition-transform duration-200 ${active ? "tab-icon-bounce" : ""}`}
-                  strokeWidth={active ? 2.4 : 2}
-                />
+                <span className="dock-bubble">
+                  <Icon
+                    key={active ? `${to}-on` : `${to}-off`}
+                    className={`h-[21px] w-[21px] ${active ? "tab-icon-bounce" : ""}`}
+                    strokeWidth={active ? 2.5 : 2}
+                  />
+                </span>
                 <span className="truncate leading-none">{label}</span>
               </Link>
             </li>

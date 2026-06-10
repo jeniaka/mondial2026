@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Wand2 } from 'lucide-react';
 import { api, type MatchPrediction } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
@@ -46,16 +47,24 @@ export function GuessForMe({
   };
 
   const variant = data?.variants?.find((v) => v.risk === risk);
+  const homePct = Math.round((data?.home_win_pct ?? 0) * 100);
+  const drawPct = Math.round((data?.draw_pct ?? 0) * 100);
+  const awayPct = Math.round((data?.away_win_pct ?? 0) * 100);
 
   return (
-    <div className="mt-4 rounded-3xl border border-border bg-card p-5">
+    <div className="card-surface mt-4 p-5">
       <div className="flex items-center justify-between">
-        <div>
-          <h3 className="font-display text-lg font-bold">{t('guessForMe')}</h3>
-          <p className="text-xs text-muted-foreground">{t('guessForMeSub')}</p>
+        <div className="flex items-center gap-3">
+          <span className="icon-tile h-10 w-10">
+            <Wand2 className="h-5 w-5" />
+          </span>
+          <div>
+            <h3 className="font-display text-lg font-bold">{t('guessForMe')}</h3>
+            <p className="text-xs text-muted-foreground">{t('guessForMeSub')}</p>
+          </div>
         </div>
         {data?.sources_used && (
-          <span className="text-xs text-muted-foreground">
+          <span className="rounded-full bg-primary/10 px-2.5 py-1 text-[10px] font-bold text-primary">
             {data.sources_used.length} {lang === 'he' ? 'מקורות' : 'sources'}
           </span>
         )}
@@ -67,46 +76,46 @@ export function GuessForMe({
           disabled={loading}
           size="lg"
           variant="outline"
-          className="press mt-3 w-full"
+          className="press ripple mt-4 h-12 w-full rounded-2xl border-primary/30 font-display text-base font-bold text-primary"
         >
           {loading ? t('loading') : t('guessBtn')}
         </Button>
       ) : (
         <div className="mt-4 space-y-4">
           {/* Win probability bar */}
-          <div>
-            <div className="flex overflow-hidden rounded-xl text-[11px] font-bold">
+          <div className="reveal">
+            <div className="flex h-9 overflow-hidden rounded-xl text-[11px] font-bold">
               <div
-                className="flex items-center justify-center bg-primary/80 py-2 text-primary-foreground"
-                style={{ width: `${Math.round((data.home_win_pct ?? 0) * 100)}%` }}
+                className="flex items-center justify-center bg-primary text-primary-foreground transition-all duration-700"
+                style={{ width: `${homePct}%` }}
               >
-                {Math.round((data.home_win_pct ?? 0) * 100)}%
+                {homePct > 12 ? `${homePct}%` : ''}
               </div>
               <div
-                className="flex items-center justify-center bg-muted py-2 text-muted-foreground"
-                style={{ width: `${Math.round((data.draw_pct ?? 0) * 100)}%` }}
+                className="flex items-center justify-center bg-muted text-muted-foreground transition-all duration-700"
+                style={{ width: `${drawPct}%` }}
               >
-                {Math.round((data.draw_pct ?? 0) * 100)}%
+                {drawPct > 12 ? `${drawPct}%` : ''}
               </div>
               <div
-                className="flex items-center justify-center bg-secondary py-2 text-secondary-foreground"
-                style={{ width: `${Math.round((data.away_win_pct ?? 0) * 100)}%` }}
+                className="flex items-center justify-center bg-accent text-accent-foreground transition-all duration-700"
+                style={{ width: `${awayPct}%` }}
               >
-                {Math.round((data.away_win_pct ?? 0) * 100)}%
+                {awayPct > 12 ? `${awayPct}%` : ''}
               </div>
             </div>
-            <div className="mt-1 flex justify-between text-[10px] text-muted-foreground">
-              <span>{homeName}</span>
-              <span>{t('draw')}</span>
-              <span>{awayName}</span>
+            <div className="mt-1.5 flex justify-between text-[10px] font-semibold text-muted-foreground">
+              <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-primary" />{homeName}</span>
+              <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-muted-foreground/40" />{t('draw')}</span>
+              <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-accent" />{awayName}</span>
             </div>
           </div>
 
           {/* Risk slider */}
-          <div>
-            <div className="mb-1 flex items-center justify-between text-[11px] text-muted-foreground">
+          <div className="reveal rounded-2xl bg-muted/40 p-3" style={{ animationDelay: '60ms' }}>
+            <div className="mb-1.5 flex items-center justify-between text-[11px] text-muted-foreground">
               <span>{t('safeLabel')}</span>
-              <span className="font-bold text-foreground">
+              <span key={risk} className="num-flip rounded-full bg-primary/10 px-2.5 py-0.5 font-bold text-primary">
                 {lang === 'he' ? variant?.label_he : variant?.label_en}
               </span>
               <span>{t('wildLabel')}</span>
@@ -123,13 +132,13 @@ export function GuessForMe({
 
           {/* Score result */}
           {variant && (
-            <div className="rounded-2xl bg-muted p-4 text-center">
-              <div className="num font-display text-5xl font-black">
+            <div key={`${variant.home_score}-${variant.away_score}`} className="pop-in rounded-2xl bg-gradient-pitch p-4 text-center text-primary-foreground shadow-warm">
+              <div className="num score-display text-5xl">
                 {variant.home_score}
-                <span className="px-2 text-muted-foreground">:</span>
+                <span className="px-2 font-sans not-italic opacity-50">:</span>
                 {variant.away_score}
               </div>
-              <p className="mt-2 text-sm text-muted-foreground">
+              <p className="mt-2 text-sm text-primary-foreground/85">
                 {lang === 'he' ? variant.reason_he : variant.reason_en}
               </p>
             </div>
@@ -140,7 +149,7 @@ export function GuessForMe({
             <Button
               onClick={() => onUseBet(variant.home_score, variant.away_score)}
               size="lg"
-              className="press btn-glow ripple w-full bg-gradient-warm shadow-warm"
+              className="press btn-glow ripple shine-sweep h-12 w-full rounded-2xl bg-gradient-warm font-display text-base font-bold shadow-warm"
             >
               {t('useThisBet')}
             </Button>

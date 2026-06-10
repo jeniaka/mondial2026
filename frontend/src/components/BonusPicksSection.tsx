@@ -97,20 +97,20 @@ export function BonusPicksSection({ gid }: { gid: string | null }) {
   return (
     <div className="space-y-4 pt-3">
       {/* Hero card */}
-      <div className="shine-sweep mb-2 overflow-hidden rounded-2xl bg-gradient-warm p-4 shadow-warm">
+      <div className="hero-banner shine-sweep mb-2 rounded-2xl p-4">
         <div className="flex items-center gap-3">
-          <span className="grid h-9 w-9 place-items-center rounded-2xl bg-primary-foreground/15 backdrop-blur">
+          <span className="hero-chip grid h-9 w-9 place-items-center rounded-2xl">
             <Star className="h-4 w-4 text-primary-foreground rotate-slow" />
           </span>
           <div>
-            <p className="text-xs text-primary-foreground/85">{t('bonusIntro')}</p>
+            <p className="text-xs font-medium text-primary-foreground/90">{t('bonusIntro')}</p>
           </div>
         </div>
-        <div className="mt-2 inline-flex rounded-full bg-primary-foreground/15 px-2.5 py-1 text-[10px] font-semibold text-primary-foreground backdrop-blur">
+        <div className="hero-chip mt-2 inline-flex rounded-full px-2.5 py-1 text-[10px] font-semibold text-primary-foreground">
           {t('bonusRules')}
         </div>
         {lockTs && !locked && (
-          <div className="mt-3 flex items-center justify-between rounded-2xl bg-primary-foreground/15 px-3 py-2 backdrop-blur">
+          <div className="hero-chip mt-3 flex items-center justify-between rounded-2xl px-3 py-2">
             <span className="text-[10px] font-bold uppercase tracking-wider text-primary-foreground/80">
               {lang === 'he' ? 'נעילה בעוד' : 'Locks in'}
             </span>
@@ -186,10 +186,10 @@ export function BonusPicksSection({ gid }: { gid: string | null }) {
 function BonusSubSection({ title, pts, icon, children }: { title: string; pts: number; icon: React.ReactNode; children: React.ReactNode }) {
   const { t } = useI18n();
   return (
-    <section className="rounded-2xl border border-border bg-card p-3.5">
+    <section className="card-surface rounded-2xl p-3.5">
       <h3 className="mb-2.5 flex items-center gap-2 font-display text-sm font-bold">
-        <span className="text-primary">{icon}</span> {title}
-        <span className="ms-auto rounded-full bg-accent/40 px-2 py-0.5 text-[10px] font-bold text-accent-foreground">{pts} {t('points')}</span>
+        <span className="icon-tile-soft h-7 w-7">{icon}</span> {title}
+        <span className="ms-auto rounded-full bg-accent px-2 py-0.5 text-[10px] font-black text-accent-foreground">{pts} {t('points')}</span>
       </h3>
       {children}
     </section>

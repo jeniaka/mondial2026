@@ -38,25 +38,25 @@ function ProfilePage() {
   return (
     <AppShell title={lang === 'he' ? 'פרופיל' : 'Profile'}>
       {/* Avatar + name */}
-      <div className="shine-sweep card-lift mb-4 flex items-center gap-4 overflow-hidden rounded-3xl bg-gradient-warm p-5 shadow-warm">
+      <div className="hero-banner shine-sweep card-lift mb-4 flex items-center gap-4 p-5">
         {user.picture ? (
-          <span className="avatar-ring inline-block rounded-full">
-            <img src={user.picture} alt={user.name} className="h-16 w-16 rounded-full object-cover" />
+          <span className="avatar-ring inline-block shrink-0 rounded-full">
+            <img src={user.picture} alt={user.name} className="h-[68px] w-[68px] rounded-full object-cover" />
           </span>
         ) : (
-          <div className="avatar-ring grid h-16 w-16 place-items-center rounded-full bg-primary-foreground/20 text-2xl font-black text-primary-foreground">
+          <div className="avatar-ring grid h-[68px] w-[68px] shrink-0 place-items-center rounded-full bg-pitch font-display text-3xl font-black text-pitch-foreground">
             {user.name?.[0] ?? '?'}
           </div>
         )}
         <div className="min-w-0">
-          <div className="font-display text-xl font-black text-primary-foreground truncate">{user.name}</div>
-          <div className="text-xs text-primary-foreground/80 truncate">{user.email}</div>
+          <div className="font-display text-[22px] font-black italic text-primary-foreground truncate">{user.name}</div>
+          <div className="text-xs text-primary-foreground/80 truncate" dir="ltr">{user.email}</div>
         </div>
       </div>
 
       {/* Stats */}
       {isLoading ? <CardSkeleton count={3} /> : stats && (
-        <div className="mb-4 grid grid-cols-3 gap-2">
+        <div className="mb-5 grid grid-cols-3 gap-2">
           <StatCard icon={<Trophy className="h-5 w-5" />} value={stats.total_predictions} label={lang === 'he' ? 'ניחושים' : 'Picks'} />
           <StatCard icon={<Target className="h-5 w-5" />} value={stats.exact_predictions} label={lang === 'he' ? 'מדויקים' : 'Exact'} />
           <StatCard icon={<Award className="h-5 w-5" />} value={stats.best_rank ?? '—'} label={lang === 'he' ? 'דירוג מירב' : 'Best rank'} />
@@ -64,8 +64,8 @@ function ProfilePage() {
       )}
 
       {/* Settings */}
-      <div className="mb-4 rounded-3xl border border-border bg-card p-4">
-        <h3 className="mb-3 font-display text-base font-bold">{lang === 'he' ? 'הגדרות' : 'Settings'}</h3>
+      <h3 className="section-label mb-2 px-1">{lang === 'he' ? 'הגדרות' : 'Settings'}</h3>
+      <div className="card-surface mb-4 p-4">
         <div className="space-y-3">
 
           {/* Language */}
@@ -144,10 +144,10 @@ function ProfilePage() {
 
 function StatCard({ icon, value, label }: { icon: React.ReactNode; value: number | string; label: string }) {
   return (
-    <div className="flex flex-col items-center rounded-2xl border border-border bg-card p-3">
-      <span className="text-primary">{icon}</span>
-      <div className="num mt-1 font-display text-2xl font-black">{value}</div>
-      <div className="text-[10px] text-muted-foreground">{label}</div>
+    <div className="card-surface flex flex-col items-center rounded-2xl p-3.5">
+      <span className="icon-tile-soft h-9 w-9">{icon}</span>
+      <div className="num mt-1.5 score-display text-[26px]">{value}</div>
+      <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{label}</div>
     </div>
   );
 }
@@ -216,7 +216,7 @@ function NotificationSettings() {
 
   return (
     <div className="mb-4 mt-4">
-      <h3 className="mb-2 px-1 text-[11px] font-black uppercase tracking-wider text-primary">
+      <h3 className="section-label mb-2 px-1">
         {lang === 'he' ? 'הגדרות התראות' : 'Notification settings'}
       </h3>
       <div className="reveal glass card-lift overflow-hidden rounded-3xl px-4 py-2 isolate">
@@ -274,7 +274,7 @@ function NotificationSettings() {
           onClick={save}
           disabled={saving}
           size="lg"
-          className="press btn-glow ripple shine-sweep w-full bg-gradient-warm shadow-warm"
+          className="press btn-glow ripple shine-sweep h-12 w-full rounded-2xl bg-gradient-warm font-display text-base font-bold shadow-warm"
         >
           {saving ? '…' : (lang === 'he' ? 'שמור העדפות' : 'Save preferences')}
         </Button>
@@ -325,7 +325,7 @@ function AppInviteCard() {
 
   return (
     <div className="mb-4 mt-4">
-      <h3 className="mb-2 px-1 text-[11px] font-black uppercase tracking-wider text-primary">
+      <h3 className="section-label mb-2 px-1">
         {lang === 'he' ? 'הזמן חבר לאפליקציה' : 'Invite a friend'}
       </h3>
       <div className="reveal glass card-lift relative overflow-hidden rounded-3xl p-4">

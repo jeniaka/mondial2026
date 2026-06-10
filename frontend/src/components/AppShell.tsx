@@ -71,8 +71,8 @@ export function AppShell({ title, children, action }: { title?: string; children
         <main
           ref={swipeRef as React.RefObject<HTMLElement>}
           key={loc.pathname}
-          className={`${animClass} pan-y relative z-10 px-4 pb-28 pt-3`}
-          style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 88px)" }}
+          className={`${animClass} pan-y relative z-10 px-4 pt-3`}
+          style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 110px)" }}
         >
           {children}
         </main>

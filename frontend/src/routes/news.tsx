@@ -39,14 +39,14 @@ function NewsPage() {
   return (
     <AppShell title={lang === 'he' ? 'חדשות' : 'News'}>
       {/* Hero */}
-      <div className="shine-sweep card-lift mb-4 overflow-hidden rounded-3xl bg-gradient-warm p-5 shadow-warm">
+      <div className="hero-banner shine-sweep mb-4 p-5">
         <div className="flex items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-3">
-            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-primary-foreground/15 backdrop-blur">
+            <span className="hero-chip grid h-11 w-11 shrink-0 place-items-center rounded-2xl">
               <Newspaper className="h-5 w-5 text-primary-foreground wobble" />
             </span>
             <div className="min-w-0">
-              <h1 className="font-display text-xl font-black text-primary-foreground">
+              <h1 className="font-display text-[22px] font-black italic text-primary-foreground">
                 {lang === 'he' ? 'חדשות ספורט' : 'Sports News'}
               </h1>
               <p className="truncate text-xs text-primary-foreground/85">
@@ -58,7 +58,7 @@ function NewsPage() {
             onClick={() => { haptic('light'); refetch(); }}
             disabled={isRefetching}
             aria-label="refresh"
-            className="press ripple grid h-10 w-10 shrink-0 place-items-center rounded-full bg-primary-foreground/15 text-primary-foreground backdrop-blur"
+            className="press ripple hero-chip grid h-11 w-11 shrink-0 place-items-center rounded-full text-primary-foreground"
           >
             <RefreshCw className={`h-4 w-4 ${isRefetching ? 'rotate-slow' : ''}`} />
           </button>
@@ -66,14 +66,13 @@ function NewsPage() {
       </div>
 
       {/* Sub-tab switcher */}
-      <div className="mb-4 grid grid-cols-2 gap-1 rounded-full bg-muted/40 p-1">
+      <div className="seg mb-4">
         {SOURCES.map((s) => (
           <button
             key={s.key}
             onClick={() => { haptic('light'); setSource(s.key); }}
-            className={`ripple rounded-full px-3 py-2 text-sm font-bold transition-all duration-300 ${source === s.key
-              ? 'bg-primary text-primary-foreground shadow-warm scale-[1.02]'
-              : 'text-muted-foreground'}`}
+            className="seg-item ripple"
+            data-active={source === s.key}
           >
             {s.label}
           </button>
@@ -114,7 +113,7 @@ function NewsRow({ article, index, isLast }: { article: NewsArticle; index: numb
         onClick={() => haptic('light')}
         className="press ripple flex items-start gap-3 px-3 py-3 active:bg-muted/40"
       >
-        <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-primary/15 text-[10px] font-black text-primary">
+        <span className="num grid h-7 w-7 shrink-0 place-items-center rounded-xl bg-primary/12 font-display text-[11px] font-black text-primary">
           {index + 1}
         </span>
         <div className="min-w-0 flex-1">
@@ -122,8 +121,7 @@ function NewsRow({ article, index, isLast }: { article: NewsArticle; index: numb
             {article.title}
           </p>
           <div className="mt-1 flex items-center gap-1.5 text-[10px] text-muted-foreground">
-            <span className="font-bold">{article.source}</span>
-            <span>·</span>
+            <span className="rounded-full bg-muted/70 px-1.5 py-0.5 font-bold">{article.source}</span>
             <span className="truncate" dir="ltr">{cleanHost(article.url)}</span>
           </div>
         </div>
