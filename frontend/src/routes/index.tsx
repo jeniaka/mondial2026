@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Calendar as CalIcon, Sparkles } from "lucide-react";
 import { getMatches, type Match } from "@/server/matches.functions";
@@ -24,6 +24,7 @@ function HomePage() {
   const { ids: pinned } = usePinned();
   const [goalTrigger, setGoalTrigger] = useState(0);
   const prevScoresRef = useRef<Record<string, string>>({});
+  const scrolledForIdRef = useRef<string | null>(null);
 
   useEffect(() => { if (!loading && !user) nav({ to: "/login" }); }, [user, loading, nav]);
 
@@ -40,6 +41,23 @@ function HomePage() {
   const finished = matches.filter((m) => m.status === "FINISHED");
   const pinnedMatches = matches.filter((m) => pinned.includes(m.id));
   const nextMatch = upcoming[0];
+
+  // Default scroll position = the next upcoming game.
+  // Callback ref on the next-match card: fires when that card's DOM node
+  // actually mounts — which is only after auth + matches are both ready, so it
+  // works on cold app-open AND when returning to the tab (component remounts).
+  // Guarded per match id so the 30s background refetch doesn't yank the user;
+  // only re-scrolls if the next game itself changes.
+  const nextMatchRef = useCallback((node: HTMLDivElement | null) => {
+    if (!node || !nextMatch) return;
+    if (scrolledForIdRef.current === nextMatch.id) return;
+    scrolledForIdRef.current = nextMatch.id;
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      const y = node.getBoundingClientRect().top + window.scrollY - 100;
+      window.scrollTo({ top: Math.max(0, y), behavior: "auto" });
+    }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nextMatch?.id]);
 
   // Trigger goal celebration when a PINNED LIVE match scores
   // (must be BEFORE any early return — Rules of Hooks)
@@ -138,7 +156,14 @@ function HomePage() {
                     </span>
                   </div>
                   <div className="grid gap-2.5">
-                    {ms.map((m, i) => <MatchCard key={m.id} match={m} index={i} />)}
+                    {ms.map((m, i) => (
+                      <MatchCard
+                        key={m.id}
+                        match={m}
+                        index={i}
+                        cardRef={m.id === nextMatch?.id ? nextMatchRef : undefined}
+                      />
+                    ))}
                   </div>
                 </div>
               ))}
@@ -196,7 +221,7 @@ function idtDateLabel(s: string, lang: string): string {
   );
 }
 
-function MatchCard({ match, index = 0 }: { match: Match; index?: number }) {
+function MatchCard({ match, index = 0, cardRef }: { match: Match; index?: number; cardRef?: React.Ref<HTMLDivElement> }) {
   const nav = useNavigate();
   const { lang } = useI18n();
   const live = isLive(match.status);
@@ -218,6 +243,7 @@ function MatchCard({ match, index = 0 }: { match: Match; index?: number }) {
 
   return (
     <div
+      ref={cardRef}
       onClick={() => { haptic("light"); nav({ to: "/match/$id", params: { id: match.id } }); }}
       className={`reveal press card-lift card-surface relative flex cursor-pointer items-center gap-2 p-3.5 ${live ? "breathing-live" : ""}`}
       style={{ animationDelay: `${index * 55}ms` }}
