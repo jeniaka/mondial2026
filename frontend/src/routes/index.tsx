@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Calendar as CalIcon, Sparkles } from "lucide-react";
 import { getMatches, type Match } from "@/server/matches.functions";
@@ -24,7 +24,8 @@ function HomePage() {
   const { ids: pinned } = usePinned();
   const [goalTrigger, setGoalTrigger] = useState(0);
   const prevScoresRef = useRef<Record<string, string>>({});
-  const scrolledForIdRef = useRef<string | null>(null);
+  const nextMatchRef = useRef<HTMLDivElement>(null);
+  const didScrollRef = useRef<string | null>(null);
 
   useEffect(() => { if (!loading && !user) nav({ to: "/login" }); }, [user, loading, nav]);
 
@@ -43,21 +44,31 @@ function HomePage() {
   const nextMatch = upcoming[0];
 
   // Default scroll position = the next upcoming game.
-  // Callback ref on the next-match card: fires when that card's DOM node
-  // actually mounts — which is only after auth + matches are both ready, so it
-  // works on cold app-open AND when returning to the tab (component remounts).
-  // Guarded per match id so the 30s background refetch doesn't yank the user;
-  // only re-scrolls if the next game itself changes.
-  const nextMatchRef = useCallback((node: HTMLDivElement | null) => {
-    if (!node || !nextMatch) return;
-    if (scrolledForIdRef.current === nextMatch.id) return;
-    scrolledForIdRef.current = nextMatch.id;
-    requestAnimationFrame(() => requestAnimationFrame(() => {
-      const y = node.getBoundingClientRect().top + window.scrollY - 100;
-      window.scrollTo({ top: Math.max(0, y), behavior: "auto" });
-    }));
+  // Re-runs when auth + matches both become ready (covers cold app-open) and on
+  // every remount (returning to the tab). We re-assert the scroll across a short
+  // window with "instant" because (a) the global `html{scroll-behavior:smooth}`
+  // would otherwise animate it, and (b) TanStack scrollRestoration also sets the
+  // position on load — the last write within the window wins. Guarded per match
+  // id so the 30s background refetch never yanks the user mid-read.
+  useEffect(() => {
+    if (!user || isLoading || !nextMatch) return;
+    if (didScrollRef.current === nextMatch.id) return;
+
+    let cancelled = false;
+    const scrollToNext = () => {
+      const el = nextMatchRef.current;
+      if (!el) return;
+      const y = el.getBoundingClientRect().top + window.scrollY - 100;
+      window.scrollTo({ top: Math.max(0, y), behavior: "instant" as ScrollBehavior });
+    };
+    const timers = [0, 60, 200, 450].map((d) =>
+      window.setTimeout(() => { if (!cancelled) scrollToNext(); }, d),
+    );
+    const done = window.setTimeout(() => { didScrollRef.current = nextMatch.id; }, 500);
+
+    return () => { cancelled = true; timers.forEach(clearTimeout); clearTimeout(done); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nextMatch?.id]);
+  }, [user, isLoading, nextMatch?.id]);
 
   // Trigger goal celebration when a PINNED LIVE match scores
   // (must be BEFORE any early return — Rules of Hooks)
