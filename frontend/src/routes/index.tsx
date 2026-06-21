@@ -58,25 +58,50 @@ function HomePage() {
   // Auto-scroll the Matches tab to the anchor match — ONCE per tab entry.
   // AppShell remounts this page (key={pathname}) on every tab switch, so the
   // guard ref resets on re-entry and the scroll runs again exactly once.
-  // After it positions the view it never fires again: no interval, no scroll
-  // listener, no re-assert — the user is free to scroll anywhere and it stays.
-  // A double rAF lets the rows get real heights AND lands after TanStack's
-  // scrollRestoration (which would otherwise reset to top). "instant" is
-  // required because the global html{scroll-behavior:smooth} would turn an
-  // "auto" scroll into an animation that loses the position on load.
+  // After it positions the view it never fires again: no interval, no re-assert.
+  // We wait for document.fonts.ready first — the web-font swap changes row
+  // heights, so measuring earlier mis-positions / clamps the scroll — capped at
+  // 600ms so a slow font load can't stall it, then position once after a frame.
+  // "instant" is required because the global html{scroll-behavior:smooth} would
+  // otherwise animate it. If the user starts scrolling before we position, we
+  // bail so we never fight them.
   useEffect(() => {
     if (hasAutoScrolledRef.current) return;
     if (!user || isLoading || !anchorId) return;
     hasAutoScrolledRef.current = true;
-    const raf1 = requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        const el = anchorRef.current;
-        if (!el) return;
+
+    let cancelled = false;
+    const cleanup = () => {
+      window.removeEventListener("wheel", stop);
+      window.removeEventListener("touchstart", stop);
+      window.removeEventListener("keydown", stop);
+    };
+    function stop() { cancelled = true; cleanup(); }
+    window.addEventListener("wheel", stop, { passive: true });
+    window.addEventListener("touchstart", stop, { passive: true });
+    window.addEventListener("keydown", stop);
+
+    const position = () => {
+      if (cancelled) return;
+      const el = anchorRef.current;
+      if (el) {
         const y = el.getBoundingClientRect().top + window.scrollY - 100;
         window.scrollTo({ top: Math.max(0, y), behavior: "instant" as ScrollBehavior });
-      });
-    });
-    return () => cancelAnimationFrame(raf1);
+      }
+      cleanup();
+    };
+
+    let ran = false;
+    const run = () => {
+      if (ran) return;
+      ran = true;
+      requestAnimationFrame(() => requestAnimationFrame(position));
+    };
+    const fontsReady: Promise<unknown> = document.fonts?.ready ?? Promise.resolve();
+    fontsReady.then(run);
+    const cap = window.setTimeout(run, 600);
+
+    return () => { cancelled = true; cleanup(); clearTimeout(cap); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, isLoading, anchorId]);
 
