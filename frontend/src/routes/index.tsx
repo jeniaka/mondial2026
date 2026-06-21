@@ -24,8 +24,8 @@ function HomePage() {
   const { ids: pinned } = usePinned();
   const [goalTrigger, setGoalTrigger] = useState(0);
   const prevScoresRef = useRef<Record<string, string>>({});
-  const nextMatchRef = useRef<HTMLDivElement>(null);
-  const didScrollRef = useRef<string | null>(null);
+  const anchorRef = useRef<HTMLDivElement>(null);
+  const hasAutoScrolledRef = useRef(false);
 
   useEffect(() => { if (!loading && !user) nav({ to: "/login" }); }, [user, loading, nav]);
 
@@ -43,32 +43,42 @@ function HomePage() {
   const pinnedMatches = matches.filter((m) => pinned.includes(m.id));
   const nextMatch = upcoming[0];
 
-  // Default scroll position = the next upcoming game.
-  // Re-runs when auth + matches both become ready (covers cold app-open) and on
-  // every remount (returning to the tab). We re-assert the scroll across a short
-  // window with "instant" because (a) the global `html{scroll-behavior:smooth}`
-  // would otherwise animate it, and (b) TanStack scrollRestoration also sets the
-  // position on load — the last write within the window wins. Guarded per match
-  // id so the 30s background refetch never yanks the user mid-read.
+  // Anchor = first match whose kickoff is in the future (>= now); if every
+  // match is already over, the last match. Computed from kickoff datetime
+  // (stored as naive Israel/UTC+3 wall-clock) so it's correct regardless of the
+  // viewer's own timezone. See kickoffMs().
+  const anchorId = (() => {
+    if (matches.length === 0) return null;
+    const sorted = [...matches].sort((a, b) => kickoffMs(a.utcDate) - kickoffMs(b.utcDate));
+    const now = Date.now();
+    const next = sorted.find((m) => kickoffMs(m.utcDate) >= now);
+    return (next ?? sorted[sorted.length - 1]).id;
+  })();
+
+  // Auto-scroll the Matches tab to the anchor match — ONCE per tab entry.
+  // AppShell remounts this page (key={pathname}) on every tab switch, so the
+  // guard ref resets on re-entry and the scroll runs again exactly once.
+  // After it positions the view it never fires again: no interval, no scroll
+  // listener, no re-assert — the user is free to scroll anywhere and it stays.
+  // A double rAF lets the rows get real heights AND lands after TanStack's
+  // scrollRestoration (which would otherwise reset to top). "instant" is
+  // required because the global html{scroll-behavior:smooth} would turn an
+  // "auto" scroll into an animation that loses the position on load.
   useEffect(() => {
-    if (!user || isLoading || !nextMatch) return;
-    if (didScrollRef.current === nextMatch.id) return;
-
-    let cancelled = false;
-    const scrollToNext = () => {
-      const el = nextMatchRef.current;
-      if (!el) return;
-      const y = el.getBoundingClientRect().top + window.scrollY - 100;
-      window.scrollTo({ top: Math.max(0, y), behavior: "instant" as ScrollBehavior });
-    };
-    const timers = [0, 60, 200, 450].map((d) =>
-      window.setTimeout(() => { if (!cancelled) scrollToNext(); }, d),
-    );
-    const done = window.setTimeout(() => { didScrollRef.current = nextMatch.id; }, 500);
-
-    return () => { cancelled = true; timers.forEach(clearTimeout); clearTimeout(done); };
+    if (hasAutoScrolledRef.current) return;
+    if (!user || isLoading || !anchorId) return;
+    hasAutoScrolledRef.current = true;
+    const raf1 = requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const el = anchorRef.current;
+        if (!el) return;
+        const y = el.getBoundingClientRect().top + window.scrollY - 100;
+        window.scrollTo({ top: Math.max(0, y), behavior: "instant" as ScrollBehavior });
+      });
+    });
+    return () => cancelAnimationFrame(raf1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, isLoading, nextMatch?.id]);
+  }, [user, isLoading, anchorId]);
 
   // Trigger goal celebration when a PINNED LIVE match scores
   // (must be BEFORE any early return — Rules of Hooks)
@@ -172,7 +182,7 @@ function HomePage() {
                         key={m.id}
                         match={m}
                         index={i}
-                        cardRef={m.id === nextMatch?.id ? nextMatchRef : undefined}
+                        cardRef={m.id === anchorId ? anchorRef : undefined}
                       />
                     ))}
                   </div>
@@ -182,7 +192,14 @@ function HomePage() {
           )}
           {finished.length > 0 && (
             <Section title={t("finished")}>
-              {finished.map((m, i) => <MatchCard key={m.id} match={m} index={i} />)}
+              {finished.map((m, i) => (
+                <MatchCard
+                  key={m.id}
+                  match={m}
+                  index={i}
+                  cardRef={m.id === anchorId ? anchorRef : undefined}
+                />
+              ))}
             </Section>
           )}
         </>
@@ -224,6 +241,17 @@ function idtTime(s: string): string {
   return s.slice(11, 16); // "22:00"
 }
 
+// Absolute epoch ms for a kickoff. The string is Israel wall-clock (UTC+3 all
+// tournament — June/July 2026 is IDT), so subtract 3h to get UTC. Built from
+// parts (not new Date(str)) so it's identical in every browser/timezone.
+function kickoffMs(s: string): number {
+  const [datePart = "", timePart = "00:00:00"] = s.split("T");
+  const [y, mo, d] = datePart.split("-").map(Number);
+  const [h = 0, mi = 0, se = 0] = timePart.split(":").map(Number);
+  if (!y || !mo || !d) return Number.POSITIVE_INFINITY; // unknown date → treat as far future
+  return Date.UTC(y, mo - 1, d, h, mi, se) - 3 * 60 * 60 * 1000;
+}
+
 function idtDateLabel(s: string, lang: string): string {
   const [y, mo, d] = s.slice(0, 10).split("-").map(Number);
   return new Date(y, mo - 1, d).toLocaleDateString(
@@ -255,6 +283,7 @@ function MatchCard({ match, index = 0, cardRef }: { match: Match; index?: number
   return (
     <div
       ref={cardRef}
+      data-match-id={match.id}
       onClick={() => { haptic("light"); nav({ to: "/match/$id", params: { id: match.id } }); }}
       className={`reveal press card-lift card-surface relative flex cursor-pointer items-center gap-2 p-3.5 ${live ? "breathing-live" : ""}`}
       style={{ animationDelay: `${index * 55}ms` }}
