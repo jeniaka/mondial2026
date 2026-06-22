@@ -196,6 +196,47 @@ function MatchDetail() {
         </div>
       </div>
 
+      {(live || finished) && (
+        <div className="card-surface mt-4 p-5">
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <h3 className="font-display text-lg font-bold">⚽ {t('goalsTitle')}</h3>
+            {match.htHome != null && match.htAway != null && (
+              <span className="num shrink-0 rounded-full bg-secondary px-2.5 py-1 text-xs font-bold text-secondary-foreground">
+                {t('halfTime')} {match.htHome}–{match.htAway}
+              </span>
+            )}
+          </div>
+          {match.events && match.events.length > 0 ? (
+            <ul className="space-y-2.5">
+              {[...match.events]
+                .sort((a, b) => ((a.minute ?? 0) - (b.minute ?? 0)) || ((a.injury_time ?? 0) - (b.injury_time ?? 0)))
+                .map((e, i) => {
+                  const isHome = e.team === match.homeTla;
+                  const teamName = isHome ? homeName : e.team === match.awayTla ? awayName : e.team;
+                  const min = e.minute != null ? `${e.minute}${e.injury_time ? `+${e.injury_time}` : ''}'` : '';
+                  return (
+                    <li key={i} className="flex items-center gap-2.5 text-sm">
+                      <span className="num w-12 shrink-0 text-end font-bold text-primary">{min}</span>
+                      <span className="shrink-0 text-base">{e.type === 'OWN_GOAL' ? '🥅' : '⚽'}</span>
+                      <span className="min-w-0 flex-1 truncate">
+                        <span className="font-bold">{e.scorer ?? '—'}</span>
+                        {e.type === 'PENALTY_SCORED' && <span className="ms-1 text-xs text-muted-foreground">({t('penaltyAbbr')})</span>}
+                        {e.type === 'OWN_GOAL' && <span className="ms-1 text-xs text-muted-foreground">({t('ownGoalAbbr')})</span>}
+                        {e.assist && <span className="ms-1 text-xs text-muted-foreground/70">· {e.assist}</span>}
+                      </span>
+                      <span className="shrink-0 text-xs font-semibold text-muted-foreground">{teamName}</span>
+                    </li>
+                  );
+                })}
+            </ul>
+          ) : finished ? (
+            <p className="text-sm text-muted-foreground">{t('goalDetailsUnavailable')}</p>
+          ) : (
+            <p className="text-sm text-muted-foreground">{t('noGoalsYet')}</p>
+          )}
+        </div>
+      )}
+
       {groups && groups.length > 1 && (
         <div className="mt-3 flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">
           {groups.map((g) => (

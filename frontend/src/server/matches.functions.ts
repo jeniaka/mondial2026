@@ -1,4 +1,6 @@
-import type { ApiMatch } from '@/lib/api';
+import type { ApiMatch, ApiMatchEvent } from '@/lib/api';
+
+export type MatchEvent = ApiMatchEvent;
 
 export type Match = {
   id: string;
@@ -14,8 +16,11 @@ export type Match = {
   awayIso2: string;
   homeScore: number | null;
   awayScore: number | null;
+  htHome: number | null;
+  htAway: number | null;
   competition: string;
   minute?: number | null;
+  events: MatchEvent[];
 };
 
 const TOURNAMENT_FROM = '2026-06-01';
@@ -36,8 +41,11 @@ function toMatch(m: ApiMatch): Match {
     awayIso2:    m.away?.iso2 ?? '',
     homeScore:   m.score?.ft_home ?? m.score?.home ?? null,
     awayScore:   m.score?.ft_away ?? m.score?.away ?? null,
+    htHome:      m.score?.ht_home ?? null,
+    htAway:      m.score?.ht_away ?? null,
     competition: m.stage ?? m.group ?? m.competition ?? 'World Cup 2026',
     minute:      m.minute ?? null,
+    events:      m.events ?? [],
   };
 }
 

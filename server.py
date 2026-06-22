@@ -1629,9 +1629,24 @@ def handle_internal_sync(handler: BaseHTTPRequestHandler, **_):
 
     from pymongo import UpdateOne
 
+    fd_matches = data.get("matches", [])
+    # Snapshot existing docs BEFORE writing so we can (a) diff for notifications and
+    # (b) know which finished matches already have a stored goal timeline (so we
+    # don't re-spend a rate-limited detail call on them every run).
+    fd_ids = [f"fd-{m['id']}" for m in fd_matches]
+    old_matches = {m["_id"]: m for m in db.matches().find({"_id": {"$in": fd_ids}})}
+
+    # Goal-detail enrichment is rate-limited (Football-Data free tier ≈10 req/min).
+    # Only the handful of live + newly-finished matches need a /matches/{id} call;
+    # cap per run so a busy matchday can never blow through the limit.
+    detail_budget = 9
+    of_data = None  # lazy openfootball backfill — fetched at most once per run
+    enriched = 0
+    live_count = 0
+
     new_match_docs = []
     ops = []
-    for fd_match in data.get("matches", []):
+    for fd_match in fd_matches:
         match_doc = sports.map_fd_match(fd_match)
         for side in ("home", "away"):
             fifa = match_doc[side]["fifa"]
@@ -1640,12 +1655,50 @@ def handle_internal_sync(handler: BaseHTTPRequestHandler, **_):
             match_doc[side]["iso2"] = country.get("iso2", "").upper()
             if not match_doc[side]["name_en"]:
                 match_doc[side]["name_en"] = country.get("name_en", fifa)
+
+        mid = match_doc["_id"]
+        old = old_matches.get(mid)
+        status = match_doc.get("status")
+        is_live = status in ("IN_PLAY", "PAUSED", "LIVE")
+        if is_live:
+            live_count += 1
+        needs_detail = is_live or (status == "FINISHED" and not (old and old.get("events")))
+
+        events_to_set = None
+        if needs_detail and detail_budget > 0:
+            detail_budget -= 1
+            fd_id = fd_match["id"]
+            if is_live:
+                sports.invalidate(f"match:{fd_id}")  # force-fresh live goals
+            evs = sports.map_fd_goals(sports.get_match(fd_id), match_doc)
+            if evs:
+                events_to_set = evs
+            elif status == "FINISHED":
+                # Football-Data free tier omitted the goals array → openfootball backfill.
+                if of_data is None:
+                    of_data = sports.fetch_openfootball() or {}
+                evs = sports.openfootball_events_for(match_doc, of_data)
+                if evs:
+                    events_to_set = evs
+
+        # Never let the fixtures payload wipe a stored goal timeline: drop `events`
+        # from the base $set and only (over)write it when we fetched a fresh one.
+        set_doc = {k: v for k, v in match_doc.items() if k != "events"}
+        update = {"$set": set_doc}
+        if events_to_set is not None:
+            set_doc["events"] = events_to_set
+            enriched += 1
+        else:
+            update["$setOnInsert"] = {"events": []}
+
+        # Reflect the events we'll actually store on the in-memory doc so the
+        # notification diff (goal-in-pinned) sees the fresh timeline.
+        match_doc["events"] = (
+            events_to_set if events_to_set is not None
+            else (old.get("events") if old else [])
+        )
         new_match_docs.append(match_doc)
-        ops.append(UpdateOne(
-            {"_id": match_doc["_id"]},
-            {"$set": match_doc},
-            upsert=True
-        ))
+        ops.append(UpdateOne({"_id": mid}, update, upsert=True))
 
     # Validate all TLAs against countries.json
     missing_flags = sports.validate_team_tlas(new_match_docs, countries)
@@ -1653,10 +1706,6 @@ def handle_internal_sync(handler: BaseHTTPRequestHandler, **_):
     if not ops:
         send_json(handler, 200, {"ok": True, "synced": 0, "missing_flags": missing_flags})
         return
-
-    # Snapshot existing states before write so we can diff for notifications
-    ids = [m["_id"] for m in new_match_docs]
-    old_matches = {m["_id"]: m for m in db.matches().find({"_id": {"$in": ids}})}
 
     db.matches().bulk_write(ops, ordered=False)
 
@@ -1668,7 +1717,12 @@ def handle_internal_sync(handler: BaseHTTPRequestHandler, **_):
     for new_match in new_match_docs:
         _fire_match_notifications(old_matches.get(new_match["_id"]), new_match)
 
-    send_json(handler, 200, {"ok": True, "synced": len(ops), "missing_flags": missing_flags, "seed_purged": seed_deleted})
+    log.info("Sync: upserted=%d enriched=%d live=%d seed_purged=%d",
+             len(ops), enriched, live_count, seed_deleted)
+    send_json(handler, 200, {
+        "ok": True, "synced": len(ops), "enriched": enriched, "live": live_count,
+        "missing_flags": missing_flags, "seed_purged": seed_deleted,
+    })
 
 
 def handle_internal_score(handler: BaseHTTPRequestHandler, **_):

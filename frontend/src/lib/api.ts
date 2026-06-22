@@ -36,6 +36,18 @@ function json(body: unknown) {
   return JSON.stringify(body);
 }
 
+// A single goal in a match's timeline (scorer + minute), from our Python backend.
+export type ApiMatchEvent = {
+  minute: number | null;
+  injury_time?: number | null;
+  type: string; // GOAL | PENALTY_SCORED | OWN_GOAL
+  scorer: string | null;
+  assist?: string | null;
+  team: string; // FIFA/TLA code of the scoring team
+  score_home?: number | null;
+  score_away?: number | null;
+};
+
 // Match shape from our Python backend
 export type ApiMatch = {
   id: string;
@@ -43,11 +55,16 @@ export type ApiMatch = {
   status: string;
   home: { name_en: string; name_he: string; tla: string; iso2?: string };
   away: { name_en: string; name_he: string; tla: string; iso2?: string };
-  score: { home: number | null; away: number | null; ft_home?: number | null; ft_away?: number | null };
+  score: {
+    home: number | null; away: number | null;
+    ft_home?: number | null; ft_away?: number | null;
+    ht_home?: number | null; ht_away?: number | null;
+  };
   minute: number | null;
   stage: string | null;
   group: string | null;
   competition: string | null;
+  events?: ApiMatchEvent[];
 };
 
 export type Group = {

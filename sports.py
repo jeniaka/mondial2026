@@ -169,7 +169,7 @@ def map_fd_match(fd: dict) -> dict:
             "name_he": "",  # filled from countries.json lookup
         },
         "status":  fd.get("status", "SCHEDULED"),
-        "minute":  None,
+        "minute":  fd.get("minute"),
         "score": {
             "home":     _int(full.get("home")),
             "away":     _int(full.get("away")),
@@ -186,3 +186,143 @@ def map_fd_match(fd: dict) -> dict:
         "events":         [],
         "last_synced_at": datetime.now(timezone.utc),
     }
+
+
+# ---------------------------------------------------------------------------
+# Goal-event mapping (scorer + minute timeline)
+# ---------------------------------------------------------------------------
+
+# Football-Data /matches/{id} goal.type -> our internal event type.
+# Our event schema is what server.py's notification + serializer code already
+# expects: {minute, type ("GOAL"/"PENALTY_SCORED"/"OWN_GOAL"), scorer, team(fifa)}.
+_FD_GOAL_TYPE = {
+    "REGULAR": "GOAL",
+    "PENALTY": "PENALTY_SCORED",
+    "OWN":     "OWN_GOAL",
+}
+
+
+def _team_fifa_for_name(name: str, match_doc: dict) -> str:
+    """Resolve a goal's team name to our FIFA/TLA code via the match's teams."""
+    name_n = (name or "").strip().lower()
+    home = match_doc.get("home", {})
+    away = match_doc.get("away", {})
+    if name_n and name_n == (away.get("name_en", "") or "").strip().lower():
+        return away.get("fifa", "")
+    if name_n and name_n == (home.get("name_en", "") or "").strip().lower():
+        return home.get("fifa", "")
+    return ""
+
+
+def map_fd_goals(detail: dict, match_doc: dict) -> list:
+    """Map a Football-Data /matches/{id} detail dict's `goals[]` into our events
+    schema. Resolves the scoring team to our FIFA code by name. Sorted by minute.
+    Returns [] when there is no detail or no goals."""
+    if not detail:
+        return []
+    out = []
+    for g in (detail.get("goals") or []):
+        team_name = (g.get("team") or {}).get("name", "")
+        score = g.get("score") or {}
+        assist = g.get("assist") or None
+        out.append({
+            "minute":      g.get("minute"),
+            "injury_time": g.get("injuryTime"),
+            "type":        _FD_GOAL_TYPE.get(g.get("type", "REGULAR"), "GOAL"),
+            "scorer":      (g.get("scorer") or {}).get("name"),
+            "assist":      assist.get("name") if isinstance(assist, dict) else None,
+            "team":        _team_fifa_for_name(team_name, match_doc),
+            "score_home":  score.get("home"),
+            "score_away":  score.get("away"),
+        })
+    out.sort(key=lambda e: ((e.get("minute") or 0), (e.get("injury_time") or 0)))
+    return out
+
+
+# ---------------------------------------------------------------------------
+# openfootball fallback (no API key) — backfill goals for FINISHED matches
+# when Football-Data's free tier omits the `goals` array.
+# ---------------------------------------------------------------------------
+
+OPENFOOTBALL_URL = (
+    "https://raw.githubusercontent.com/openfootball/worldcup.json/master/2026/worldcup.json"
+)
+TTL_OPENFOOTBALL = 3600  # 1h — source is hand-updated ~once/day
+
+
+def fetch_openfootball():
+    """Fetch + cache the openfootball 2026 worldcup.json. Returns parsed dict or None.
+    Best-effort: returns None on 404 (file may not exist yet) or any error."""
+    def fetch():
+        try:
+            r = http_requests.get(OPENFOOTBALL_URL, timeout=15)
+            if r.status_code != 200:
+                log.warning("openfootball fetch %s -> HTTP %s", OPENFOOTBALL_URL, r.status_code)
+                return None
+            return r.json()
+        except Exception as exc:
+            log.error("openfootball fetch failed: %s", exc)
+            return None
+    return _cached("openfootball:2026", TTL_OPENFOOTBALL, fetch)
+
+
+def _flatten_openfootball(of_data: dict) -> list:
+    """openfootball files put matches either at top-level `matches` or nested under
+    `rounds[].matches`. Return a flat list of match dicts."""
+    if not isinstance(of_data, dict):
+        return []
+    if isinstance(of_data.get("matches"), list):
+        return of_data["matches"]
+    out = []
+    for rnd in (of_data.get("rounds") or []):
+        out.extend(rnd.get("matches") or [])
+    return out
+
+
+def openfootball_events_for(match_doc: dict, of_data: dict) -> list:
+    """Find the openfootball match matching match_doc (by team names, then date)
+    and return its goals as our events schema. Best-effort backfill for FINISHED
+    matches only. Returns [] if no confident match is found."""
+    of_matches = _flatten_openfootball(of_data)
+    if not of_matches:
+        return []
+
+    home = (match_doc.get("home", {}).get("name_en", "") or "").strip().lower()
+    away = (match_doc.get("away", {}).get("name_en", "") or "").strip().lower()
+    home_fifa = match_doc.get("home", {}).get("fifa", "")
+    away_fifa = match_doc.get("away", {}).get("fifa", "")
+    ko = match_doc.get("kickoff_utc")
+    date_str = ko.strftime("%Y-%m-%d") if ko else None
+
+    for m in of_matches:
+        t1 = (m.get("team1") or "").strip().lower()
+        t2 = (m.get("team2") or "").strip().lower()
+        if {t1, t2} != {home, away}:
+            continue
+        # If both have a date, require it to match (guards same-pairing replays).
+        if date_str and m.get("date") and m.get("date") != date_str:
+            continue
+        t1_fifa = home_fifa if t1 == home else away_fifa
+        t2_fifa = away_fifa if t2 == away else home_fifa
+        evs = []
+        for goals_key, team_fifa in (("goals1", t1_fifa), ("goals2", t2_fifa)):
+            for g in (m.get(goals_key) or []):
+                if g.get("owngoal"):
+                    typ = "OWN_GOAL"
+                elif g.get("penalty"):
+                    typ = "PENALTY_SCORED"
+                else:
+                    typ = "GOAL"
+                evs.append({
+                    "minute":      g.get("minute"),
+                    "injury_time": g.get("offset"),
+                    "type":        typ,
+                    "scorer":      g.get("name"),
+                    "assist":      None,
+                    "team":        team_fifa,
+                    "score_home":  None,
+                    "score_away":  None,
+                })
+        evs.sort(key=lambda e: ((e.get("minute") or 0), (e.get("injury_time") or 0)))
+        return evs
+    return []
