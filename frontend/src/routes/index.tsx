@@ -309,6 +309,7 @@ function MatchCard({ match, index = 0, cardRef }: { match: Match; index?: number
     <div
       ref={cardRef}
       data-match-id={match.id}
+      dir="ltr"
       onClick={() => { haptic("light"); nav({ to: "/match/$id", params: { id: match.id } }); }}
       className={`reveal press card-lift card-surface relative flex cursor-pointer items-center gap-2 p-3.5 ${live ? "breathing-live" : ""}`}
       style={{ animationDelay: `${index * 55}ms` }}

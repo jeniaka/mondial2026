@@ -150,7 +150,7 @@ function MatchDetail() {
           )}
         </div>
 
-        <div className="relative mt-5 grid grid-cols-3 items-center gap-2 text-primary-foreground">
+        <div dir="ltr" className="relative mt-5 grid grid-cols-3 items-center gap-2 text-primary-foreground">
           <div className="text-center">
             <span className={`flag-wave inline-block drop-shadow-lg ${live ? 'flag-clash-l' : ''}`}><Flag country={match.homeTeam} size="lg" /></span>
             <div className="mt-2 truncate font-display text-sm font-bold">{homeName}</div>
