@@ -33,6 +33,10 @@ _rate_lock = threading.Lock()
 _rate_last_evict: float = 0.0
 _RATE_EVICT_INTERVAL = 300  # evict stale entries every 5 minutes
 
+# Last in-process match sync (set by run_match_sync). Surfaced on /healthz so a
+# deploy can be confirmed to have refreshed scores without dashboard access.
+_last_sync: dict = {"at": None, "synced": None, "live": None, "finished": None, "error": None}
+
 def _check_rate(key: str, limit: int, window: int) -> bool:
     """Returns True if request is allowed, False if rate-limited."""
     global _rate_last_evict
@@ -263,6 +267,7 @@ def handle_healthz(handler: BaseHTTPRequestHandler, **_):
         "build_present": build_present,
         "build_mtime": build_mtime,
         "ts": datetime.now(timezone.utc).isoformat(),
+        "last_sync": _last_sync,
     })
 
 
@@ -1609,9 +1614,12 @@ def handle_user_delete(handler: BaseHTTPRequestHandler, **_):
 
 # --- Internal / cron endpoints ---
 
-def handle_internal_sync(handler: BaseHTTPRequestHandler, **_):
-    if not require_internal_token(handler):
-        return
+def run_match_sync() -> dict:
+    """Pull current fixtures + scores from Football-Data and upsert into Mongo,
+    enriching live + newly-finished matches with the goal timeline (rate-limited).
+    Returns a summary dict. Shared by the /internal/sync-matches endpoint AND the
+    in-process background loop, so the app keeps scores fresh on its own even when
+    the external cron is down (which is what froze the data)."""
     import sports
     import json as _json
 
@@ -1619,13 +1627,14 @@ def handle_internal_sync(handler: BaseHTTPRequestHandler, **_):
     with open(countries_path, encoding="utf-8") as f:
         countries = _json.load(f)
 
-    # Bypass in-process cache so each cron run hits Football-Data fresh
+    # Bypass in-process cache so each run hits Football-Data fresh
     sports.invalidate("fixtures:all")
 
     data = sports.get_fixtures()
     if not data:
-        send_json(handler, 200, {"ok": True, "synced": 0, "note": "no data from Football-Data"})
-        return
+        _last_sync.update({"at": datetime.now(timezone.utc).isoformat(), "synced": 0,
+                           "live": 0, "finished": 0, "error": "no data from Football-Data"})
+        return {"ok": True, "synced": 0, "note": "no data from Football-Data"}
 
     from pymongo import UpdateOne
 
@@ -1643,6 +1652,7 @@ def handle_internal_sync(handler: BaseHTTPRequestHandler, **_):
     of_data = None  # lazy openfootball backfill — fetched at most once per run
     enriched = 0
     live_count = 0
+    finished_count = 0
 
     new_match_docs = []
     ops = []
@@ -1662,6 +1672,8 @@ def handle_internal_sync(handler: BaseHTTPRequestHandler, **_):
         is_live = status in ("IN_PLAY", "PAUSED", "LIVE")
         if is_live:
             live_count += 1
+        if status == "FINISHED":
+            finished_count += 1
         needs_detail = is_live or (status == "FINISHED" and not (old and old.get("events")))
 
         events_to_set = None
@@ -1704,8 +1716,9 @@ def handle_internal_sync(handler: BaseHTTPRequestHandler, **_):
     missing_flags = sports.validate_team_tlas(new_match_docs, countries)
 
     if not ops:
-        send_json(handler, 200, {"ok": True, "synced": 0, "missing_flags": missing_flags})
-        return
+        _last_sync.update({"at": datetime.now(timezone.utc).isoformat(), "synced": 0,
+                           "live": 0, "finished": 0, "error": None})
+        return {"ok": True, "synced": 0, "missing_flags": missing_flags}
 
     db.matches().bulk_write(ops, ordered=False)
 
@@ -1717,12 +1730,27 @@ def handle_internal_sync(handler: BaseHTTPRequestHandler, **_):
     for new_match in new_match_docs:
         _fire_match_notifications(old_matches.get(new_match["_id"]), new_match)
 
-    log.info("Sync: upserted=%d enriched=%d live=%d seed_purged=%d",
-             len(ops), enriched, live_count, seed_deleted)
-    send_json(handler, 200, {
+    log.info("Sync: upserted=%d enriched=%d live=%d finished=%d seed_purged=%d",
+             len(ops), enriched, live_count, finished_count, seed_deleted)
+    _last_sync.update({"at": datetime.now(timezone.utc).isoformat(), "synced": len(ops),
+                       "live": live_count, "finished": finished_count, "error": None})
+    return {
         "ok": True, "synced": len(ops), "enriched": enriched, "live": live_count,
-        "missing_flags": missing_flags, "seed_purged": seed_deleted,
-    })
+        "finished": finished_count, "missing_flags": missing_flags, "seed_purged": seed_deleted,
+    }
+
+
+def handle_internal_sync(handler: BaseHTTPRequestHandler, **_):
+    if not require_internal_token(handler):
+        return
+    try:
+        result = run_match_sync()
+    except Exception as exc:
+        log.exception("sync-matches failed: %s", exc)
+        _last_sync.update({"at": datetime.now(timezone.utc).isoformat(), "error": str(exc)})
+        send_json(handler, 500, {"ok": False, "error": str(exc)})
+        return
+    send_json(handler, 200, result)
 
 
 def handle_internal_score(handler: BaseHTTPRequestHandler, **_):
@@ -2509,12 +2537,32 @@ def _startup_seed_predictions():
         log.error("STARTUP: _startup_seed_predictions failed: %s", exc)
 
 
+def _background_sync_loop():
+    """Keep Mongo match scores fresh without depending on the external GitHub
+    cron (which had been failing/disabled, freezing all scores at TIMED). Runs
+    once shortly after startup, then every 5 minutes while the process is awake.
+    Daemon thread: on Render free-tier cold start the next boot runs main() again
+    and re-arms this loop, so scores refresh whenever the app is visited too."""
+    import time as _time
+    _time.sleep(8)  # let the HTTP server + Mongo connection settle first
+    while True:
+        try:
+            res = run_match_sync()
+            log.info("Background sync: synced=%s live=%s finished=%s",
+                     res.get("synced"), res.get("live"), res.get("finished"))
+        except Exception as exc:
+            log.exception("Background sync failed: %s", exc)
+            _last_sync.update({"at": datetime.now(timezone.utc).isoformat(), "error": str(exc)})
+        _time.sleep(300)
+
+
 def main():
     _startup_validate_build()
     _startup_validate_countries()
     db.ensure_indexes()
     _startup_seed_matches()
     _startup_seed_predictions()
+    threading.Thread(target=_background_sync_loop, name="match-sync", daemon=True).start()
     host = "0.0.0.0"
     port = config.PORT
     server = ThreadingHTTPServer((host, port), MondialHandler)
