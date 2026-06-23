@@ -39,7 +39,6 @@ function HomePage() {
   const matches = data?.matches ?? [];
   const live = matches.filter((m) => isLive(m.status));
   const upcoming = matches.filter((m) => !isLive(m.status) && m.status !== "FINISHED");
-  const finished = matches.filter((m) => m.status === "FINISHED");
   const pinnedMatches = matches.filter((m) => pinned.includes(m.id));
   const nextMatch = upcoming[0];
 
@@ -122,8 +121,12 @@ function HomePage() {
 
   if (!user) return null;
 
-  // Group upcoming by date in Israel time (UTC+3)
-  const byDate = upcoming.reduce<Record<string, Match[]>>((acc, m) => {
+  // One chronological list: finished (with scores) + upcoming, grouped by date in
+  // Israel time (UTC+3). Live matches keep their own section above; everything else
+  // flows oldest→newest so the whole tournament is scrollable from the start.
+  // `matches` arrives sorted by kickoff (API), so the date groups stay in order.
+  const listMatches = matches.filter((m) => !isLive(m.status));
+  const byDate = listMatches.reduce<Record<string, Match[]>>((acc, m) => {
     const k = idtDateLabel(m.utcDate, lang);
     (acc[k] ??= []).push(m);
     return acc;
@@ -191,42 +194,25 @@ function HomePage() {
         <EmptyState title={lang === "he" ? "המשחקים יפורסמו עם פרסומם הרשמי" : "Fixtures will appear once published"} hint={lang === "he" ? "המונדיאל מתחיל ב-11 ביוני 2026" : "World Cup starts June 11, 2026"} />
       ) : (
         <>
-          {upcoming.length > 0 && (
-            <>
-              <h2 className="section-label mb-3 mt-2">{t("upcoming")}</h2>
-              {Object.entries(byDate).map(([date, ms]) => (
-                <div key={date} className="mb-5">
-                  <div className="sticky-slide sticky top-[60px] z-10 -mx-4 mb-2 bg-background/85 px-4 py-1.5 backdrop-blur">
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-3 py-1 text-[11px] font-bold text-secondary-foreground">
-                      <CalIcon className="h-3 w-3 text-primary" /> {date}
-                    </span>
-                  </div>
-                  <div className="grid gap-2.5">
-                    {ms.map((m, i) => (
-                      <MatchCard
-                        key={m.id}
-                        match={m}
-                        index={i}
-                        cardRef={m.id === anchorId ? anchorRef : undefined}
-                      />
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </>
-          )}
-          {finished.length > 0 && (
-            <Section title={t("finished")}>
-              {finished.map((m, i) => (
-                <MatchCard
-                  key={m.id}
-                  match={m}
-                  index={i}
-                  cardRef={m.id === anchorId ? anchorRef : undefined}
-                />
-              ))}
-            </Section>
-          )}
+          {Object.entries(byDate).map(([date, ms]) => (
+            <div key={date} className="mb-5">
+              <div className="sticky-slide sticky top-[60px] z-10 -mx-4 mb-2 bg-background/85 px-4 py-1.5 backdrop-blur">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-3 py-1 text-[11px] font-bold text-secondary-foreground">
+                  <CalIcon className="h-3 w-3 text-primary" /> {date}
+                </span>
+              </div>
+              <div className="grid gap-2.5">
+                {ms.map((m, i) => (
+                  <MatchCard
+                    key={m.id}
+                    match={m}
+                    index={i}
+                    cardRef={m.id === anchorId ? anchorRef : undefined}
+                  />
+                ))}
+              </div>
+            </div>
+          ))}
         </>
       )}
     </AppShell>
